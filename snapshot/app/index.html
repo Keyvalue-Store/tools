@@ -22,6 +22,10 @@
   tr.pick:hover td { background: var(--soft); }
   tr.pick.on td { background: var(--accent-soft); }
   .row > .field.grow { flex: 1; min-width: 220px; }
+  .keys-table td.key { min-width: 14ch; }
+  @media (max-width: 640px) {
+    .keys-table th:nth-child(n+4), .keys-table td:nth-child(n+4) { display: none; }
+  }
   .facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 8px 0 12px; font-size: .92rem; }
   .facts dt { color: var(--muted); }
   .facts dd { margin: 0; overflow-wrap: anywhere; }

@@ -47,8 +47,8 @@
     return (n / 1073741824).toFixed(2) + ' GB';
   }
   function plural(n, one, many) { return fmt(n) + ' ' + (n === 1 ? one : many); }
-  function table(headers, rows, numeric) {
-    const wrap = el('div', { class: 'table-wrap' });
+  function table(headers, rows, numeric, cls) {
+    const wrap = el('div', { class: 'table-wrap' + (cls ? ' ' + cls : '') });
     const t = el('table');
     t.append(el('thead', null, [el('tr', null, headers.map((h, i) => el('th', { class: numeric && numeric.includes(i) ? 'num' : '', text: h })))]));
     const body = el('tbody');
@@ -199,7 +199,7 @@
     out.append(table(['Type and encoding', 'Keys', 'Bytes'], Object.entries(s.byEncoding).sort((a, b) => b[1].bytes - a[1].bytes).map(([t, v]) => [t, fmt(v.keys), sizeText(v.bytes)]), [1, 2]));
 
     out.append(el('h3', { text: 'Biggest keys' }));
-    const bigRows = s.largest.slice(0, 20).map((x) => {
+    const bigRows = s.largest.slice(0, 15).map((x) => {
       const full = entries.find((e) => e.db === x.db && e.size === x.size && e.key === x.key) || null;
       const tr = el('tr', { class: full ? 'pick' : '' }, [
         el('td', { class: 'key', text: R.showKey(x.key) }), el('td', { text: x.type }),
@@ -209,7 +209,7 @@
       if (full) tr.addEventListener('click', () => { showValue(full); $('browse').scrollIntoView({ behavior: 'smooth' }); });
       return tr;
     });
-    out.append(table(['Key', 'Type', 'Length', 'In the file', 'DB'], bigRows, [2, 3, 4]));
+    out.append(table(['Key', 'Type', 'Length', 'In the file', 'DB'], bigRows, [2, 3, 4], 'keys-table'));
 
     const split = el('div', { class: 'split' });
     const left = el('div'), right = el('div');
@@ -258,11 +258,12 @@
   const strict = new TextDecoder('utf-8', { fatal: true });
   function keyText(b) { try { return strict.decode(b); } catch (e) { return R.showBytes(b); } }
 
-  let picked = null;
-  function filterKeys() {
+  let picked = null, shown = 50;
+  function filterKeys(more) {
     const box = $('matches');
     box.textContent = '';
     if (!entries.length) return;
+    shown = more ? shown + 50 : 50;
     const q = $('filter').value;
     const type = $('type').value;
     const needle = q ? new TextEncoder().encode(q) : null;
@@ -272,9 +273,9 @@
       if (type && e.type !== type) continue;
       if (needle && !contains(e.key, needle)) continue;
       total++;
-      if (hits.length < 200) hits.push(e);
+      if (hits.length < shown) hits.push(e);
     }
-    box.append(el('p', { class: 'muted small', text: total > hits.length ? `${fmt(total)} keys match. Showing the first ${hits.length}.` : `${plural(total, 'key matches', 'keys match')}.` }));
+    box.append(el('p', { class: 'muted small', text: total > hits.length ? `${fmt(total)} keys match. Showing the first ${fmt(hits.length)}.` : `${plural(total, 'key matches', 'keys match')}.` }));
     const rows = hits.map((e) => {
       const tr = el('tr', { class: 'pick' + (e === picked ? ' on' : '') }, [
         el('td', { class: 'key', text: R.showKey(e.key) }), el('td', { text: e.type }),
@@ -284,7 +285,12 @@
       tr.addEventListener('click', () => { showValue(e); for (const r of box.querySelectorAll('tr.on')) r.classList.remove('on'); tr.classList.add('on'); });
       return tr;
     });
-    box.append(table(['Key', 'Type', 'Length', 'In the file', 'Expires', 'DB'], rows, [2, 3, 5]));
+    box.append(table(['Key', 'Type', 'Length', 'In the file', 'Expires', 'DB'], rows, [2, 3, 5], 'keys-table'));
+    if (total > hits.length) {
+      const btn = el('button', { type: 'button', class: 'btn', text: 'Show 50 more' });
+      btn.addEventListener('click', () => filterKeys(true));
+      box.append(el('div', { class: 'row' }, [btn]));
+    }
   }
   function contains(hay, needle) {
     outer: for (let i = 0; i + needle.length <= hay.length; i++) {
@@ -356,8 +362,8 @@
     readFile(buf.buffer, 'example.rdb');
   });
   let t;
-  $('filter').addEventListener('input', () => { clearTimeout(t); t = setTimeout(filterKeys, 200); });
-  $('type').addEventListener('change', filterKeys);
+  $('filter').addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => filterKeys(false), 200); });
+  $('type').addEventListener('change', () => filterKeys(false));
   $('dump').addEventListener('input', () => { clearTimeout(t); t = setTimeout(readDump, 250); });
   $('dump-example').addEventListener('click', () => {
     $('dump').value = "\"\\x10??\\x00\\x00\\x00\\b\\x00\\x84name\\x05\\x83Ana\\x04\\x84plan\\x05\\x83pro\\x04\\x85email\\x06\\x8fana@example.com\\x10\\x86visits\\a\\x11\\x01\\xffP\\x00\\xad\\x16\\xfbv\\x1cA,\\xa5\"";
