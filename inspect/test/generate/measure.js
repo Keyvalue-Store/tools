@@ -9,6 +9,8 @@
 //   node inspect/test/generate/measure.js
 
 'use strict';
+// node --test runs every .js file under a test folder; this one only runs by hand.
+if (process.env.NODE_TEST_CONTEXT) return;
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');

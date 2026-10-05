@@ -40,7 +40,7 @@
  },
  "speed": {
   "value": "a 5.0 MB JSON document, gzipped to 0.86 MB",
-  "milliseconds": 374,
+  "milliseconds": 333,
   "node": "v22.22.0"
  },
  "fixtureList": [

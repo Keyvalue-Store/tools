@@ -139,7 +139,7 @@ The results:
 - **DEFLATE.** The decoder matched Node's zlib on 7 inputs at 4 compression levels and 5 strategies, including fixed and dynamic Huffman codes and stored blocks.
 - **No false alarms.** Of 50,000 random base64 tokens and 20,000 random hex strings, from 4 to 48 bytes long, none was taken for anything but text. Of 20,000 random binary values, all but 232 stayed binary data, and those 232 were 10 bytes or shorter and happened to be valid text.
 - **No crashes.** Thousands of random values, and every test value cut short and with a flipped bit, decoded or failed cleanly. So did values built to make a decoder hang or print forever, such as a Java class that is its own superclass and a pickled list holding itself twice, thirty levels deep.
-- **Speed.** A 5 MB JSON document inside gzip decodes in about 0.4 seconds.
+- **Speed.** A 5 MB JSON document inside gzip decodes in under half a second.
 
 The scripts that wrote the values are in `test/generate/`, the values and what they should decode to in `test/fixtures/`, and the measurements in `test/results/`, made by `test/generate/measure.js`. The tests replay them, so they run with nothing but Node.js:
 
