@@ -1,0 +1,37 @@
+{
+    "source": "PHP 8.3.6, igbinary with PHP references",
+    "layers": [],
+    "format": "igbinary",
+    "value": {
+        "map": [
+            [
+                "a",
+                [
+                    {
+                        "i": "1"
+                    }
+                ]
+            ],
+            [
+                "b",
+                [
+                    {
+                        "i": "1"
+                    }
+                ]
+            ],
+            [
+                "c",
+                {
+                    "i": "7"
+                }
+            ],
+            [
+                "d",
+                {
+                    "i": "7"
+                }
+            ]
+        ]
+    }
+}

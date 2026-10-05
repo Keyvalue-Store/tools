@@ -1,0 +1,33 @@
+{
+ "source": "Python 3.13.16, zlib level 9",
+ "layers": [
+  "zlib"
+ ],
+ "format": "json",
+ "value": {
+  "map": [
+   [
+    "user",
+    "alice"
+   ],
+   [
+    "items",
+    [
+     {
+      "i": "1"
+     },
+     {
+      "i": "2"
+     },
+     {
+      "i": "3"
+     }
+    ]
+   ],
+   [
+    "note",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ]
+  ]
+ }
+}

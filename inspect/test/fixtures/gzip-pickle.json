@@ -1,0 +1,22 @@
+{
+ "source": "Python 3.13.16, pickle protocol 5 then gzip",
+ "layers": [
+  "gzip"
+ ],
+ "format": "pickle",
+ "value": {
+  "map": [
+   [
+    "k",
+    [
+     {
+      "i": "1"
+     },
+     {
+      "i": "2"
+     }
+    ]
+   ]
+  ]
+ }
+}

@@ -1,0 +1,48 @@
+{
+    "source": "PHP 8.3.6, serialize() with references",
+    "layers": [],
+    "format": "php",
+    "value": {
+        "map": [
+            [
+                "obj",
+                [
+                    {
+                        "obj": "stdClass",
+                        "fields": [
+                            [
+                                "id",
+                                {
+                                    "i": "1"
+                                }
+                            ]
+                        ]
+                    },
+                    {
+                        "obj": "stdClass",
+                        "fields": [
+                            [
+                                "id",
+                                {
+                                    "i": "1"
+                                }
+                            ]
+                        ]
+                    }
+                ]
+            ],
+            [
+                "a",
+                {
+                    "i": "5"
+                }
+            ],
+            [
+                "b",
+                {
+                    "i": "5"
+                }
+            ]
+        ]
+    }
+}

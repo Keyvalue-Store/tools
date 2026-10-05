@@ -1,0 +1,9 @@
+{
+ "source": "Pillow, a 3 by 2 image",
+ "layers": [],
+ "format": "image",
+ "value": null,
+ "width": 3,
+ "height": 2,
+ "mime": "image/png"
+}

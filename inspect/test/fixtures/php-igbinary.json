@@ -1,0 +1,361 @@
+{
+    "source": "PHP 8.3.6, igbinary 3.2.13",
+    "layers": [],
+    "format": "igbinary",
+    "value": {
+        "map": [
+            [
+                "name",
+                "café 🔥"
+            ],
+            [
+                "count",
+                {
+                    "i": "42"
+                }
+            ],
+            [
+                "big",
+                {
+                    "i": "9223372036854775807"
+                }
+            ],
+            [
+                "small",
+                {
+                    "i": "-9223372036854775808"
+                }
+            ],
+            [
+                "neg",
+                {
+                    "i": "-300"
+                }
+            ],
+            [
+                "ratio",
+                {
+                    "n": 0.1
+                }
+            ],
+            [
+                "whole",
+                {
+                    "n": 2.0
+                }
+            ],
+            [
+                "tiny",
+                {
+                    "n": 1.5e-300
+                }
+            ],
+            [
+                "inf",
+                {
+                    "n": "Infinity"
+                }
+            ],
+            [
+                "ninf",
+                {
+                    "n": "-Infinity"
+                }
+            ],
+            [
+                "yes",
+                true
+            ],
+            [
+                "no",
+                false
+            ],
+            [
+                "none",
+                null
+            ],
+            [
+                "list",
+                [
+                    {
+                        "i": "1"
+                    },
+                    "two",
+                    {
+                        "n": 3.5
+                    },
+                    [
+                        {
+                            "i": "4"
+                        }
+                    ]
+                ]
+            ],
+            [
+                "map",
+                {
+                    "map": [
+                        [
+                            "b",
+                            {
+                                "i": "1"
+                            }
+                        ],
+                        [
+                            "a",
+                            {
+                                "i": "2"
+                            }
+                        ],
+                        [
+                            {
+                                "i": "7"
+                            },
+                            "seven"
+                        ],
+                        [
+                            {
+                                "i": "-1"
+                            },
+                            "minus"
+                        ]
+                    ]
+                }
+            ],
+            [
+                "empty",
+                []
+            ],
+            [
+                "emptystr",
+                ""
+            ],
+            [
+                "binary",
+                {
+                    "b": "00ff01"
+                }
+            ],
+            [
+                "account",
+                {
+                    "obj": "Account",
+                    "fields": [
+                        [
+                            "name",
+                            "alice"
+                        ],
+                        [
+                            "balance",
+                            {
+                                "n": 12.5
+                            }
+                        ],
+                        [
+                            "secret",
+                            "s\u0000cret"
+                        ],
+                        [
+                            "tags",
+                            [
+                                "a",
+                                "b"
+                            ]
+                        ],
+                        [
+                            "owner",
+                            null
+                        ]
+                    ]
+                }
+            ],
+            [
+                "std",
+                {
+                    "obj": "stdClass",
+                    "fields": [
+                        [
+                            "k",
+                            "v"
+                        ],
+                        [
+                            "n",
+                            [
+                                {
+                                    "i": "1"
+                                },
+                                {
+                                    "i": "2"
+                                }
+                            ]
+                        ]
+                    ]
+                }
+            ],
+            [
+                "suit",
+                {
+                    "obj": "Suit",
+                    "fields": []
+                }
+            ],
+            [
+                "nested",
+                {
+                    "map": [
+                        [
+                            "a",
+                            {
+                                "map": [
+                                    [
+                                        "b",
+                                        {
+                                            "map": [
+                                                [
+                                                    "c",
+                                                    {
+                                                        "map": [
+                                                            [
+                                                                "d",
+                                                                "deep"
+                                                            ]
+                                                        ]
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                ]
+                            }
+                        ]
+                    ]
+                }
+            ],
+            [
+                "long_string",
+                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            ],
+            [
+                "strings",
+                [
+                    "same",
+                    "same",
+                    "other",
+                    "same"
+                ]
+            ],
+            [
+                "accounts",
+                [
+                    {
+                        "obj": "Account",
+                        "fields": [
+                            [
+                                "name",
+                                "alice"
+                            ],
+                            [
+                                "balance",
+                                {
+                                    "n": 12.5
+                                }
+                            ],
+                            [
+                                "secret",
+                                "s\u0000cret"
+                            ],
+                            [
+                                "tags",
+                                [
+                                    "a",
+                                    "b"
+                                ]
+                            ],
+                            [
+                                "owner",
+                                null
+                            ]
+                        ]
+                    },
+                    {
+                        "obj": "Account",
+                        "fields": [
+                            [
+                                "name",
+                                "alice"
+                            ],
+                            [
+                                "balance",
+                                {
+                                    "n": 12.5
+                                }
+                            ],
+                            [
+                                "secret",
+                                "s\u0000cret"
+                            ],
+                            [
+                                "tags",
+                                [
+                                    "a",
+                                    "b"
+                                ]
+                            ],
+                            [
+                                "owner",
+                                null
+                            ]
+                        ]
+                    }
+                ]
+            ],
+            [
+                "ints",
+                [
+                    {
+                        "i": "0"
+                    },
+                    {
+                        "i": "255"
+                    },
+                    {
+                        "i": "256"
+                    },
+                    {
+                        "i": "65535"
+                    },
+                    {
+                        "i": "65536"
+                    },
+                    {
+                        "i": "4294967295"
+                    },
+                    {
+                        "i": "4294967296"
+                    },
+                    {
+                        "i": "-1"
+                    },
+                    {
+                        "i": "-255"
+                    },
+                    {
+                        "i": "-256"
+                    },
+                    {
+                        "i": "-65535"
+                    },
+                    {
+                        "i": "-65536"
+                    },
+                    {
+                        "i": "-4294967295"
+                    },
+                    {
+                        "i": "-4294967296"
+                    }
+                ]
+            ]
+        ]
+    }
+}

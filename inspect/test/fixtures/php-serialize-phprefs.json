@@ -1,0 +1,37 @@
+{
+    "source": "PHP 8.3.6, serialize() with PHP references",
+    "layers": [],
+    "format": "php",
+    "value": {
+        "map": [
+            [
+                "a",
+                [
+                    {
+                        "i": "1"
+                    }
+                ]
+            ],
+            [
+                "b",
+                [
+                    {
+                        "i": "1"
+                    }
+                ]
+            ],
+            [
+                "c",
+                {
+                    "i": "7"
+                }
+            ],
+            [
+                "d",
+                {
+                    "i": "7"
+                }
+            ]
+        ]
+    }
+}

@@ -1,0 +1,6 @@
+{
+ "source": "redis-8.10.2, DUMP of a small hash",
+ "layers": [],
+ "format": "redis-dump",
+ "value": null
+}

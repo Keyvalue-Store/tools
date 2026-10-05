@@ -1,0 +1,13 @@
+{
+ "source": "Python 3.13.16, msgpack with single floats",
+ "layers": [],
+ "format": "msgpack",
+ "value": [
+  {
+   "n": 1.5
+  },
+  {
+   "n": 2.25
+  }
+ ]
+}

@@ -1,0 +1,76 @@
+{
+ "source": "Django 6.1.1, django.core.cache.backends.redis.RedisSerializer",
+ "layers": [],
+ "format": "pickle",
+ "value": {
+  "obj": "auth.User",
+  "fields": [
+   [
+    "_state",
+    {
+     "obj": "django.db.models.base.ModelState",
+     "fields": [
+      [
+       "fields_cache",
+       {
+        "map": []
+       }
+      ]
+     ]
+    }
+   ],
+   [
+    "id",
+    {
+     "i": "7"
+    }
+   ],
+   [
+    "password",
+    ""
+   ],
+   [
+    "last_login",
+    null
+   ],
+   [
+    "is_superuser",
+    false
+   ],
+   [
+    "username",
+    "alice"
+   ],
+   [
+    "first_name",
+    "Alice"
+   ],
+   [
+    "last_name",
+    ""
+   ],
+   [
+    "email",
+    "alice@example.com"
+   ],
+   [
+    "is_staff",
+    true
+   ],
+   [
+    "is_active",
+    true
+   ],
+   [
+    "date_joined",
+    {
+     "ms": 1791190800000
+    }
+   ],
+   [
+    "_django_version",
+    "6.1.1"
+   ]
+  ]
+ }
+}

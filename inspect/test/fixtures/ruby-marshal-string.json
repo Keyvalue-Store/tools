@@ -1,0 +1,8 @@
+{
+  "source": "Ruby 3.3.6, Marshal.dump",
+  "layers": [
+
+  ],
+  "format": "marshal",
+  "value": "just text"
+}

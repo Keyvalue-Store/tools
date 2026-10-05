@@ -1,0 +1,61 @@
+{
+ "source": "Python 3.13.16, msgpack 1.2.3",
+ "layers": [],
+ "format": "msgpack",
+ "value": {
+  "map": [
+   [
+    "user_id",
+    {
+     "i": "42"
+    }
+   ],
+   [
+    "name",
+    "Alice"
+   ],
+   [
+    "roles",
+    [
+     "admin",
+     "editor"
+    ]
+   ],
+   [
+    "cart",
+    {
+     "map": [
+      [
+       "sku-1",
+       {
+        "i": "2"
+       }
+      ],
+      [
+       "sku-7",
+       {
+        "i": "1"
+       }
+      ]
+     ]
+    }
+   ],
+   [
+    "dark_mode",
+    true
+   ],
+   [
+    "last_login",
+    {
+     "ms": 1791218550000
+    }
+   ],
+   [
+    "avatar",
+    {
+     "b": "89504e472e2e2e"
+    }
+   ]
+  ]
+ }
+}

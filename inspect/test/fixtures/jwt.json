@@ -1,0 +1,64 @@
+{
+ "source": "Python 3.13.16, hmac and base64",
+ "layers": [],
+ "format": "jwt",
+ "value": {
+  "obj": "JSON Web Token",
+  "fields": [
+   [
+    "header",
+    {
+     "map": [
+      [
+       "alg",
+       "HS256"
+      ],
+      [
+       "typ",
+       "JWT"
+      ]
+     ]
+    }
+   ],
+   [
+    "payload",
+    {
+     "map": [
+      [
+       "sub",
+       "user-42"
+      ],
+      [
+       "name",
+       "Alice"
+      ],
+      [
+       "iat",
+       {
+        "i": "1791218550"
+       }
+      ],
+      [
+       "exp",
+       {
+        "i": "1791222150"
+       }
+      ],
+      [
+       "roles",
+       [
+        "admin"
+       ]
+      ]
+     ]
+    }
+   ],
+   [
+    "signature",
+    {
+     "b": "88f90f34d0b8881ceacab7873d7572a76181a8e437fb3ff7a54db46e3aac9bd8"
+    }
+   ]
+  ]
+ }
+}

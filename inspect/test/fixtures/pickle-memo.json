@@ -1,0 +1,21 @@
+{
+ "source": "Python 3.13.16, pickle protocol 2",
+ "layers": [],
+ "format": "pickle",
+ "value": {
+  "map": [
+   [
+    "a",
+    [
+     "once"
+    ]
+   ],
+   [
+    "b",
+    [
+     "once"
+    ]
+   ]
+  ]
+ }
+}

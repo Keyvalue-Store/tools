@@ -1,0 +1,50 @@
+{
+    "source": "PHP 8.3.6, session_encode() with session.serialize_handler=php",
+    "layers": [],
+    "format": "php-session",
+    "value": {
+        "map": [
+            [
+                "user_id",
+                {
+                    "i": "42"
+                }
+            ],
+            [
+                "cart",
+                {
+                    "map": [
+                        [
+                            "sku-1",
+                            {
+                                "i": "2"
+                            }
+                        ]
+                    ]
+                }
+            ],
+            [
+                "flash",
+                "Saved."
+            ],
+            [
+                "login",
+                {
+                    "obj": "Session2",
+                    "fields": [
+                        [
+                            "user",
+                            "alice"
+                        ],
+                        [
+                            "at",
+                            {
+                                "i": "1791218550"
+                            }
+                        ]
+                    ]
+                }
+            ]
+        ]
+    }
+}

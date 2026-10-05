@@ -1,0 +1,33 @@
+{
+ "source": "Python 3.13.16, lz4.frame 4.4.5",
+ "layers": [
+  "lz4"
+ ],
+ "format": "json",
+ "value": {
+  "map": [
+   [
+    "user",
+    "alice"
+   ],
+   [
+    "items",
+    [
+     {
+      "i": "1"
+     },
+     {
+      "i": "2"
+     },
+     {
+      "i": "3"
+     }
+    ]
+   ],
+   [
+    "note",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ]
+  ]
+ }
+}

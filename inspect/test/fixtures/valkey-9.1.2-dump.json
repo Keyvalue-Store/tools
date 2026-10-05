@@ -1,0 +1,6 @@
+{
+ "source": "valkey-9.1.2, DUMP of a small hash",
+ "layers": [],
+ "format": "redis-dump",
+ "value": null
+}

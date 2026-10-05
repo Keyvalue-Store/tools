@@ -1,0 +1,149 @@
+{
+ "source": "Python 3.13.16, bson from pymongo bson",
+ "layers": [],
+ "format": "bson",
+ "value": {
+  "map": [
+   [
+    "_id",
+    {
+     "tag": "ObjectId",
+     "v": "65f0a1b2c3d4e5f601234567"
+    }
+   ],
+   [
+    "name",
+    "alice"
+   ],
+   [
+    "age",
+    {
+     "i": "30"
+    }
+   ],
+   [
+    "balance",
+    {
+     "i": "1099511627776"
+    }
+   ],
+   [
+    "ratio",
+    {
+     "n": 0.75
+    }
+   ],
+   [
+    "joined",
+    {
+     "ms": 1791187200123
+    }
+   ],
+   [
+    "price",
+    {
+     "tag": "Decimal128",
+     "v": {
+      "dec": "1234.5678"
+     }
+    }
+   ],
+   [
+    "tiny",
+    {
+     "tag": "Decimal128",
+     "v": {
+      "dec": "1E-10"
+     }
+    }
+   ],
+   [
+    "huge",
+    {
+     "tag": "Decimal128",
+     "v": {
+      "dec": "-9.99E+100"
+     }
+    }
+   ],
+   [
+    "tags",
+    [
+     "a",
+     "b"
+    ]
+   ],
+   [
+    "address",
+    {
+     "map": [
+      [
+       "city",
+       "Lisbon"
+      ],
+      [
+       "zip",
+       "1100"
+      ]
+     ]
+    }
+   ],
+   [
+    "blob",
+    {
+     "b": "000102"
+    }
+   ],
+   [
+    "uid",
+    {
+     "tag": "UUID",
+     "v": "12345678-1234-5678-1234-567812345678"
+    }
+   ],
+   [
+    "pattern",
+    {
+     "tag": "regex",
+     "v": "/^a.*z$/i"
+    }
+   ],
+   [
+    "none",
+    null
+   ],
+   [
+    "yes",
+    true
+   ],
+   [
+    "min",
+    {
+     "tag": "MinKey",
+     "v": null
+    }
+   ],
+   [
+    "max",
+    {
+     "tag": "MaxKey",
+     "v": null
+    }
+   ],
+   [
+    "ts",
+    {
+     "tag": "Timestamp",
+     "v": "1791218550, 7"
+    }
+   ],
+   [
+    "code",
+    {
+     "tag": "JavaScript",
+     "v": "function () { return 1; }"
+    }
+   ]
+  ]
+ }
+}

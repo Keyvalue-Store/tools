@@ -1,0 +1,14 @@
+{
+  "source": "Ruby 3.3.6, Marshal.dump",
+  "layers": [
+
+  ],
+  "format": "marshal",
+  "value": [
+    {
+      "i": "1"
+    },
+    "a",
+    "b"
+  ]
+}

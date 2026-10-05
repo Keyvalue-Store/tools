@@ -1,0 +1,33 @@
+{
+ "source": "Python 3.13.16, lz4.block with the size stored",
+ "layers": [
+  "lz4-block"
+ ],
+ "format": "json",
+ "value": {
+  "map": [
+   [
+    "user",
+    "alice"
+   ],
+   [
+    "items",
+    [
+     {
+      "i": "1"
+     },
+     {
+      "i": "2"
+     },
+     {
+      "i": "3"
+     }
+    ]
+   ],
+   [
+    "note",
+    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+   ]
+  ]
+ }
+}
