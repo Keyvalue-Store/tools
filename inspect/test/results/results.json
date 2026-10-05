@@ -1,18 +1,49 @@
 {
- "note": "Measured in October 2026. Every fixture decoded to what the language that wrote it reads back, as test/inspect.test.js checks.",
+ "note": "Measured in October 2026 by test/generate/measure.js. test/inspect.test.js checks every fixture against what the language that wrote it reads back.",
+ "fixtures": 57,
  "fixturesByWriter": {
-  "Python": 27,
+  "Python": 29,
   "Django": 1,
   "Pillow": 5,
   "Java": 5,
   "Written by hand": 1,
-  "PHP": 9,
+  "PHP": 11,
   "redis-8.10.2": 1,
   "Ruby": 3,
   "valkey-9.1.2": 1
  },
+ "checked": {
+  "valueByValue": 47,
+  "imageTypeAndSize": 5,
+  "namedOnly": 5
+ },
  "quotedOutputs": 10,
- "fixtures": [
+ "randomInput": {
+  "base64Tokens": {
+   "tried": 50000,
+   "lengths": "4 to 48 bytes, half base64 and half base64url",
+   "misread": 0
+  },
+  "hexStrings": {
+   "tried": 20000,
+   "lengths": "4 to 32 bytes",
+   "misread": 0
+  },
+  "binaryValues": {
+   "tried": 20000,
+   "lengths": "1 to 64 bytes",
+   "result": {
+    "binary": 19768,
+    "text": 232
+   }
+  }
+ },
+ "speed": {
+  "value": "a 5.0 MB JSON document, gzipped to 0.86 MB",
+  "milliseconds": 374,
+  "node": "v22.22.0"
+ },
+ "fixtureList": [
   {
    "file": "base64-gzip-json.bin",
    "bytes": 104,
@@ -22,7 +53,7 @@
     "gzip"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "bson.bin",
@@ -30,7 +61,7 @@
    "writtenBy": "Python 3.13.16, bson from pymongo bson",
    "layers": [],
    "format": "bson",
-   "matches": true
+   "expected": "bson"
   },
   {
    "file": "bzip2-json.bin",
@@ -38,7 +69,7 @@
    "writtenBy": "Python 3.13.16, bz2",
    "layers": [],
    "format": "bzip2",
-   "matches": true
+   "expected": "bzip2"
   },
   {
    "file": "cbor.bin",
@@ -46,7 +77,7 @@
    "writtenBy": "Python 3.13.16, cbor2",
    "layers": [],
    "format": "cbor",
-   "matches": true
+   "expected": "cbor"
   },
   {
    "file": "django-cache-user.bin",
@@ -54,7 +85,7 @@
    "writtenBy": "Django 6.1.1, django.core.cache.backends.redis.RedisSerializer",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "gzip-json.bin",
@@ -64,7 +95,7 @@
     "gzip"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "gzip-pickle.bin",
@@ -74,7 +105,7 @@
     "gzip"
    ],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "hex-zlib-json.bin",
@@ -85,7 +116,7 @@
     "zlib"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "image-bmp.bin",
@@ -93,7 +124,7 @@
    "writtenBy": "Pillow, a 3 by 2 image",
    "layers": [],
    "format": "image",
-   "matches": true
+   "expected": "image"
   },
   {
    "file": "image-gif.bin",
@@ -101,7 +132,7 @@
    "writtenBy": "Pillow, a 3 by 2 image",
    "layers": [],
    "format": "image",
-   "matches": true
+   "expected": "image"
   },
   {
    "file": "image-jpeg.bin",
@@ -109,7 +140,7 @@
    "writtenBy": "Pillow, a 3 by 2 image",
    "layers": [],
    "format": "image",
-   "matches": true
+   "expected": "image"
   },
   {
    "file": "image-png.bin",
@@ -117,7 +148,7 @@
    "writtenBy": "Pillow, a 3 by 2 image",
    "layers": [],
    "format": "image",
-   "matches": true
+   "expected": "image"
   },
   {
    "file": "image-webp.bin",
@@ -125,7 +156,7 @@
    "writtenBy": "Pillow, a 3 by 2 image",
    "layers": [],
    "format": "image",
-   "matches": true
+   "expected": "image"
   },
   {
    "file": "java-integer.bin",
@@ -133,7 +164,7 @@
    "writtenBy": "Java 21.0.12.1, ObjectOutputStream",
    "layers": [],
    "format": "java",
-   "matches": true
+   "expected": "java"
   },
   {
    "file": "java-session.bin",
@@ -141,7 +172,7 @@
    "writtenBy": "Java 21.0.12.1, ObjectOutputStream",
    "layers": [],
    "format": "java",
-   "matches": true
+   "expected": "java"
   },
   {
    "file": "java-stream.bin",
@@ -149,7 +180,7 @@
    "writtenBy": "Java 21.0.12.1, ObjectOutputStream",
    "layers": [],
    "format": "java",
-   "matches": true
+   "expected": "java"
   },
   {
    "file": "java-string.bin",
@@ -157,15 +188,15 @@
    "writtenBy": "Java 21.0.12.1, ObjectOutputStream",
    "layers": [],
    "format": "java",
-   "matches": true
+   "expected": "java"
   },
   {
    "file": "java-values.bin",
-   "bytes": 73023,
+   "bytes": 73317,
    "writtenBy": "Java 21.0.12.1, ObjectOutputStream",
    "layers": [],
    "format": "java",
-   "matches": true
+   "expected": "java"
   },
   {
    "file": "json-exact.bin",
@@ -173,7 +204,7 @@
    "writtenBy": "Written by hand",
    "layers": [],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "jwt.bin",
@@ -181,7 +212,7 @@
    "writtenBy": "Python 3.13.16, hmac and base64",
    "layers": [],
    "format": "jwt",
-   "matches": true
+   "expected": "jwt"
   },
   {
    "file": "lz4-block-json.bin",
@@ -191,7 +222,7 @@
     "lz4-block"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "lz4-frame-json.bin",
@@ -201,7 +232,7 @@
     "lz4"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "msgpack-float32.bin",
@@ -209,7 +240,7 @@
    "writtenBy": "Python 3.13.16, msgpack with single floats",
    "layers": [],
    "format": "msgpack",
-   "matches": true
+   "expected": "msgpack"
   },
   {
    "file": "msgpack-session.bin",
@@ -217,7 +248,7 @@
    "writtenBy": "Python 3.13.16, msgpack 1.2.3",
    "layers": [],
    "format": "msgpack",
-   "matches": true
+   "expected": "msgpack"
   },
   {
    "file": "msgpack.bin",
@@ -225,7 +256,15 @@
    "writtenBy": "Python 3.13.16, msgpack 1.2.3",
    "layers": [],
    "format": "msgpack",
-   "matches": true
+   "expected": "msgpack"
+  },
+  {
+   "file": "php-igbinary-custom.bin",
+   "bytes": 37,
+   "writtenBy": "PHP 8.3.6, igbinary of a Serializable class",
+   "layers": [],
+   "format": "igbinary",
+   "expected": "igbinary"
   },
   {
    "file": "php-igbinary-phprefs.bin",
@@ -233,7 +272,7 @@
    "writtenBy": "PHP 8.3.6, igbinary with PHP references",
    "layers": [],
    "format": "igbinary",
-   "matches": true
+   "expected": "igbinary"
   },
   {
    "file": "php-igbinary-refs.bin",
@@ -241,7 +280,7 @@
    "writtenBy": "PHP 8.3.6, igbinary with the same object twice",
    "layers": [],
    "format": "igbinary",
-   "matches": true
+   "expected": "igbinary"
   },
   {
    "file": "php-igbinary.bin",
@@ -249,7 +288,15 @@
    "writtenBy": "PHP 8.3.6, igbinary 3.2.13",
    "layers": [],
    "format": "igbinary",
-   "matches": true
+   "expected": "igbinary"
+  },
+  {
+   "file": "php-serialize-custom.bin",
+   "bytes": 56,
+   "writtenBy": "PHP 8.3.6, serialize() of a Serializable class",
+   "layers": [],
+   "format": "php",
+   "expected": "php"
   },
   {
    "file": "php-serialize-int.bin",
@@ -257,7 +304,7 @@
    "writtenBy": "PHP 8.3.6, serialize()",
    "layers": [],
    "format": "php",
-   "matches": true
+   "expected": "php"
   },
   {
    "file": "php-serialize-phprefs.bin",
@@ -265,7 +312,7 @@
    "writtenBy": "PHP 8.3.6, serialize() with PHP references",
    "layers": [],
    "format": "php",
-   "matches": true
+   "expected": "php"
   },
   {
    "file": "php-serialize-refs.bin",
@@ -273,7 +320,7 @@
    "writtenBy": "PHP 8.3.6, serialize() with references",
    "layers": [],
    "format": "php",
-   "matches": true
+   "expected": "php"
   },
   {
    "file": "php-serialize-string.bin",
@@ -281,7 +328,7 @@
    "writtenBy": "PHP 8.3.6, serialize()",
    "layers": [],
    "format": "php",
-   "matches": true
+   "expected": "php"
   },
   {
    "file": "php-serialize.bin",
@@ -289,7 +336,7 @@
    "writtenBy": "PHP 8.3.6, serialize()",
    "layers": [],
    "format": "php",
-   "matches": true
+   "expected": "php"
   },
   {
    "file": "php-session.bin",
@@ -297,7 +344,23 @@
    "writtenBy": "PHP 8.3.6, session_encode() with session.serialize_handler=php",
    "layers": [],
    "format": "php-session",
-   "matches": true
+   "expected": "php-session"
+  },
+  {
+   "file": "pickle-edge-protocol-0.bin",
+   "bytes": 206809,
+   "writtenBy": "Python 3.13.16, pickle protocol 0 with time zones and rebuilt objects",
+   "layers": [],
+   "format": "pickle",
+   "expected": "pickle"
+  },
+  {
+   "file": "pickle-edge.bin",
+   "bytes": 202968,
+   "writtenBy": "Python 3.13.16, pickle protocol 5 with time zones and rebuilt objects",
+   "layers": [],
+   "format": "pickle",
+   "expected": "pickle"
   },
   {
    "file": "pickle-memo.bin",
@@ -305,7 +368,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 2",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "pickle-protocol-0.bin",
@@ -313,7 +376,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 0",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "pickle-protocol-1.bin",
@@ -321,7 +384,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 1",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "pickle-protocol-2.bin",
@@ -329,7 +392,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 2",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "pickle-protocol-3.bin",
@@ -337,7 +400,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 3",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "pickle-protocol-4.bin",
@@ -345,7 +408,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 4",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "pickle-protocol-5.bin",
@@ -353,7 +416,7 @@
    "writtenBy": "Python 3.13.16, pickle protocol 5",
    "layers": [],
    "format": "pickle",
-   "matches": true
+   "expected": "pickle"
   },
   {
    "file": "protobuf.bin",
@@ -361,7 +424,7 @@
    "writtenBy": "Python 3.13.16, protobuf 7.36.1",
    "layers": [],
    "format": "protobuf",
-   "matches": true
+   "expected": "protobuf"
   },
   {
    "file": "redis-8.10.2-dump.bin",
@@ -369,7 +432,7 @@
    "writtenBy": "redis-8.10.2, DUMP of a small hash",
    "layers": [],
    "format": "redis-dump",
-   "matches": true
+   "expected": "redis-dump"
   },
   {
    "file": "ruby-marshal-array.bin",
@@ -377,7 +440,7 @@
    "writtenBy": "Ruby 3.3.6, Marshal.dump",
    "layers": [],
    "format": "marshal",
-   "matches": true
+   "expected": "marshal"
   },
   {
    "file": "ruby-marshal-string.bin",
@@ -385,7 +448,7 @@
    "writtenBy": "Ruby 3.3.6, Marshal.dump",
    "layers": [],
    "format": "marshal",
-   "matches": true
+   "expected": "marshal"
   },
   {
    "file": "ruby-marshal.bin",
@@ -393,7 +456,7 @@
    "writtenBy": "Ruby 3.3.6, Marshal.dump",
    "layers": [],
    "format": "marshal",
-   "matches": true
+   "expected": "marshal"
   },
   {
    "file": "snappy-framed-json.bin",
@@ -403,7 +466,7 @@
     "snappy"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "snappy-raw-json.bin",
@@ -413,7 +476,7 @@
     "snappy-raw"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "valkey-9.1.2-dump.bin",
@@ -421,7 +484,7 @@
    "writtenBy": "valkey-9.1.2, DUMP of a small hash",
    "layers": [],
    "format": "redis-dump",
-   "matches": true
+   "expected": "redis-dump"
   },
   {
    "file": "xz-json.bin",
@@ -429,7 +492,7 @@
    "writtenBy": "Python 3.13.16, lzma",
    "layers": [],
    "format": "xz",
-   "matches": true
+   "expected": "xz"
   },
   {
    "file": "zlib-fast-json.bin",
@@ -439,7 +502,7 @@
     "zlib"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "zlib-json.bin",
@@ -449,7 +512,7 @@
     "zlib"
    ],
    "format": "json",
-   "matches": true
+   "expected": "json"
   },
   {
    "file": "zstd-json.bin",
@@ -457,29 +520,7 @@
    "writtenBy": "Python 3.13.16, zstandard 0.25.0",
    "layers": [],
    "format": "zstd",
-   "matches": true
+   "expected": "zstd"
   }
- ],
- "randomInput": {
-  "base64Tokens": {
-   "tried": 50000,
-   "misread": 0
-  },
-  "hexStrings": {
-   "tried": 20000,
-   "misread": 0
-  },
-  "binaryValues": {
-   "tried": 20000,
-   "result": {
-    "binary": 19979,
-    "text": 21
-   }
-  }
- },
- "speed": {
-  "value": "a 5.9 MB JSON document, gzipped to 0.53 MB",
-  "milliseconds": 409,
-  "node": "v22.22.0"
- }
+ ]
 }

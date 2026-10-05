@@ -250,4 +250,102 @@ test('the command line reads files, standard input and pasted text', () => {
   const j = JSON.parse(r.stdout);
   assert.equal(j.format, 'bson');
   assert.equal(j.value.name, 'alice');
+  // Options without their value, a folder, and a raw value that only looks quoted.
+  r = run(['--text']);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /--text needs a value/);
+  r = run([path.join(FIX, 'gzip-json.bin'), '--out']);
+  assert.equal(r.status, 2);
+  r = run([FIX]);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /folder/);
+  r = run(['-'], Buffer.concat([Buffer.from('"\x0b'), Buffer.from([0x0b, 0xff]), Buffer.from('"\n')]));
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(r.stdout, /quoted form/);
+});
+
+test('values built to make the inspector hang, crash or print forever', () => {
+  const quick = (b) => { const t = Date.now(); const a = I.analyze(b); const shown = a.result.value ? I.show(a.result.value) : ''; const json = a.result.value ? JSON.stringify(I.plain(a.result.value)) : ''; assert.ok(Date.now() - t < 5000, 'took too long'); return { a, shown, json }; };
+  // A Java class that names itself as its own superclass.
+  quick(Buffer.from('aced0005737200014100000000000000010200007871007e0000', 'hex'));
+  quick(Buffer.from('aced0005737d000000007871007e0000', 'hex'));
+  // x = [x, x] thirty times: a billion copies if each reference were printed in full.
+  const dag = [0x80, 0x02, 0x5d, 0x94];
+  for (let i = 0; i < 30; i++) dag.push(0x32, 0x86, 0x94);
+  dag.push(0x2e);
+  let r = quick(new Uint8Array(dag));
+  assert.equal(r.a.result.id, 'pickle');
+  assert.ok(r.shown.length < 100000 && r.json.length < 100000);
+  assert.match(r.shown, /<same as \[0\]/);
+  // Two thousand tuples, one inside the next.
+  r = quick(new Uint8Array([0x80, 0x02, 0x29].concat(new Array(2000).fill(0x85), [0x2e])));
+  assert.match(r.shown, /nested deeper than 500 levels/);
+  assert.match(r.json, /"\$deeper":true/);
+  // Megabytes of base64url letters with no dots, which once overflowed the JWT check.
+  assert.equal(quick(new TextEncoder().encode('a'.repeat(6e6))).a.result.id, 'text');
+  // A small LZ4 block that unpacks to 20 MB of text.
+  const size = 20e6, block = [0x1f, 0x61, 0x01, 0x00];
+  let left = size - 1 - 5 - 19;
+  while (left >= 255) { block.push(255); left -= 255; }
+  block.push(left, 0x50, 0x61, 0x61, 0x61, 0x61, 0x61);
+  const sized = new Uint8Array(4 + block.length);
+  new DataView(sized.buffer).setUint32(0, size, true);
+  sized.set(block, 4);
+  r = quick(sized);
+  assert.equal(r.a.layers[0].id, 'lz4-block');
+  assert.equal(r.a.bytes.length, size);
+  // gzip that unpacks past the limit is named, with the reason.
+  const bomb = zlib.gzipSync(Buffer.alloc(80 * 1024 * 1024));
+  const big = I.analyze(new Uint8Array(bomb));
+  assert.equal(big.result.id, 'gzip');
+  assert.match(big.result.notes[0], /more than 64 MB/);
+});
+
+test('shared objects print once, small ones in full', () => {
+  // The same list twice from pickle's memo is small, so it shows in full both times.
+  const memo = I.analyze(bin('pickle-memo'));
+  assert.equal(I.show(memo.result.value), '{"a": ["once"], "b": ["once"]}');
+  // A big object reached twice shows in full the first time only.
+  const many = I.parseJSON(JSON.stringify(Array.from({ length: 30 }, (_, i) => i)));
+  const twice = { t: 'map', entries: [[{ t: 'str', v: 'first' }, many], [{ t: 'str', v: 'second' }, many]] };
+  assert.match(I.show(twice), /"second": <same as first>/);
+  assert.deepEqual(I.plain(twice).second, { $same: 'first' });
+});
+
+test('Ruby numbers a Time after its instance variables', () => {
+  // [t, t]: the second t points back by number, past the zone string Ruby numbered first.
+  const a = I.analyze(Buffer.from('04085b0749753a0954696d650d208011c000000000063a097a6f6e65492208555443063a0645464007', 'hex'));
+  assert.equal(a.result.id, 'marshal');
+  assert.equal(a.result.value.items[1], a.result.value.items[0]);
+  assert.equal(a.result.value.items[1].t, 'date');
+  // An empty symbol, and a Float that happens to be whole.
+  assert.equal(I.show(I.parseMarshal(Buffer.from('04083a00', 'hex'))), ':""');
+  assert.equal(I.show(I.parseMarshal(Buffer.from('0408660631', 'hex'))), '1.0');
+});
+
+test('ordinary text stays text', () => {
+  for (const t of ['Mrs.', 'Mme.', 'Mon.', 'MBA.', 'Kg.', 'N.', '12:30', '23:59:59', '06 12 34 56 78', 'aGVsbG8=']) {
+    const a = I.analyze(I.fromInput(t).bytes);
+    assert.equal(a.result.id, 'text', t);
+  }
+  // A real protocol 0 pickle of a word is still a pickle.
+  assert.equal(I.analyze(new TextEncoder().encode("Vword\np0\n.")).result.id, 'pickle');
+  assert.equal(I.fromInput('ac ed 00 05').form, 'hex');
+  assert.equal(I.fromInput('00 01 02 03 04 05 06 07').form, 'hex');
+  assert.equal(I.fromInput('0x0102').form, 'hex');
+  // Quoted text keeps characters past U+FFFF.
+  assert.equal(new TextDecoder().decode(I.fromInput('"\\x41 \u{1F525}"').bytes), 'A \u{1F525}');
+});
+
+test('the JSON view keeps every key and plain numbers', () => {
+  assert.equal(JSON.stringify(I.plain(I.parseJSON('{"__proto__": {"x": 1}, "a": 2}'))), '{"__proto__":{"x":1},"a":2}');
+  assert.deepEqual(I.plain(I.parseJSON('[1.0, 10.50, 1e5, 0.1, 12345678901234567890123, 1e400]')), [1, 10.5, 100000, 0.1, '12345678901234567890123', '1e400']);
+});
+
+test('up to 8 layers come off, and what is inside the eighth is read', () => {
+  let b = Buffer.from(JSON.stringify({ user: 'alice', note: 'layers all the way down' }));
+  for (let n = 1; n <= 8; n++) b = n % 3 === 0 ? zlib.gzipSync(b) : Buffer.from(b.toString('base64'));
+  const a = I.analyze(new Uint8Array(b));
+  assert.equal(a.layers.length, 8);
+  assert.equal(a.result.id, 'json');
 });

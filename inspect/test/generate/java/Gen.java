@@ -64,7 +64,7 @@ class Token implements Externalizable {
 
 public class Gen {
     static final Set<String> MAPS = Set.of("java.util.HashMap", "java.util.LinkedHashMap", "java.util.Hashtable", "java.util.TreeMap", "java.util.Properties");
-    static final Set<String> LISTS = Set.of("java.util.ArrayList", "java.util.LinkedList", "java.util.ArrayDeque", "java.util.Vector", "java.util.HashSet", "java.util.LinkedHashSet", "java.util.TreeSet");
+    static final Set<String> LISTS = Set.of("java.util.ArrayList", "java.util.LinkedList", "java.util.ArrayDeque", "java.util.Vector", "java.util.Stack", "java.util.HashSet", "java.util.LinkedHashSet", "java.util.TreeSet");
 
     // JSON by hand, so the generator needs nothing beyond the JDK.
     static String json(Object x) {
@@ -190,6 +190,15 @@ public class Gen {
         values.put("tracked", new Tracked());
         values.put("token", new Token());
         values.put("timestamp", new java.sql.Timestamp(1791218550456L));
+        java.sql.Timestamp nanos = new java.sql.Timestamp(1791218550000L);
+        nanos.setNanos(456789012);
+        values.put("timestamp nanos", nanos);
+        values.put("vector", new Vector<>(List.of("a", 1, "b")));
+        Stack<String> stack = new Stack<>();
+        stack.push("x");
+        stack.push("y");
+        values.put("stack", stack);
+        values.put("old date", LocalDate.of(-5, 1, 1));
         values.put("instant", Instant.ofEpochSecond(1791218550L, 123456789));
         values.put("date", LocalDate.of(2026, 10, 5));
         values.put("time", LocalTime.of(9, 30));

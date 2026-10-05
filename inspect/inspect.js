@@ -64,7 +64,8 @@
   const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
   const concat = (parts) => { let n = 0; for (const p of parts) n += p.length; const out = new Uint8Array(n); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out; };
   // Printable text: no control characters but tab, line feed and carriage return.
-  const printable = (t) => !/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/.test(t);
+  // No control characters apart from tab, newline and carriage return, C1 ones included.
+  const printable = (t) => !/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/.test(t);
   function isoTime(ms) {
     if (!isFinite(ms) || Math.abs(ms) > 8.64e15) return null;
     return new Date(ms).toISOString().replace('.000Z', 'Z');
@@ -136,27 +137,36 @@
     // could just as well be text, such as a hash, so those stay text, and
     // the analysis tries them as hex later.
     const h = t.replace(/^0x/i, '').replace(/[\s:]+/g, '');
-    if (h.length >= 2 && h.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(h) && (/^0x/i.test(t) || /^[0-9a-fA-F]{2}([\s:]+[0-9a-fA-F]{2})+$/.test(t))) {
+    // Pairs of digits alone, like 12:30 or 06 12 34 56 78, are more likely
+    // a time or a phone number, so those need 8 pairs or more.
+    const pairs = /^[0-9a-fA-F]{2}([\s:]+[0-9a-fA-F]{2})+$/.test(t) && (/[a-fA-F]/.test(t) || h.length >= 16);
+    if (h.length >= 2 && h.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(h) && (/^0x/i.test(t) || pairs)) {
       return { bytes: hexBytes(h), form: 'hex' };
     }
     return { bytes: encoder.encode(s), form: 'text' };
   }
   // redis-cli's escapes inside quotes: \xHH, \n, \r, \t, \a, \b, \" and \\.
   function unquote(s) {
-    const out = [];
-    for (let i = 0; i < s.length; i++) {
-      const c = s[i];
-      if (c === '\\') {
-        const n = s[i + 1];
-        if (n === 'x' && /^[0-9a-fA-F]{2}$/.test(s.substr(i + 2, 2))) { out.push(parseInt(s.substr(i + 2, 2), 16)); i += 3; continue; }
-        const map = { n: 10, r: 13, t: 9, a: 7, b: 8, '"': 34, '\\': 92 };
-        if (map[n] !== undefined) { out.push(map[n]); i++; continue; }
-        return null;
-      }
-      if (c === '"') return null;
-      for (const b of encoder.encode(c)) out.push(b);
+    const parts = [];
+    let size = 0;
+    const map = { n: 10, r: 13, t: 9, a: 7, b: 8, '"': 34, '\\': 92 };
+    for (let i = 0; i < s.length;) {
+      let j = i;
+      while (j < s.length && s[j] !== '\\' && s[j] !== '"') j++;
+      if (j > i) { const run = encoder.encode(s.slice(i, j)); parts.push(run); size += run.length; }
+      if (j >= s.length) break;
+      if (s[j] === '"') return null;
+      const n = s[j + 1];
+      let byte;
+      if (n === 'x' && /^[0-9a-fA-F]{2}$/.test(s.substr(j + 2, 2))) { byte = parseInt(s.substr(j + 2, 2), 16); i = j + 4; }
+      else if (map[n] !== undefined) { byte = map[n]; i = j + 2; }
+      else return null;
+      parts.push([byte]); size++;
     }
-    return new Uint8Array(out);
+    const out = new Uint8Array(size);
+    let o = 0;
+    for (const part of parts) { out.set(part, o); o += part.length; }
+    return out;
   }
   function hexBytes(h) { const b = new Uint8Array(h.length / 2); for (let i = 0; i < b.length; i++) b[i] = parseInt(h.substr(i * 2, 2), 16); return b; }
 
@@ -255,14 +265,14 @@
 
   // The most any decompression may produce, so a small value that expands
   // to gigabytes can't take the page down.
-  const MAX_OUT = 256 * 1024 * 1024;
+  const MAX_OUT = 64 * 1024 * 1024;
   // Output that grows as needed.
   function sink(size) {
     let buf = new Uint8Array(Math.max(256, size)), n = 0;
     return {
       get n() { return n; },
       room(k) {
-        if (n + k > MAX_OUT) throw new FormatError('It decompresses to more than 256 MB');
+        if (n + k > MAX_OUT) throw new FormatError('It decompresses to more than 64 MB');
         if (n + k > buf.length) { const b = new Uint8Array(Math.max(buf.length * 2, n + k)); b.set(buf.subarray(0, n)); buf = b; }
       },
       push(x) { this.room(1); buf[n++] = x; },
@@ -445,7 +455,7 @@
     const r = new Reader(b);
     const size = bigEndian ? r.u32be() : r.u32le();
     // LZ4 can grow data that won't compress, but only by a little.
-    if (size === 0 || size > MAX_OUT || size + Math.ceil(size / 255) + 16 < b.length - 4) throw new FormatError('Not a sized LZ4 block');
+    if (size === 0 || size > MAX_OUT || size + Math.ceil(size / 255) + 16 < b.length - 4 || size > b.length * 256 + 64) throw new FormatError('Not a sized LZ4 block');
     const out = sink(size);
     lz4Block(b.subarray(4), out);
     const result = out.done();
@@ -458,7 +468,8 @@
   function snappyRaw(b) {
     const r = new Reader(b);
     const size = Number(r.varint());
-    if (size > MAX_OUT) throw new FormatError('Too big for Snappy');
+    // Snappy's longest copy takes 3 bytes for 64, so it can't grow data more than about 22 times.
+    if (size > MAX_OUT || size > b.length * 22 + 64) throw new FormatError('Too big for Snappy');
     const out = sink(size);
     while (r.left) {
       const tag = r.u8();
@@ -584,7 +595,15 @@
 
   // ---- JWT ----
 
-  const JWT = /^[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]*$/;
+  // Three base64url parts. Checked piece by piece, since one regex over
+  // megabytes of text can run out of stack.
+  function isJWT(t) {
+    if (t.length > 1048576) return false;
+    const a = t.indexOf('.'), b = a < 0 ? -1 : t.indexOf('.', a + 1);
+    if (a < 4 || b < a + 5 || t.indexOf('.', b + 1) >= 0) return false;
+    const part = /^[A-Za-z0-9_-]*$/;
+    return part.test(t.slice(0, a)) && part.test(t.slice(a + 1, b)) && part.test(t.slice(b + 1));
+  }
   function parseJWT(text) {
     const parts = text.split('.');
     const part = (s) => { const b = base64Bytes(s); const t = b && utf8(b); if (t === null) throw new FormatError('Not a JWT'); return parseJSON(t); };
@@ -1065,15 +1084,14 @@
           if (i >= 0) refs[i] = node;
           const next = r.u8();
           if (next === 0x27) { node.note = 'enum case ' + name().v; return node; }
+          if (next >= 0x1d && next <= 0x1f) {
+            // Serializable classes: what their serialize() method wrote.
+            const data = r.bytes(next === 0x1d ? r.u8() : next === 0x1e ? r.u16be() : r.u32be());
+            node.fields = [['serialized', textOrBytes(data)]];
+            node.note = 'written by the class\'s own serialize method';
+            return node;
+          }
           node.fields = members(next, true, d);
-          return node;
-        }
-        case 0x1d: case 0x1e: case 0x1f: {
-          const i = slot();
-          const cls = name();
-          const data = r.bytes(c === 0x1d ? r.u8() : c === 0x1e ? r.u16be() : r.u32be());
-          const node = V.obj(cls.v, [['serialized', textOrBytes(data)]], null, 'written by the class\'s own serialize method');
-          if (i >= 0) refs[i] = node;
           return node;
         }
         case 0x01: case 0x02: case 0x03: return ref(c === 0x01 ? r.u8() : c === 0x02 ? r.u16be() : r.u32be());
@@ -1224,7 +1242,10 @@
       if (!d) fail('an object without a class');
       const obj = handle(V.obj(d.name, []));
       const chain = [];
-      for (let x = d; x; x = x.superDesc) chain.unshift(x);
+      for (let x = d; x; x = x.superDesc) {
+        if (chain.includes(x)) fail('a class that is its own superclass');
+        chain.unshift(x);
+      }
       const written = [];
       for (const c of chain) {
         if (c.flags & 0x04) {
@@ -1253,8 +1274,12 @@
         const entries = [];
         for (let i = 0; i + 1 < o.length; i += 2) entries.push([o[i], o[i + 1]]);
         shown = V.map(entries);
-      } else if (data('java.util.ArrayList') || data('java.util.LinkedList') || data('java.util.ArrayDeque') || data('java.util.Vector')) {
-        shown = V.list(objs(data('java.util.ArrayList') || data('java.util.LinkedList') || data('java.util.ArrayDeque') || data('java.util.Vector')));
+      } else if (written.some((w) => w.cls === 'java.util.Vector') && field('elementData')) {
+        // Vector and Stack keep their elements in a field: the first elementCount of elementData.
+        const arr = field('elementData'), count = field('elementCount');
+        shown = V.list((arr.items || []).slice(0, count ? Number(count.v) : undefined));
+      } else if (data('java.util.ArrayList') || data('java.util.LinkedList') || data('java.util.ArrayDeque')) {
+        shown = V.list(objs(data('java.util.ArrayList') || data('java.util.LinkedList') || data('java.util.ArrayDeque')));
       } else if (data('java.util.HashSet') || data('java.util.TreeSet')) {
         const o = objs(data('java.util.HashSet') || data('java.util.TreeSet'));
         shown = V.list(cls === 'java.util.TreeSet' || data('java.util.TreeSet') ? o.slice(1) : o, 'set');
@@ -1263,8 +1288,11 @@
         const blk = (data('java.util.Date') || []).find((x) => x.block);
         if (blk && blk.block.length >= 8) {
           let ms = Number(new Reader(blk.block).i64be());
-          if (cls === 'java.sql.Timestamp' && field('nanos')) ms += Math.floor(Number(field('nanos').v) / 1e6);
-          shown = V.date(ms, isoTime(ms));
+          const nanos = cls === 'java.sql.Timestamp' && field('nanos') ? Number(field('nanos').v) : 0;
+          ms += Math.floor(nanos / 1e6);
+          const iso = isoTime(ms);
+          // A Timestamp can hold more than milliseconds; the text keeps every digit.
+          shown = V.date(ms, iso && nanos % 1e6 ? iso.replace(/(\.\d+)?Z$/, '.' + String(nanos).padStart(9, '0').replace(/000$/, '') + 'Z') : iso);
         }
       } else if (cls === 'java.util.UUID' && field('mostSigBits') && field('leastSigBits')) {
         shown = V.tagged('UUID', V.str(uuidText(BigInt(field('mostSigBits').v), BigInt(field('leastSigBits').v))));
@@ -1302,7 +1330,7 @@
     function javaTime(b) {
       const x = new Reader(b);
       const frac = (n) => (n % 1e6 === 0 ? '.' + pad(n / 1e6, 3) : n % 1e3 === 0 ? '.' + pad(n / 1e3, 6) : '.' + pad(n, 9));
-      const date = () => { const y = x.i32be(), m = x.u8(), d = x.u8(); return (y > 9999 ? '+' : '') + pad(y, 4) + '-' + pad(m) + '-' + pad(d); };
+      const date = () => { const y = x.i32be(), m = x.u8(), d = x.u8(); return (y < 0 ? '-' + pad(-y, 4) : (y > 9999 ? '+' : '') + pad(y, 4)) + '-' + pad(m) + '-' + pad(d); };
       const time = () => {
         let h = x.u8() << 24 >> 24, m = 0, s = 0, n = 0;
         if (h < 0) h = ~h;
@@ -1414,9 +1442,10 @@
     const popMark = () => { if (!marks.length) fail('no mark'); return stack.splice(marks.pop()); };
     const line = () => { const end = b.indexOf(10, r.pos); if (end < 0) fail('a line without its end'); const s = latin1(b.subarray(r.pos, end)); r.pos = end + 1; return s; };
     const bigLE = (bytes) => { let x = 0n; for (let i = bytes.length - 1; i >= 0; i--) x = (x << 8n) | BigInt(bytes[i]); if (bytes.length && bytes[bytes.length - 1] & 0x80) x -= 1n << BigInt(bytes.length * 8); return x; };
-    const glob = (module, name) => ({ t: 'global', module: module, name: name });
-    const isGlobal = (g, full) => g && g.t === 'global' && (g.module + '.' + g.name) === full;
-    const gname = (g) => (g && g.t === 'global' ? g.module + '.' + g.name : 'callable');
+    // A class or function the pickle names. It shows as its name when it ends up in the value.
+    const glob = (module, name) => Object.assign(V.tagged('global', V.str(module + '.' + name)), { global: true, module: module, name: name });
+    const isGlobal = (g, full) => g && g.global && (g.module + '.' + g.name) === full;
+    const gname = (g) => (g && g.global ? g.module + '.' + g.name : 'callable');
     const morph = (target, v) => { for (const k of Object.keys(target)) delete target[k]; return Object.assign(target, v); };
     const textOf = (v) => (v.t === 'str' ? v.v : v.t === 'bin' ? latin1(v.v) : null);
 
@@ -1432,7 +1461,9 @@
         case 'builtins.bytearray': { const t = a[0] ? textOf(a[0]) : ''; return V.tagged('bytearray', V.bin(a[0] && a[0].t === 'bin' ? a[0].v : Uint8Array.from(t || '', (c) => c.charCodeAt(0)))); }
         case 'builtins.complex': return V.tagged('complex', V.list(a));
         case 'builtins.bytes': return V.bin(a[0] && a[0].t === 'bin' ? a[0].v : a[0] && a[0].items ? Uint8Array.from(a[0].items, (x) => Number(x.v)) : new Uint8Array(0));
-        case 'zoneinfo.ZoneInfo._unpickle': return Object.assign(V.tagged('timezone', a[0] || V.nul()), { zone: a[0] ? textOf(a[0]) : null });
+        case 'zoneinfo.ZoneInfo._unpickle': case 'pytz._p': return Object.assign(V.tagged('timezone', a[0] || V.nul()), { zone: a[0] ? textOf(a[0]) : null });
+        // Python 3.13 names a class's method as getattr(Class, 'name').
+        case 'builtins.getattr': { const n = a[1] && textOf(a[1]); if (a[0] && a[0].global && n) return glob(a[0].module, a[0].name + '.' + n); break; }
         case '_codecs.encode': { const t = a[0] && textOf(a[0]); if (t !== null && a[1] && textOf(a[1]) === 'latin1') return V.bin(Uint8Array.from(t, (c) => c.charCodeAt(0))); break; }
         case 'collections.OrderedDict': { const m = V.map([], 'OrderedDict'); if (a[0] && a[0].items) for (const p of a[0].items) if (p.items && p.items.length === 2) m.entries.push([p.items[0], p.items[1]]); return m; }
         case 'collections.defaultdict': return V.map([], 'defaultdict(' + (a[0] ? gname(a[0]) : 'None') + ')');
@@ -1443,10 +1474,12 @@
           const raw = a[0] && (a[0].t === 'bin' ? a[0].v : a[0].t === 'str' ? Uint8Array.from(a[0].v, (c) => c.charCodeAt(0)) : null);
           const text = raw && pyDate(raw, kind);
           if (text) {
-            const tz = (a[1] && a[1].tz) || '';
-            const zone = a[1] && a[1].zone;
+            const info = tzInfo(a[1]);
+            const tz = (info && info.tz) || '';
+            const zone = info && info.zone;
             if (kind === 'datetime') {
               if (zone) return Object.assign(V.date(null, text + '[' + zone + ']'), { note: 'datetime' });
+              if (info && info.other) return Object.assign(V.date(null, text), { note: 'datetime, time zone ' + info.other });
               // Without a time zone it's a wall-clock time, not a moment.
               if (!tz) return Object.assign(V.date(null, text), { note: 'datetime, no time zone' });
               const ms = Date.parse(text + (tz !== 'UTC' ? tz : 'Z'));
@@ -1459,18 +1492,25 @@
         case 'datetime.timedelta': {
           const [d, s, us] = a.map((x) => Number(x && x.v) || 0);
           // The way Python prints it: "1 day, 1:02:03.000005".
-          return V.tagged('timedelta', V.str((d ? d + (Math.abs(d) === 1 ? ' day, ' : ' days, ') : '') + Math.floor(s / 3600) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60) + (us ? '.' + pad(us, 6) : '')));
+          return Object.assign(V.tagged('timedelta', V.str((d ? d + (Math.abs(d) === 1 ? ' day, ' : ' days, ') : '') + Math.floor(s / 3600) + ':' + pad(Math.floor(s / 60) % 60) + ':' + pad(s % 60) + (us ? '.' + pad(us, 6) : ''))), { seconds: d * 86400 + s });
         }
         case 'datetime.timezone': {
-          const off = a[0] && a[0].t === 'tagged' && a[0].tag === 'timedelta' ? a[0].v.v : null;
-          const v = V.tagged('timezone', V.str(off || 'UTC'));
-          if (off !== null) { const m = /^(-?\d+ days?, )?(\d+):(\d\d):(\d\d)/.exec(off); if (m) { let sec = (+m[2]) * 3600 + (+m[3]) * 60 + (+m[4]); if (m[1] && m[1].startsWith('-1')) sec -= 86400; v.tz = sec === 0 ? 'UTC' : (sec < 0 ? '-' : '+') + pad(Math.floor(Math.abs(sec) / 3600)) + ':' + pad(Math.floor(Math.abs(sec) / 60) % 60); } }
-          else v.tz = 'UTC';
+          const off = a[0] && a[0].tag === 'timedelta' ? a[0] : null;
+          const v = V.tagged('timezone', V.str(off ? off.v.v : 'UTC'));
+          v.tz = offsetName(off ? off.seconds : 0);
           return v;
         }
         case 'pytz._UTC': return Object.assign(V.tagged('timezone', V.str('UTC')), { tz: 'UTC' });
         case 're._compile': return V.tagged('regex', a[0] || V.nul());
-        case 'copyreg._reconstructor': return V.obj(gname(a[0]), []);
+        case 'copyreg._reconstructor': {
+          // Subclasses of dict, list and tuple carry their contents in the third argument.
+          const o = V.obj(gname(a[0]), []);
+          const st = a[2];
+          if (st && st.t === 'map') for (const [k, v] of st.entries) o.fields.push([k.t === 'str' ? k.v : k, v]);
+          else if (st && st.t === 'list') o.items = st.items.slice();
+          else if (st && st.t !== 'null') o.fields.push(['value', st]);
+          return o;
+        }
         case 'django.db.models.base.model_unpickle': {
           const id = a[0];
           const label = id && id.items ? id.items.map((x) => textOf(x)).join('.') : 'model';
@@ -1479,10 +1519,29 @@
       }
       return Object.assign(V.obj(name, [], a.length ? a : undefined, 'built by calling ' + name), { label: 'arguments' });
     }
+    // The time zone a datetime was given, from the classes Python code uses.
+    function offsetName(sec) { return sec === 0 ? 'UTC' : (sec < 0 ? '-' : '+') + pad(Math.floor(Math.abs(sec) / 3600)) + ':' + pad(Math.floor(Math.abs(sec) / 60) % 60); }
+    function tzInfo(v) {
+      if (!v || v.t === 'null') return null;
+      if (v.tz) return { tz: v.tz };
+      if (v.zone) return { zone: v.zone };
+      if (v.t === 'obj') {
+        const f = (n) => { const e = v.fields.find((x) => x[0] === n); return e ? e[1] : null; };
+        if (/^dateutil\.tz\.(tz\.)?tzutc$/.test(v.cls)) return { tz: 'UTC' };
+        if (/^dateutil\.tz\.(tz\.)?tzoffset$/.test(v.cls) && f('_offset') && f('_offset').seconds !== undefined) return { tz: offsetName(f('_offset').seconds) };
+        if (/^dateutil\.tz\.(tz\.)?tzfile$/.test(v.cls)) {
+          const file = textOf(f('_filename') || (v.items && v.items[1]) || V.nul());
+          if (file) return { zone: file.replace(/^.*zoneinfo\//, '') };
+        }
+        return { other: v.cls };
+      }
+      return { other: v.tag || v.t };
+    }
     function build(obj, state) {
       if (obj.t === 'obj') {
         let st = state;
-        if (st.t === 'list' && st.kind === 'tuple' && st.items.length === 2) {
+        // (dict, slots) from classes with __slots__; any other tuple is state as it is.
+        if (st.t === 'list' && st.kind === 'tuple' && st.items.length === 2 && st.items.every((x) => x.t === 'map' || x.t === 'null')) {
           const [d, slots] = st.items;
           const entries = [].concat(d.t === 'map' ? d.entries : [], slots.t === 'map' ? slots.entries : []);
           st = V.map(entries);
@@ -1533,7 +1592,7 @@
         }
         case 0x54: stack.push(textOrBytes(r.bytes(r.i32le()))); break;
         case 0x55: stack.push(textOrBytes(r.bytes(r.u8()))); break;
-        case 0x56: stack.push(V.str(String.fromCodePoint(...pyUnescape(line(), true)))); break;
+        case 0x56: { const cp = pyUnescape(line(), true); let t = ''; for (let i = 0; i < cp.length; i += 8192) t += String.fromCodePoint.apply(null, cp.slice(i, i + 8192)); stack.push(V.str(t)); break; }
         case 0x58: case 0x8c: case 0x8d: {
           const n = op === 0x58 ? r.u32le() : op === 0x8c ? r.u8() : Number(r.u64le());
           const t = utf8(r.bytes(n));
@@ -1614,12 +1673,16 @@
     const raw = () => r.bytes(long());
     function symbol() {
       const tc = r.u8();
-      if (tc === 0x3a) { const s = utf8(raw()) || '?'; symbols.push(s); return s; }
+      if (tc === 0x3a) { const bytes = raw(); const t = utf8(bytes); const s = t !== null ? t : latin1(bytes); symbols.push(s); return s; }
       if (tc === 0x3b) { const i = long(); if (i >= symbols.length) fail('a symbol link to nothing'); return symbols[i]; }
       if (tc === 0x49) { const s = symbol(); for (let n = long(); n > 0; n--) { symbol(); value(1); } return s; }
       fail('expected a symbol');
     }
     const keep = (v) => { objects.push(v); return v; };
+    function userDefined(cls, data) {
+      if (cls === 'Time') { const t = rubyTime(data); if (t) return t; }
+      return V.obj(cls, [['_dump', textOrBytes(data)]], null, 'written by ' + cls + '._dump');
+    }
     // Time#_dump: two little-endian words of bit fields, in UTC.
     function rubyTime(data) {
       if (data.length < 8) return null;
@@ -1631,6 +1694,8 @@
         const year = ((p >>> 14) & 0xffff) + 1900, mon = (p >>> 10) & 0xf, day = (p >>> 5) & 0x1f, hour = p & 0x1f;
         const min = (s >>> 26) & 0x3f, sec = (s >>> 20) & 0x3f, usec = s & 0xfffff;
         ms = Date.UTC(year, mon, day, hour, min, sec) + Math.floor(usec / 1000);
+        const iso = isoTime(ms);
+        if (iso && usec % 1000) return V.date(ms, iso.replace(/(\.\d+)?Z$/, '.' + pad(usec, 6) + 'Z'));
       }
       return V.date(ms, isoTime(ms));
     }
@@ -1645,7 +1710,12 @@
         case ':': case ';': { r.pos--; return Object.assign(V.str(symbol()), { note: 'symbol' }); }
         case '"': return keep(V.bin(raw()));
         case 'I': {
-          const v = value(d + 1);
+          // A _dump object, such as a Time, is numbered after its instance
+          // variables, the way Ruby reads it; everything else before them.
+          const userDef = r.peek() === 0x75;
+          let v, cls, data;
+          if (userDef) { r.pos++; cls = symbol(); data = raw(); }
+          else v = value(d + 1);
           let enc = null;
           const ivars = [];
           for (let n = long(); n > 0; n--) {
@@ -1654,6 +1724,7 @@
             else if (k === 'encoding') enc = val.t === 'bin' ? latin1(val.v) : val.t === 'str' ? val.v : null;
             else ivars.push([k, val]);
           }
+          if (userDef) v = keep(userDefined(cls, data));
           if (v.t === 'bin' && enc) { const t = enc === 'UTF-8' || enc === 'US-ASCII' ? utf8(v.v) : null; if (t !== null) { delete v.v; Object.assign(v, V.str(t)); } else v.note = enc; }
           if (v.t === 'date') {
             const off = ivars.find((x) => x[0] === 'offset'), zone = ivars.find((x) => x[0] === 'zone');
@@ -1673,7 +1744,10 @@
         }
         case 'f': {
           const s = latin1(raw()).split('\0')[0];
-          return keep(s === 'inf' ? V.float(Infinity) : s === '-inf' ? V.float(-Infinity) : s === 'nan' ? V.float(NaN) : V.num(s));
+          // Ruby writes the shortest digits that read back exactly, so a double holds them.
+          const f = s === 'inf' ? Infinity : s === '-inf' ? -Infinity : s === 'nan' ? NaN : Number(s);
+          if (Number.isNaN(f) && s !== 'nan') fail('a bad float');
+          return keep(V.float(f));
         }
         case 'l': {
           const sign = String.fromCharCode(r.u8());
@@ -1692,12 +1766,7 @@
           for (let n = long(); n > 0; n--) { const k = symbol(); o.fields.push([k, value(d + 1)]); }
           return o;
         }
-        case 'u': {
-          const cls = symbol();
-          const data = raw();
-          if (cls === 'Time') { const t = rubyTime(data); if (t) return keep(t); }
-          return keep(V.obj(cls, [['_dump', textOrBytes(data)]], null, 'written by ' + cls + '._dump'));
-        }
+        case 'u': { const cls = symbol(); return keep(userDefined(cls, raw())); }
         case 'U': {
           const o = keep(V.obj(symbol(), [], null, 'written by marshal_dump'));
           o.fields.push(['marshal_dump', value(d + 1)]);
@@ -1814,9 +1883,18 @@
   // Whether what's inside base64, hex or headerless compression is
   // convincing enough to count: a format with a signature, real-looking
   // text, or a guess with plenty of evidence.
-  function convincing(inner) {
+  function convincing(inner, minText) {
     if (inner.id === 'binary' || inner.id === 'empty') return false;
-    if (inner.id === 'text') { const t = inner.value.v; return t.length >= 6 && (t.match(/[A-Za-z0-9 ]/g) || []).length / t.length >= 0.7; }
+    if (inner.id === 'text') {
+      // Real text is mostly letters, digits and spaces. Only the start is
+      // counted, so a huge value stays cheap.
+      const t = inner.value.v;
+      if (t.length < (minText || 8)) return false;
+      const n = Math.min(t.length, 65536);
+      let good = 0;
+      for (let i = 0; i < n; i++) { const c = t.charCodeAt(i); if ((c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 32) good++; }
+      return good / n >= 0.7;
+    }
     if (inner.score !== undefined && inner.score < 4) return false;
     return true;
   }
@@ -1825,7 +1903,12 @@
   //   { layer: true, id, name, out, check, facts }      something wrapped around more bytes
   //   { id, name, value, notes, alternatives, image }   the value itself
   function identify(b, depth) {
-    const tryLayer = (id, name, f) => { try { const x = f(); return Object.assign({ layer: true, id: id, name: name }, x); } catch (e) { return null; } };
+    // A wrapper that would decompress past the limit is named, with the reason.
+    let tooBig = null;
+    const tryLayer = (id, name, f) => {
+      try { const x = f(); return Object.assign({ layer: true, id: id, name: name }, x); }
+      catch (e) { if (e instanceof FormatError && /more than \d+ MB/.test(e.message)) tooBig = { id: id, name: name, value: null, notes: [`This ${name} data decompresses to more than ${MAX_OUT / 1048576} MB, which is past what the inspector opens.`] }; return null; }
+    };
     const tryValue = (id, name, f) => { try { return { id: id, name: name, value: f() }; } catch (e) { return null; } };
     const tryPickle = () => { try { const p = readPickle(b); return { id: 'pickle', name: 'Python pickle', value: p.value, notes: ['Pickle protocol ' + p.protocol + '.'] }; } catch (e) { return null; } };
     let x;
@@ -1836,6 +1919,7 @@
     if (startsWith(b, [0x04, 0x22, 0x4d, 0x18]) && (x = tryLayer('lz4', 'LZ4 frame', () => lz4Frame(b)))) return x;
     if (startsWith(b, SNAPPY_ID) && (x = tryLayer('snappy', 'Snappy, framed', () => snappyFramed(b)))) return x;
     if (isZlib(b) && (x = tryLayer('zlib', 'zlib', () => unzlib(b))) && x.check === 'ok') return x;
+    if (tooBig) return tooBig;
     for (const n of NAMED) if (n.test(b)) return { id: n.id, name: n.name, value: null, notes: ['This tool recognizes ' + n.name + ' but doesn\'t decode it.'] };
     const img = imageInfo(b);
     if (img) return { id: 'image', name: img.name, value: null, image: img, notes: img.width ? [img.width + ' by ' + img.height + ' pixels'] : [] };
@@ -1855,7 +1939,10 @@
     const noNewline = b[b.length - 1] === 10 ? b.subarray(0, b.length - (b[b.length - 2] === 13 ? 2 : 1)) : b;
     if (PHP_START.test(head)) for (const v of [b, noNewline]) if ((x = tryValue('php', 'PHP serialize', () => parsePHP(v)))) return x;
     if (/^[A-Za-z0-9_.-]+\|/.test(head) && (x = tryValue('php-session', 'PHP session', () => parsePHPSession(noNewline)))) return x;
-    if (b[b.length - 1] === 0x2e && '(]})cIlLSVNKJFdtUXTMG'.includes(head[0]) && (x = tryPickle())) return x;
+    // Words like "Mrs." and "N." are valid pickles too, so ask for what real
+    // ones have: protocol 0 ends its opcodes with newlines, and protocol 1
+    // writes binary lengths and numbers.
+    if (b[b.length - 1] === 0x2e && '(]})cIlLSVNKJFdtUXTMG'.includes(head[0]) && b.some((c) => c < 0x20 || c > 0x7e) && (x = tryPickle())) return x;
 
     // Text.
     let text = utf8(b);
@@ -1864,20 +1951,21 @@
     if (text !== null && printable(text)) {
       const t = text.trim();
       if (/^[[{"]/.test(t) && (x = tryValue('json', 'JSON', () => parseJSON(t)))) return x;
-      if (JWT.test(t) && (x = tryValue('jwt', 'JSON Web Token', () => parseJWT(t)))) return x;
-      if (/^(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(t)) return { id: 'image', name: 'SVG image', value: V.str(text), image: { mime: 'image/svg+xml', name: 'SVG image' } };
+      if (isJWT(t) && (x = tryValue('jwt', 'JSON Web Token', () => parseJWT(t)))) return x;
+      if (/^(<\?xml[^>]*>\s*)?<svg[\s>]/i.test(t.slice(0, 4096))) return { id: 'image', name: 'SVG image', value: V.str(text), image: { mime: 'image/svg+xml', name: 'SVG image' } };
       // Text that encodes something else.
-      if (depth < 7) {
+      if (depth < 8) {
         const b64 = looksBase64(t);
         if (b64 && b64.length >= 3 && convincing(identify(b64, depth + 1))) return { layer: true, id: 'base64', name: 'Base64', out: b64, check: null, facts: [] };
         if (/^[0-9a-fA-F]+$/.test(t) && t.length % 2 === 0 && t.length >= 16) {
           const hb = hexBytes(t);
-          if (convincing(identify(hb, depth + 1))) return { layer: true, id: 'hex', name: 'Hex digits', out: hb, check: null, facts: [] };
+          // Hex digits are mostly hashes and IDs, so text inside needs to be longer to count.
+          if (convincing(identify(hb, depth + 1), 12)) return { layer: true, id: 'hex', name: 'Hex digits', out: hb, check: null, facts: [] };
         }
       }
       const notes = textNotes(t);
       if (bom) notes.unshift('Starts with a UTF-8 byte order mark.');
-      if (t !== '' && /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(t)) notes.unshift('A number.');
+      if (t !== '' && t.length < 400 && /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(t)) notes.unshift('A number.');
       return { id: 'text', name: 'Text', value: V.str(text), notes: notes };
     }
 
@@ -1885,7 +1973,7 @@
     const found = [];
     const add = (c) => { if (c) found.push(c); };
     const c0 = b[0];
-    if (depth < 7) {
+    if (depth < 8) {
       for (const [id, name, f] of [['lz4-block', 'LZ4 block with its size first', () => lz4Sized(b, false)], ['lz4-block-be', 'LZ4 block with its size first (big-endian)', () => lz4Sized(b, true)], ['snappy-raw', 'Snappy', () => snappyRaw(b)]]) {
         const l = tryLayer(id, name, f);
         if (l && l.out.length && convincing(identify(l.out, depth + 1))) return l;
@@ -1931,9 +2019,10 @@
   function analyze(input) {
     let b = input instanceof Uint8Array ? input : encoder.encode(String(input));
     const layers = [];
-    for (let depth = 0; depth < 8; depth++) {
+    for (let depth = 0; ; depth++) {
       const x = identify(b, depth);
       if (!x.layer) return { layers: layers, result: x, bytes: b };
+      if (layers.length === 8) break;
       const facts = (x.facts || []).slice();
       if (x.rest) facts.push(x.rest + ' bytes follow the compressed data');
       layers.push({ id: x.id, name: x.name, size: b.length, out: x.out.length, check: x.check, facts: facts });
@@ -1949,108 +2038,198 @@
   }
   const floatText = (x) => (Number.isNaN(x) ? 'NaN' : x === Infinity ? 'Infinity' : x === -Infinity ? '-Infinity' : Object.is(x, -0) ? '-0.0' : Number.isInteger(x) && Math.abs(x) < 1e21 ? x + '.0' : String(x));
   // The value as readable text, nested with two-space indents.
+  // The children of a node, for walking the value.
+  function children(x) {
+    const out = [];
+    if (x.items) for (const e of x.items) out.push(e);
+    if (x.entries) for (const [k, e] of x.entries) out.push(k, e);
+    if (x.fields) for (const [k, e] of x.fields) { if (typeof k !== 'string') out.push(k); out.push(e); }
+    if (x.t === 'tagged' && x.v) out.push(x.v);
+    return out.filter((c) => c && typeof c === 'object' && c.t);
+  }
+  const CONTAINERS = new Set(['list', 'map', 'obj', 'tagged']);
+  // How many times each container is reached. Formats with back-references
+  // can point at one object from many places, and printing it in full at
+  // each of them could take forever: [x, x] nested 30 times is 2^30 copies.
+  function refCounts(root) {
+    const counts = new Map(), seen = new Set([root]), stack = [root];
+    while (stack.length) {
+      for (const c of children(stack.pop())) {
+        if (!CONTAINERS.has(c.t)) continue;
+        counts.set(c, (counts.get(c) || 0) + 1);
+        if (!seen.has(c)) { seen.add(c); stack.push(c); }
+      }
+    }
+    return counts;
+  }
+  // Whether a node is small enough to print again in full: 20 nodes or fewer.
+  function smallNode(x, cache) {
+    if (cache.has(x)) return cache.get(x);
+    let n = 0;
+    const stack = [x];
+    while (stack.length && n <= 20) { n++; for (const c of children(stack.pop())) stack.push(c); }
+    const small = n <= 20 && !stack.length;
+    cache.set(x, small);
+    return small;
+  }
+  const MAX_DEPTH = 500;
+  const pathPart = (where, part) => (where === '' && part[0] === '.' ? part.slice(1) : where + part);
+  const keyPart = (k) => (/^[A-Za-z_$][\w$]*$/.test(k) ? '.' + k : '[' + quote(k) + ']');
+
   function show(v, opts) {
     opts = opts || {};
     const maxStr = opts.maxString || 4000, maxItems = opts.maxItems || 2000;
     const path = new Set();
+    const counts = v && typeof v === 'object' ? refCounts(v) : new Map();
+    const first = new Map(), small = new Map();
     const note = (s, x) => (x && x.note && x.note !== 'symbol' && !(x.t === 'map' || x.t === 'list') ? s + '  // ' + x.note : s);
     const short = (s) => (s.length > maxStr ? s.slice(0, maxStr) + '... (' + (s.length - maxStr) + ' more characters)' : s);
+    const symbol = (t) => ':' + (/^[A-Za-z_][\w]*[?!=]?$/.test(t) ? t : quote(t));
     function scalar(x) {
       switch (x.t) {
         case 'null': return 'null';
         case 'bool': return x.v ? 'true' : 'false';
         case 'int': case 'num': return x.v;
         case 'float': return floatText(x.v);
-        case 'str': return x.note === 'symbol' ? ':' + (/^[A-Za-z_][\w]*[?!=]?$/.test(x.v) ? x.v : quote(x.v)) : quote(short(x.v));
+        case 'str': return x.note === 'symbol' ? symbol(x.v) : quote(short(x.v));
         case 'bin': { const n = x.v.length; return 'bytes(' + n + ') ' + hex(x.v.subarray(0, Math.min(n, maxStr / 2))) + (n > maxStr / 2 ? '...' : ''); }
         case 'date': return x.text || isoTime(x.v) || String(x.v);
         case 'ref': return '<' + x.v + '>';
       }
+      if (x.global) return x.v.v;
       return null;
     }
     // A map key or field name. Symbols show the Ruby way, other notes in brackets.
     // Field names show bare when they're simple names; map keys keep quotes.
     const simple = (t) => /^[A-Za-z_$@][\w$@-]*$/.test(t);
-    function key(k, bare) {
+    function key(k, bare, ind, where) {
       if (typeof k === 'string') return (bare ? /^[A-Za-z_$@][\w$@ .-]*$/.test(k) && !/\s$/.test(k) : simple(k)) ? k : quote(k);
-      if (k.t === 'str' && k.note === 'symbol') return ':' + (/^[A-Za-z_][\w]*[?!=]?$/.test(k.v) ? k.v : quote(k.v));
-      const s = bare && k.t === 'str' && /^[A-Za-z_$@][\w$@ .-]*$/.test(k.v) && !/\s$/.test(k.v) ? k.v : one(Object.assign({}, k, { note: undefined }), '');
+      if (k.t === 'str' && k.note === 'symbol') return symbol(k.v);
+      const s = bare && k.t === 'str' && /^[A-Za-z_$@][\w$@ .-]*$/.test(k.v) && !/\s$/.test(k.v) ? k.v : one(Object.assign({}, k, { note: undefined }), ind, where);
       return k.note ? s + ' (' + k.note + ')' : s;
     }
-    function one(x, ind) {
+    function one(x, ind, where) {
       if (x === null || x === undefined) return 'null';
       const s = scalar(x);
       if (s !== null) return note(s, x);
       if (path.has(x)) return '<cycle>';
+      if (counts.get(x) > 1 && !smallNode(x, small)) {
+        if (first.has(x)) return '<same as ' + (first.get(x) || 'the whole value') + '>';
+        first.set(x, where);
+      }
+      if (path.size >= MAX_DEPTH) return '<nested deeper than ' + MAX_DEPTH + ' levels>';
       path.add(x);
       try {
-        if (x.t === 'tagged') return note(x.tag + '(' + one(x.v, ind) + ')', x);
+        if (x.t === 'tagged') return note(x.tag + '(' + one(x.v, ind, where) + ')', x);
         let open, close, parts;
         const label = (x.note && (x.t === 'map' || x.t === 'list') ? x.note + ' ' : '');
+        const deeper = ind + '  ';
         if (x.t === 'list') {
           const kind = x.kind && x.kind !== 'list' ? x.kind + ' ' : '';
           open = label + kind + '['; close = ']';
-          parts = x.items.slice(0, maxItems).map((e) => one(e, ind + '  '));
+          parts = x.items.slice(0, maxItems).map((e, i) => one(e, deeper, where + '[' + i + ']'));
           if (x.items.length > maxItems) parts.push('... ' + (x.items.length - maxItems) + ' more');
         } else if (x.t === 'map') {
           open = label + '{'; close = '}';
           const sep = x.arrow ? ' => ' : ': ';
-          parts = x.entries.slice(0, maxItems).map(([k, e]) => key(k, false) + sep + one(e, ind + '  '));
+          parts = x.entries.slice(0, maxItems).map(([k, e]) => {
+            const ks = key(k, false, deeper, where);
+            return ks + sep + one(e, deeper, pathPart(where, k.t === 'str' && k.note !== 'symbol' ? keyPart(k.v) : '[' + ks + ']'));
+          });
           if (x.entries.length > maxItems) parts.push('... ' + (x.entries.length - maxItems) + ' more');
         } else if (x.t === 'obj') {
           open = x.cls + ' {'; close = '}';
-          parts = x.fields.slice(0, maxItems).map(([k, e]) => key(k, true) + ': ' + one(e, ind + '  '));
-          if (x.items && x.items.length) parts.push((x.label || 'items') + ': ' + one(V.list(x.items), ind + '  '));
+          parts = x.fields.slice(0, maxItems).map(([k, e]) => {
+            const ks = key(k, true, deeper, where);
+            return ks + ': ' + one(e, deeper, pathPart(where, typeof k === 'string' ? keyPart(k) : '[' + ks + ']'));
+          });
+          const label2 = x.label || 'items';
+          if (x.items && x.items.length) parts.push(label2 + ': ' + one(V.list(x.items), deeper, pathPart(where, '.' + label2)));
           if (!parts.length) return x.cls + (x.note ? '  // ' + x.note : '');
           if (x.note) open += '  // ' + x.note;
         } else return '?';
         const flat = open + parts.join(', ') + close;
         if (!parts.length) return open + close;
         if (flat.length <= 76 && !flat.includes('\n') && !open.includes('//') && !parts.some((p) => p.includes('//'))) return flat;
-        return open + '\n' + parts.map((p) => ind + '  ' + p).join('\n') + '\n' + ind + close;
+        return open + '\n' + parts.map((p) => deeper + p).join('\n') + '\n' + ind + close;
       } finally { path.delete(x); }
     }
-    return one(v, '');
+    return one(v, '', '');
+  }
+
+  // Decimal text in one canonical spelling, to tell whether a double holds it exactly.
+  function canonicalDecimal(s) {
+    const m = /^([+-])?(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/.exec(s);
+    if (!m || !(m[2] || m[3])) return null;
+    let digits = (m[2] || '') + (m[3] || '');
+    let exp = (m[4] ? parseInt(m[4], 10) : 0) - (m[3] || '').length;
+    digits = digits.replace(/^0+/, '');
+    if (!digits) return '0';
+    const zeros = digits.length - digits.replace(/0+$/, '').length;
+    return (m[1] === '-' ? '-' : '') + digits.slice(0, digits.length - zeros) + 'e' + (exp + zeros);
   }
 
   // The value as plain JSON-ready data: maps with text keys become objects,
   // bytes become { "$bytes": base64 }, objects keep their class in "$class".
+  // An object reached again from elsewhere, when it's big, becomes
+  // { "$same": "where it was first" }.
   function plain(v) {
     const path = new Set();
+    const counts = v && typeof v === 'object' ? refCounts(v) : new Map();
+    const first = new Map(), small = new Map();
+    // Keys such as "__proto__" stay ordinary keys.
+    const put = (o, k, val) => { Object.defineProperty(o, k, { value: val, enumerable: true, writable: true, configurable: true }); };
     const b64 = (b) => { const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'; let s = ''; for (let i = 0; i < b.length; i += 3) { const n = (b[i] << 16) | ((b[i + 1] || 0) << 8) | (b[i + 2] || 0); s += A[n >> 18] + A[(n >> 12) & 63] + (i + 1 < b.length ? A[(n >> 6) & 63] : '=') + (i + 2 < b.length ? A[n & 63] : '='); } return s; };
-    function p(x) {
+    function p(x, where) {
       if (!x) return null;
       switch (x.t) {
         case 'null': return null;
         case 'bool': return x.v;
         case 'int': { const n = Number(x.v); return Number.isSafeInteger(n) ? n : x.v; }
-        case 'num': { const n = Number(x.v); return isFinite(n) && String(n) === x.v.replace(/^\+/, '') ? n : x.v; }
+        case 'num': {
+          // A number from JSON becomes a JSON number when a double holds it
+          // exactly; decimals with a type of their own keep their digits.
+          const n = Number(x.v);
+          if (!isFinite(n)) return x.v;
+          if (x.note) return String(n) === x.v.replace(/^\+/, '') ? n : x.v;
+          return canonicalDecimal(String(n)) === canonicalDecimal(x.v) ? n : x.v;
+        }
         case 'float': return isFinite(x.v) ? x.v : floatText(x.v);
         case 'str': return x.v;
         case 'bin': return { $bytes: b64(x.v) };
         case 'date': return x.text || isoTime(x.v);
         case 'ref': return { $ref: x.v };
       }
+      if (x.global) return x.v.v;
       if (path.has(x)) return { $cycle: true };
+      if (counts.get(x) > 1 && !smallNode(x, small)) {
+        if (first.has(x)) return { $same: first.get(x) || 'the whole value' };
+        first.set(x, where);
+      }
+      if (path.size >= MAX_DEPTH) return { $deeper: true };
       path.add(x);
       try {
-        if (x.t === 'tagged') return { $tag: x.tag, value: p(x.v) };
-        if (x.t === 'list') return x.items.map(p);
+        if (x.t === 'tagged') return { $tag: x.tag, value: p(x.v, where) };
+        if (x.t === 'list') return x.items.map((e, i) => p(e, where + '[' + i + ']'));
         if (x.t === 'map') {
           const keys = x.entries.map(([k]) => (k.t === 'str' ? k.v : k.t === 'int' ? k.v : null));
-          if (keys.every((k) => k !== null) && new Set(keys).size === keys.length) { const o = {}; x.entries.forEach(([, e], i) => { o[keys[i]] = p(e); }); return o; }
-          return x.entries.map(([k, e]) => [p(k), p(e)]);
+          if (keys.every((k) => k !== null) && new Set(keys).size === keys.length) {
+            const o = {};
+            x.entries.forEach(([, e], i) => { put(o, keys[i], p(e, pathPart(where, keyPart(String(keys[i]))))); });
+            return o;
+          }
+          return x.entries.map(([k, e], i) => [p(k, where + '[' + i + '][0]'), p(e, where + '[' + i + '][1]')]);
         }
         if (x.t === 'obj') {
           const o = { $class: x.cls };
-          for (const [k, e] of x.fields) o[typeof k === 'string' ? k : JSON.stringify(p(k))] = p(e);
-          if (x.items && x.items.length) o['$' + (x.label || 'items')] = x.items.map(p);
+          for (const [k, e] of x.fields) { const name = typeof k === 'string' ? k : JSON.stringify(p(k, where)); put(o, name, p(e, pathPart(where, keyPart(name)))); }
+          if (x.items && x.items.length) { const label = '$' + (x.label || 'items'); put(o, label, x.items.map((e, i) => p(e, pathPart(where, keyPart(label)) + '[' + i + ']'))); }
           return o;
         }
         return null;
       } finally { path.delete(x); }
     }
-    return p(v);
+    return p(v, '');
   }
 
   return {

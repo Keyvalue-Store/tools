@@ -56,6 +56,13 @@ class Account {
 }
 class Session2 { public $user; public $at; public function __construct($u, $t) { $this->user = $u; $this->at = $t; } }
 enum Suit: string { case Hearts = 'H'; case Spades = 'S'; }
+// Serializable is deprecated since PHP 8.1, but code still uses it.
+error_reporting(E_ALL & ~E_DEPRECATED);
+class OldStyle implements Serializable {
+    public $data = 'raw';
+    public function serialize() { return "raw\0bytes"; }
+    public function unserialize($s) { $this->data = $s; }
+}
 
 $value = [
     'name' => 'caf' . "\u{e9}" . ' ' . "\u{1F525}",
@@ -98,3 +105,10 @@ $z = ['a' => &$y, 'b' => &$y, 'c' => 7];
 $z['d'] = &$z['c'];
 write('php-igbinary-phprefs', igbinary_serialize($z), cj($z), 'igbinary', "$PHP, igbinary with PHP references");
 write('php-serialize-phprefs', serialize($z), cj($z), 'php', "$PHP, serialize() with PHP references");
+
+// A class that writes itself with the old Serializable interface: its own
+// bytes after the class name, in both formats.
+$custom = ['old' => new OldStyle(), 'n' => 1];
+$customExpected = ['map' => [['old', ['obj' => 'OldStyle', 'fields' => [['serialized', "raw\0bytes"]]]], ['n', cj(1)]]];
+write('php-serialize-custom', serialize($custom), $customExpected, 'php', "$PHP, serialize() of a Serializable class");
+write('php-igbinary-custom', igbinary_serialize($custom), $customExpected, 'igbinary', "$PHP, igbinary of a Serializable class");

@@ -76,7 +76,8 @@
     }
 
     if (r.value) {
-      const text = I.show(r.value);
+      let text;
+      try { text = I.show(r.value); } catch (e) { out.append(verdict('bad', 'Could not show the value', e.message)); return; }
       let json = null;
       const pre = el('pre', { class: 'out value', tabindex: '0', text: text });
       out.append(pre);
@@ -91,8 +92,10 @@
         else selectAll(pre);
       });
       row.append(toggle, copy);
-      if (a.layers.length) row.append(button('Download the decoded bytes', () => download('decoded.bin', a.bytes)));
+      if (a.layers.length) row.append(downloadButton(a, r));
       out.append(row);
+    } else if (a.layers.length) {
+      out.append(el('div', { class: 'row' }, [downloadButton(a, r)]));
     }
     for (const x of r.alternatives || []) {
       const d = el('details', { class: 'more' }, [el('summary', { text: (r.id === 'binary' ? 'It might be ' : 'It also reads as ') + x.name })]);
@@ -102,6 +105,11 @@
     const bytesBox = el('details', { class: 'more' }, [el('summary', { text: a.layers.length ? 'The decoded bytes' : 'The bytes' })]);
     bytesBox.append(el('pre', { class: 'out', text: I.hexdump(a.bytes) }));
     out.append(bytesBox);
+  }
+  // What was inside the last layer, named for what it is.
+  function downloadButton(a, r) {
+    const ext = r.image && r.image.mime ? '.' + ({ 'image/jpeg': 'jpg', 'image/svg+xml': 'svg' }[r.image.mime] || r.image.mime.split('/')[1]) : r.id === 'json' ? '.json' : r.id === 'text' ? '.txt' : '.bin';
+    return button('Download the decoded bytes', () => download('decoded' + ext, a.bytes));
   }
   function selectAll(node) {
     const range = document.createRange();

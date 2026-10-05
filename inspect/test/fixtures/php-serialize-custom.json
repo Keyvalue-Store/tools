@@ -1,0 +1,27 @@
+{
+    "source": "PHP 8.3.6, serialize() of a Serializable class",
+    "layers": [],
+    "format": "php",
+    "value": {
+        "map": [
+            [
+                "old",
+                {
+                    "obj": "OldStyle",
+                    "fields": [
+                        [
+                            "serialized",
+                            "raw\u0000bytes"
+                        ]
+                    ]
+                }
+            ],
+            [
+                "n",
+                {
+                    "i": "1"
+                }
+            ]
+        ]
+    }
+}

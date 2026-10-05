@@ -33,11 +33,14 @@ function main(argv) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') { console.log(HELP); return 0; }
-    else if (a === '--text') text = argv[++i];
+    else if (a === '--text' || a === '--out') {
+      if (i + 1 >= argv.length) { console.error(a + ' needs a value after it. Try --help.'); return 2; }
+      if (a === '--text') text = argv[++i]; else out = argv[++i];
+    }
     else if (a === '--json') json = true;
     else if (a === '--hex') dump = true;
-    else if (a === '--out') out = argv[++i];
     else if (a.startsWith('--')) { console.error('Unknown option ' + a + '. Try --help.'); return 2; }
+    else if (file !== null) { console.error('Name one file at a time. Try --help.'); return 2; }
     else file = a;
   }
   if (text === null && file === null) { console.error('Name a file, - for standard input, or use --text. Try --help.'); return 2; }
@@ -46,8 +49,11 @@ function main(argv) {
   if (text !== null) ({ bytes, form } = I.fromInput(text));
   else {
     const raw = new Uint8Array(fs.readFileSync(file === '-' ? 0 : file));
+    // redis-cli's quoted form is plain ASCII in double quotes, with at most
+    // the newline redis-cli adds after it. A raw value that happens to start
+    // and end with a quote has other bytes in it.
     const asText = I.utf8(raw);
-    if (asText !== null && /^\s*"/.test(asText) && /"\s*$/.test(asText)) {
+    if (asText !== null && /^"[\x20-\x7e]*"\r?\n?$/.test(asText)) {
       const r = I.fromInput(asText);
       bytes = r.bytes; form = r.form;
     } else bytes = raw;
@@ -88,6 +94,6 @@ process.stdout.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); thr
 try {
   process.exitCode = main(process.argv.slice(2));
 } catch (e) {
-  console.error(e.code === 'ENOENT' ? 'No such file: ' + e.path : e.stack);
+  console.error(e.code === 'ENOENT' ? 'No such file: ' + e.path : e.code === 'EISDIR' ? 'That is a folder, not a file.' : 'Could not read the value: ' + e.message);
   process.exitCode = 2;
 }

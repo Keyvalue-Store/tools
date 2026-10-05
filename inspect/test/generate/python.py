@@ -7,17 +7,17 @@
 # fixtures/NAME.bin, with fixtures/NAME.json saying what it should decode
 # to, in the form test/inspect.test.js compares against.
 #
-#   pip install msgpack cbor2 pymongo protobuf lz4 python-snappy zstandard
+#   pip install msgpack cbor2 pymongo protobuf lz4 python-snappy zstandard python-dateutil
 #   python3 inspect/test/generate/python.py
 
-import base64, bz2, collections, datetime, decimal, gzip, hashlib, hmac, io, json, lzma, math, os, pickle, sys, uuid, zlib
+import base64, bz2, collections, datetime, decimal, gzip, hashlib, hmac, io, json, lzma, math, os, pickle, re, sys, uuid, zlib, zoneinfo
 
 # Sets of strings come out in an order that depends on the hash seed. Fix it,
 # so the files come out the same on every run.
 if os.environ.get('PYTHONHASHSEED') != '0':
     os.environ['PYTHONHASHSEED'] = '0'
     os.execv(sys.executable, [sys.executable] + sys.argv)
-import bson, cbor2, lz4.block, lz4.frame, msgpack, snappy, zstandard
+import bson, cbor2, dateutil.tz, lz4.block, lz4.frame, msgpack, snappy, zstandard
 from google.protobuf import descriptor_pb2, descriptor_pool, message_factory
 from google.protobuf import __version__ as protobuf_version
 
@@ -94,6 +94,41 @@ for p in range(0, 6):
 # A pickle that refers back to the same list twice, from memo.
 shared = ['once']
 write('pickle-memo', pickle.dumps({'a': shared, 'b': shared}, protocol=2), cj({'a': shared, 'b': shared}), 'pickle', PY + ', pickle protocol 2')
+
+# Time zones from zoneinfo and dateutil, a namedtuple, a dict subclass, an
+# object whose state is a tuple, and a long string, in protocols 5 and 0.
+# Protocols 0 and 1 rebuild objects through copyreg._reconstructor.
+Point = collections.namedtuple('Point', 'x y')
+class Bag(dict):
+    pass
+class Pair:
+    def __init__(self, a, b): self.a, self.b = a, b
+    def __getstate__(self): return (self.a, self.b)
+    def __setstate__(self, state): self.state = state
+bag = Bag({'a': 1})
+bag.color = 'red'
+edge = {
+    'zoneinfo': datetime.datetime(2026, 10, 5, 9, 0, tzinfo=zoneinfo.ZoneInfo('Europe/Lisbon')),
+    'tzoffset': datetime.datetime(2026, 10, 5, 9, 0, tzinfo=dateutil.tz.tzoffset('X', 3600)),
+    'tzutc': datetime.datetime(2026, 10, 5, 9, 0, tzinfo=dateutil.tz.tzutc()),
+    'tzfile': datetime.datetime(2026, 10, 5, 9, 0, tzinfo=dateutil.tz.gettz('Europe/Berlin')),
+    'point': Point(1, 2), 'bag': bag, 'pair': Pair('v', 42), 'long': 'x' * 200000,
+}
+def cj_edge(x):
+    # A datetime in a named zone shows its wall-clock time and the zone's name.
+    if isinstance(x, datetime.datetime) and isinstance(x.tzinfo, zoneinfo.ZoneInfo):
+        return {'date': x.replace(tzinfo=None).isoformat() + '[' + x.tzinfo.key + ']'}
+    if isinstance(x, datetime.datetime) and isinstance(x.tzinfo, dateutil.tz.tzfile):
+        return {'date': x.replace(tzinfo=None).isoformat() + '[' + re.sub('.*zoneinfo/', '', x.tzinfo._filename) + ']'}
+    if isinstance(x, tuple) and hasattr(x, '_fields'):
+        return {'obj': type(x).__module__ + '.' + type(x).__qualname__, 'fields': [], 'items': [cj_edge(i) for i in x]}
+    if isinstance(x, Bag):
+        return {'obj': '__main__.Bag', 'fields': [[k, cj_edge(v)] for k, v in x.items()] + [[k, cj_edge(v)] for k, v in x.__dict__.items()]}
+    if isinstance(x, dict): return {'map': [[cj_edge(k), cj_edge(v)] for k, v in x.items()]}
+    return cj(x)
+for p in (5, 0):
+    data = pickle.dumps(edge, protocol=p)
+    write('pickle-edge' + ('-protocol-0' if p == 0 else ''), data, cj_edge(pickle.loads(data)), 'pickle', PY + ', pickle protocol %d with time zones and rebuilt objects' % p)
 
 # MessagePack, with every width of integer, bin, str, floats and timestamps.
 mp = {
