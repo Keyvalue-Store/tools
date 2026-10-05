@@ -1,0 +1,364 @@
+{
+  "when": "2026-10-05T16:11:38.595Z",
+  "note": "Each server loaded the same dataset, saved a snapshot, and answered for every key: value, OBJECT ENCODING, expiry, DEBUG OBJECT serializedlength, XINFO STREAM FULL and DUMP. The viewer read each snapshot and every DUMP payload; mismatches counts keys where anything differed.",
+  "snapshots": [
+    {
+      "file": "valkey-9.1.2.rdb",
+      "server": "valkey",
+      "version": "9.1.2",
+      "mode": "data",
+      "rdbVersion": 80,
+      "magic": "VALKEY080",
+      "bytes": 120871,
+      "keys": 32,
+      "checksum": "ok",
+      "dumpsChecked": 25,
+      "mismatches": 0,
+      "types": {
+        "string": 16,
+        "stream": 2,
+        "list": 4,
+        "set": 3,
+        "hash": 5,
+        "zset": 2
+      },
+      "encodings": {
+        "string / compressed (LZF)": 1,
+        "string / raw": 12,
+        "stream / listpacks": 2,
+        "list / quicklist": 4,
+        "string / integer": 3,
+        "set / intset": 1,
+        "hash / listpack": 2,
+        "hash / hashtable with field TTLs": 2,
+        "set / listpack": 1,
+        "set / hashtable": 1,
+        "hash / hashtable": 1,
+        "zset / listpack": 1,
+        "zset / skiplist": 1
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "redis-8.10.2.rdb",
+      "server": "redis",
+      "version": "8.10.2",
+      "mode": "data",
+      "rdbVersion": 15,
+      "magic": "REDIS0015",
+      "bytes": 125499,
+      "keys": 60,
+      "checksum": "ok",
+      "dumpsChecked": 54,
+      "mismatches": 0,
+      "types": {
+        "hash": 28,
+        "string": 16,
+        "set": 3,
+        "zset": 2,
+        "list": 4,
+        "module": 1,
+        "stream": 4,
+        "array": 2
+      },
+      "encodings": {
+        "hash / template listpack": 24,
+        "string / raw": 12,
+        "set / hashtable": 1,
+        "zset / skiplist": 1,
+        "string / integer": 3,
+        "set / intset": 1,
+        "list / quicklist": 4,
+        "module / module": 1,
+        "stream / listpacks": 4,
+        "zset / listpack": 1,
+        "hash / listpack with field TTLs": 2,
+        "hash / template array": 1,
+        "string / compressed (LZF)": 1,
+        "array / array": 2,
+        "set / listpack": 1,
+        "hash / listpack": 1
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "redis-7.2.16.rdb",
+      "server": "redis",
+      "version": "7.2.16",
+      "mode": "data",
+      "rdbVersion": 11,
+      "magic": "REDIS0011",
+      "bytes": 114048,
+      "keys": 30,
+      "checksum": "ok",
+      "dumpsChecked": 24,
+      "mismatches": 0,
+      "types": {
+        "string": 16,
+        "hash": 3,
+        "list": 4,
+        "set": 3,
+        "zset": 2,
+        "stream": 2
+      },
+      "encodings": {
+        "string / compressed (LZF)": 1,
+        "string / integer": 3,
+        "hash / hashtable": 1,
+        "string / raw": 12,
+        "list / quicklist": 4,
+        "set / listpack": 1,
+        "hash / listpack": 2,
+        "zset / skiplist": 1,
+        "stream / listpacks": 2,
+        "zset / listpack": 1,
+        "set / intset": 1,
+        "set / hashtable": 1
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "redis-6.2.24.rdb",
+      "server": "redis",
+      "version": "6.2.24",
+      "mode": "data",
+      "rdbVersion": 9,
+      "magic": "REDIS0009",
+      "bytes": 114339,
+      "keys": 29,
+      "checksum": "ok",
+      "dumpsChecked": 23,
+      "mismatches": 0,
+      "types": {
+        "set": 3,
+        "string": 16,
+        "hash": 3,
+        "list": 3,
+        "stream": 2,
+        "zset": 2
+      },
+      "encodings": {
+        "set / intset": 1,
+        "string / raw": 12,
+        "hash / hashtable": 1,
+        "list / quicklist (ziplists)": 3,
+        "string / integer": 3,
+        "hash / ziplist": 2,
+        "stream / listpacks": 2,
+        "string / compressed (LZF)": 1,
+        "set / hashtable": 2,
+        "zset / skiplist": 1,
+        "zset / ziplist": 1
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "redis-5.0.14.rdb",
+      "server": "redis",
+      "version": "5.0.14",
+      "mode": "data",
+      "rdbVersion": 9,
+      "magic": "REDIS0009",
+      "bytes": 114371,
+      "keys": 29,
+      "checksum": "ok",
+      "dumpsChecked": 23,
+      "mismatches": 0,
+      "types": {
+        "string": 16,
+        "zset": 2,
+        "hash": 3,
+        "stream": 2,
+        "set": 3,
+        "list": 3
+      },
+      "encodings": {
+        "string / raw": 12,
+        "zset / skiplist": 1,
+        "hash / hashtable": 1,
+        "stream / listpacks": 2,
+        "set / intset": 1,
+        "string / integer": 3,
+        "set / hashtable": 2,
+        "string / compressed (LZF)": 1,
+        "list / quicklist (ziplists)": 3,
+        "hash / ziplist": 2,
+        "zset / ziplist": 1
+      },
+      "inFixtures": false
+    },
+    {
+      "file": "redis-3.2.13.rdb",
+      "server": "redis",
+      "version": "3.2.13",
+      "mode": "data",
+      "rdbVersion": 7,
+      "magic": "REDIS0007",
+      "bytes": 89269,
+      "keys": 27,
+      "checksum": "ok",
+      "dumpsChecked": 22,
+      "mismatches": 0,
+      "types": {
+        "list": 3,
+        "string": 16,
+        "set": 3,
+        "zset": 2,
+        "hash": 3
+      },
+      "encodings": {
+        "list / quicklist (ziplists)": 3,
+        "string / raw": 12,
+        "set / hashtable": 2,
+        "string / integer": 3,
+        "zset / skiplist (text scores)": 1,
+        "zset / ziplist": 1,
+        "set / intset": 1,
+        "hash / hashtable": 1,
+        "string / compressed (LZF)": 1,
+        "hash / ziplist": 2
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "redis-2.8.24.rdb",
+      "server": "redis",
+      "version": "2.8.24",
+      "mode": "data",
+      "rdbVersion": 6,
+      "magic": "REDIS0006",
+      "bytes": 117612,
+      "keys": 27,
+      "checksum": "ok",
+      "dumpsChecked": 22,
+      "mismatches": 0,
+      "types": {
+        "string": 16,
+        "hash": 3,
+        "list": 3,
+        "set": 3,
+        "zset": 2
+      },
+      "encodings": {
+        "string / raw": 12,
+        "hash / hashtable": 1,
+        "list / ziplist": 2,
+        "hash / ziplist": 2,
+        "set / hashtable": 2,
+        "zset / ziplist": 1,
+        "string / compressed (LZF)": 1,
+        "string / integer": 3,
+        "zset / skiplist (text scores)": 1,
+        "list / linked list": 1,
+        "set / intset": 1
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "valkey-9.1.2-lfu.rdb",
+      "server": "valkey",
+      "version": "9.1.2",
+      "mode": "lfu",
+      "rdbVersion": 80,
+      "magic": "VALKEY080",
+      "bytes": 10291,
+      "keys": 77,
+      "checksum": "ok",
+      "dumpsChecked": 76,
+      "mismatches": 0,
+      "types": {
+        "string": 66,
+        "hash": 4,
+        "list": 3,
+        "stream": 1,
+        "set": 2,
+        "zset": 1
+      },
+      "encodings": {
+        "string / raw": 62,
+        "hash / hashtable with field TTLs": 2,
+        "string / integer": 3,
+        "list / quicklist": 3,
+        "string / compressed (LZF)": 1,
+        "stream / listpacks": 1,
+        "set / intset": 1,
+        "hash / listpack": 2,
+        "set / listpack": 1,
+        "zset / listpack": 1
+      },
+      "inFixtures": true
+    },
+    {
+      "file": "redis-8.10.2-lru.rdb",
+      "server": "redis",
+      "version": "8.10.2",
+      "mode": "lru",
+      "rdbVersion": 15,
+      "magic": "REDIS0015",
+      "bytes": 15100,
+      "keys": 105,
+      "checksum": "ok",
+      "dumpsChecked": 105,
+      "mismatches": 0,
+      "types": {
+        "hash": 27,
+        "string": 66,
+        "set": 2,
+        "list": 3,
+        "stream": 3,
+        "array": 2,
+        "module": 1,
+        "zset": 1
+      },
+      "encodings": {
+        "hash / template listpack": 24,
+        "string / raw": 62,
+        "set / intset": 1,
+        "list / quicklist": 3,
+        "hash / listpack with field TTLs": 2,
+        "stream / listpacks": 3,
+        "string / compressed (LZF)": 1,
+        "array / array": 2,
+        "string / integer": 3,
+        "module / module": 1,
+        "zset / listpack": 1,
+        "set / listpack": 1,
+        "hash / listpack": 1
+      },
+      "inFixtures": true
+    }
+  ],
+  "otherFiles": [
+    {
+      "file": "redis-8.10.2-cluster.rdb",
+      "keys": 201,
+      "slotRecords": 201
+    },
+    {
+      "file": "valkey-9.1.2-cluster.rdb",
+      "keys": 201,
+      "slotInfoFields": 201
+    },
+    {
+      "file": "valkey-9.1.2-nochecksum.rdb",
+      "keys": 3,
+      "checksum": "off",
+      "compression": "off"
+    },
+    {
+      "file": "redis-6.2.24-preamble.aof",
+      "keys": 1,
+      "commandsAfterSnapshotBytes": 97
+    },
+    {
+      "file": "redis-8.10.2 via redis-cli --rdb (not kept)",
+      "keys": 105,
+      "checksum": "ok",
+      "aux": "repl-stream-db, repl-id, repl-offset"
+    }
+  ],
+  "serverNotes": [
+    "Redis 8.10.2 DEBUG OBJECT serializedlength counts template hashes at their DUMP size, which includes the field names the file keeps in a shared template.",
+    "Redis 8.10.2 DEBUG OBJECT serializedlength leaves out the 8-byte minimum expiry that hashes with field TTLs (RDB types 24 and 25) start with."
+  ]
+}

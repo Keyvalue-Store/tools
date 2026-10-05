@@ -1,0 +1,1001 @@
+{
+ "server": "valkey",
+ "version": "9.1.2",
+ "mode": "lfu",
+ "caps": {
+  "functions": true,
+  "hfe": true,
+  "arrays": false,
+  "nack": false,
+  "idmp": false,
+  "vadd": false,
+  "pexpiretime": true,
+  "plain": true,
+  "templates": false
+ },
+ "when": "2026-10-05T15:59:35.309Z",
+ "keys": [
+  {
+   "db": 0,
+   "key": "62696e3a00ff",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 16,
+   "freq": 5,
+   "value": "62696e617279206b6579206e616d65",
+   "dump": "000f62696e617279206b6579206e616d6550000218aa7791b4ef15"
+  },
+  {
+   "db": 0,
+   "key": "686173683a736d616c6c",
+   "type": "hash",
+   "encoding": "listpack",
+   "expire": null,
+   "serializedLength": 57,
+   "freq": 5,
+   "value": [
+    [
+     "656d707479",
+     "",
+     null
+    ],
+    [
+     "6e616d65",
+     "416e61",
+     null
+    ],
+    [
+     "6e6567",
+     "2d35",
+     null
+    ],
+    [
+     "706c616e",
+     "70726f",
+     null
+    ],
+    [
+     "766973697473",
+     "3137",
+     null
+    ]
+   ],
+   "dump": "1038380000000a00846e616d650583416e61048676697369747307110184706c616e058370726f0485656d707479068001836e656704dffb02ff5000aafa0515efcc4d93"
+  },
+  {
+   "db": 0,
+   "key": "686173683a74746c",
+   "type": "hash",
+   "encoding": "hashtable",
+   "expire": null,
+   "serializedLength": 61,
+   "freq": 6,
+   "value": [
+    [
+     "61",
+     "31",
+     null
+    ],
+    [
+     "62",
+     "32",
+     4102444805000
+    ],
+    [
+     "63",
+     "33",
+     null
+    ],
+    [
+     "64",
+     "34",
+     4102444805000
+    ],
+    [
+     "65",
+     "35",
+     null
+    ]
+   ],
+   "dump": "16050161c001ffffffffffffffff0162c00288ebc32cbb0300000163c003ffffffffffffffff0164c00488ebc32cbb0300000165c005ffffffffffffffff5000e487c324f6690dc5"
+  },
+  {
+   "db": 0,
+   "key": "686173683a74746c626967",
+   "type": "hash",
+   "encoding": "hashtable",
+   "expire": null,
+   "serializedLength": 6682,
+   "freq": 11,
+   "valueSha256": "019c45b730da41bdcd66b8ffa786e365f86a92a7a260185809fa296c0b0fc71f",
+   "count": 300,
+   "dumpSha256": "1a01d2bb26a18fb40a547de66b5762eea40082c2d3ae396ea5e3f87a299c5006"
+  },
+  {
+   "db": 0,
+   "key": "6b65792077697468202271756f7465732220616e6420737061636573",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 2,
+   "freq": 5,
+   "value": "76",
+   "dump": "00017650005e220723876aed3a"
+  },
+  {
+   "db": 0,
+   "key": "6c6973743a6578706972696e67",
+   "type": "list",
+   "encoding": "listpack",
+   "expire": 4102444799000,
+   "serializedLength": 16,
+   "freq": 6,
+   "value": [
+    "78",
+    "79"
+   ],
+   "dump": "1201020d0d0000000200817802817902ff5000b1bd92c713489d9b"
+  },
+  {
+   "db": 0,
+   "key": "6c6973743a706c61696e",
+   "type": "list",
+   "encoding": "listpack",
+   "expire": null,
+   "serializedLength": 100,
+   "freq": 5,
+   "valueSha256": "0ead0ecd4e021d62ce3280baab7b31f4db9d769453a296363a106c4d87e5cf59",
+   "count": 4,
+   "dump": "120102c3405d53a60fa6130000040085736d616c6c06e7d070e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e08e00040fd2ebb871e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e0ff00e056000217ba867396023207ff50007a206f6cc2711b84"
+  },
+  {
+   "db": 0,
+   "key": "6c6973743a736d616c6c",
+   "type": "list",
+   "encoding": "listpack",
+   "expire": null,
+   "serializedLength": 33,
+   "freq": 5,
+   "value": [
+    "61",
+    "31",
+    "2d32",
+    "68656c6c6f20776f726c64",
+    ""
+   ],
+   "dump": "1201021e1e00000005008161020101dffe028b68656c6c6f20776f726c640c8001ff5000a483cd6de35a1b0a"
+  },
+  {
+   "db": 0,
+   "key": "7365743a696e7473",
+   "type": "set",
+   "encoding": "intset",
+   "expire": null,
+   "serializedLength": 143,
+   "freq": 5,
+   "value": [
+    "2d31",
+    "2d32",
+    "2d32313437343833363438",
+    "2d33",
+    "2d34",
+    "2d35",
+    "30",
+    "31",
+    "3130",
+    "313030303030",
+    "3131",
+    "3132",
+    "3133",
+    "3134",
+    "32",
+    "33",
+    "34",
+    "35",
+    "36",
+    "37",
+    "38",
+    "39",
+    "39303037313939323534373430393933"
+   ],
+   "dump": "0bc3408a40c0040800000017200320000180ff200000fb2003400000fc4004200000fd2003400000fe4004e00200202f6000000160050200000220034000000340042000000420034000000540042000000620034000000740042000000820034000000940042000000a20034000000b40042000000c20034000000d40042000000e2003400001a0868071800501200050009763f3c2cae5e4d4"
+  },
+  {
+   "db": 0,
+   "key": "7365743a736d616c6c",
+   "type": "set",
+   "encoding": "listpack",
+   "expire": null,
+   "serializedLength": 31,
+   "freq": 5,
+   "value": [
+    "626c7565",
+    "677265656e",
+    "726564",
+    "782079"
+   ],
+   "dump": "141e1e0000000400837265640485677265656e0684626c7565058378207904ff5000f0ee53bd34c37de0"
+  },
+  {
+   "db": 0,
+   "key": "7374723a62696e617279",
+   "type": "string",
+   "encoding": "raw",
+   "expire": null,
+   "serializedLength": 258,
+   "freq": 5,
+   "value": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff",
+   "dump": "004100000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff50006dd4f93591460d4b"
+  },
+  {
+   "db": 0,
+   "key": "7374723a656d707479",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 1,
+   "freq": 5,
+   "value": "",
+   "dump": "0000500092b195d1912dc52e"
+  },
+  {
+   "db": 0,
+   "key": "7374723a6578706972696e67",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": 4102444800000,
+   "serializedLength": 5,
+   "freq": 6,
+   "value": "736f6f6e",
+   "dump": "0004736f6f6e5000a6c63bdf63fa45e7"
+  },
+  {
+   "db": 0,
+   "key": "7374723a666c6f6174",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 5,
+   "freq": 5,
+   "value": "332e3134",
+   "dump": "0004332e31345000435f89ecb49e8fd8"
+  },
+  {
+   "db": 0,
+   "key": "7374723a696e74",
+   "type": "string",
+   "encoding": "int",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 5,
+   "value": "3132333435",
+   "dump": "00c13930500052be23b60dae6f4d"
+  },
+  {
+   "db": 0,
+   "key": "7374723a696e743332",
+   "type": "string",
+   "encoding": "int",
+   "expire": null,
+   "serializedLength": 5,
+   "freq": 5,
+   "value": "32313437343833363437",
+   "dump": "00c2ffffff7f5000e35e2c0f7e7cca55"
+  },
+  {
+   "db": 0,
+   "key": "7374723a696e743634",
+   "type": "string",
+   "encoding": "int",
+   "expire": null,
+   "serializedLength": 20,
+   "freq": 5,
+   "value": "39323233333732303336383534373735383037",
+   "dump": "0013393232333337323033363835343737353830375000f54fb7051fba38d6"
+  },
+  {
+   "db": 0,
+   "key": "7374723a6c6f6e67",
+   "type": "string",
+   "encoding": "raw",
+   "expire": null,
+   "serializedLength": 77,
+   "freq": 5,
+   "valueSha256": "3f56a1f7a3b09ff67ec62bb6191987372724b2f9a7892ce5cdf6675b9a7140a0",
+   "dump": "00c3404853880a6162636465666768696a61e0ff09e1ff0de2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2ff11e2e21101696a5000371c8759c52b6513"
+  },
+  {
+   "db": 0,
+   "key": "7374723a6e6567",
+   "type": "string",
+   "encoding": "int",
+   "expire": null,
+   "serializedLength": 2,
+   "freq": 5,
+   "value": "2d37",
+   "dump": "00c0f95000910c18a149f0255f"
+  },
+  {
+   "db": 0,
+   "key": "7374723a72616e646f6d",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 31,
+   "freq": 5,
+   "value": "78080ac8ac1fb4802a098c987c76bd631e14ff194fc07345c7d6261b31b0",
+   "dump": "001e78080ac8ac1fb4802a098c987c76bd631e14ff194fc07345c7d6261b31b0500005b475914deb3914"
+  },
+  {
+   "db": 0,
+   "key": "7374723a73686f7274",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 6,
+   "freq": 5,
+   "value": "68656c6c6f",
+   "dump": "000568656c6c6f5000ac5816e7fb6647fe"
+  },
+  {
+   "db": 0,
+   "key": "7374723a75746638",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 20,
+   "freq": 5,
+   "value": "4772c3bcc39f6520e4bda0e5a5bd20f09f9880",
+   "dump": "00134772c3bcc39f6520e4bda0e5a5bd20f09f98805000a7ce9d3714a1483d"
+  },
+  {
+   "db": 0,
+   "key": "73747265616d3a6261736963",
+   "type": "stream",
+   "encoding": "stream",
+   "expire": null,
+   "serializedLength": 1232,
+   "streamExtras": {
+    "entriesAdded": 50,
+    "maxDeletedId": "1700000000005-2",
+    "firstId": "1700000000000-0",
+    "groups": [
+     {
+      "name": "6731"
+     },
+     {
+      "name": "6732"
+     }
+    ]
+   },
+   "freq": 8,
+   "valueSha256": "64e383c467e4a45a5b0b766f130935b0ae4eab9f74405bbeae0f49b7b2bc938e",
+   "dump": "1501100000018bcfe568000000000000000000c3420c440a080a040000370130010220010e84757365720586616374696f6e07002011000020010b8275300385636c69636b06052012400009827531038476696577054011400102827532e00324000360370033e0002402030104203702827534e00124010301403b02827535e000240202010660360036e001240202010760370037e002240008201502827538e00124020001092003120101856f7468657206876669656c64203908062028000a2017048375313004e002c1000b20172013013104e001c2000c204020120032e00326000d803a0033e00226000e80390034e00326000f803a0035e00226001080390036e003260011803a0037e00226001280390038e00126020001132003e000c9008880c90231390940ca001460410032e004ca0015202e2013e003ca0016203f2012e004ca0017803ae003ca00188039e004ca0019803ae003ca001a8039e004ca001b803ae003ca001c8039e004ca001d2026e007ca003280ca001e201a02837533e004ca001f202c2013e003ca0020607c0033e004ca0021803ae003ca00228039e004ca0023803ae003ca00248039e004ca0025803ae003ca00268039e004ca0027203ae007ca003380ca0028201802837534e004ca002960420034e003ca002a20412012e004ca002b803ae003ca002c8039e004ca002d803ae003ca002e8039e004ca002f803ae003ca00308039e004ca00312013e007ca003420ca0101ff30810000018bcfe5683100810000018bcfe5680000810000018bcfe56805023202026731810000018bcfe568100181ffffffffffffffff0d0000018bcfe56802000000000000000264bbca0ca1010000010000018bcfe56803000000000000000064bbca0ca1010000010000018bcfe56806000000000000000064bbca0ca1010000010000018bcfe56807000000000000000164bbca0ca1010000010000018bcfe56808000000000000000264bbca0ca1010000010000018bcfe56809000000000000000064bbca0ca1010000010000018bcfe5680a000000000000000164bbca0ca1010000010000018bcfe5680b000000000000000264bbca0ca1010000010000018bcfe5680c000000000000000064bbca0ca1010000010000018bcfe5680d000000000000000164bbca0ca1010000010000018bcfe5680e000000000000000264bbca0ca1010000010000018bcfe5680f000000000000000064bbca0ca1010000010000018bcfe56810000000000000000164bbca0ca1010000010202633164bbca0ca101000064bbca0ca1010000080000018bcfe5680200000000000000020000018bcfe5680300000000000000000000018bcfe5680600000000000000000000018bcfe5680700000000000000010000018bcfe5680800000000000000020000018bcfe5680900000000000000000000018bcfe5680a00000000000000010000018bcfe5680b000000000000000202633264bbca0ca101000064bbca0ca1010000050000018bcfe5680c00000000000000000000018bcfe5680d00000000000000010000018bcfe5680e00000000000000020000018bcfe5680f00000000000000000000018bcfe568100000000000000001026732810000018bcfe568310081ffffffffffffffff00010d69646c652d636f6e73756d657264bbca0ca1010000ffffffffffffffff005000bc1147c063391bac"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a30",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7630",
+   "dump": "0002763050002ef739017c530c5b"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a31",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7631",
+   "dump": "00027631500090cf79cf55021eaf"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3130",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 7,
+   "value": "763130",
+   "dump": "0003763130500067c33eaac23c7f33"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3131",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 6,
+   "value": "763131",
+   "dump": "00037631315000d9fb7e64eb6d6dc7"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3132",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 7,
+   "value": "763132",
+   "dump": "000376313250007021296ec2b802f0"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3133",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 8,
+   "value": "763133",
+   "dump": "00037631335000ce1969a0ebe91004"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3134",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 6,
+   "value": "763134",
+   "dump": "000376313450002294867a9012dd9e"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3135",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 7,
+   "value": "763135",
+   "dump": "000376313550009cacc6b4b943cf6a"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3136",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 8,
+   "value": "763136",
+   "dump": "00037631365000357691be9096a05d"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3137",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 7,
+   "value": "763137",
+   "dump": "000376313750008b4ed170b9c7b2a9"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3138",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 8,
+   "value": "763138",
+   "dump": "0003763138500086fed95334466243"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3139",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 8,
+   "value": "763139",
+   "dump": "0003763139500038c6999d1d1770b7"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a32",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7632",
+   "dump": "00027632500039152ec57cd77198"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3230",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763230",
+   "dump": "0003763230500006f5226635a2058d"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3231",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763231",
+   "dump": "00037632315000b8cd62a81cf31779"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3232",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763232",
+   "dump": "00037632325000111735a23526784e"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3233",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763233",
+   "dump": "00037632335000af2f756c1c776aba"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3234",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763234",
+   "dump": "0003763234500043a29ab6678ca720"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3235",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763235",
+   "dump": "00037632355000fd9ada784eddb5d4"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3236",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763236",
+   "dump": "0003763236500054408d726708dae3"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3237",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763237",
+   "dump": "00037632375000ea78cdbc4e59c817"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3238",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763238",
+   "dump": "00037632385000e7c8c59fc3d818fd"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3239",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763239",
+   "dump": "0003763239500059f08551ea890a09"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a33",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7633",
+   "dump": "000276335000872d6e0b5586636c"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3330",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763330",
+   "dump": "0003763330500000965bea56cae401"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3331",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763331",
+   "dump": "00037633315000beae1b247f9bf6f5"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3332",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763332",
+   "dump": "0003763332500017744c2e564e99c2"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3333",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763333",
+   "dump": "00037633335000a94c0ce07f1f8b36"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3334",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763334",
+   "dump": "0003763334500045c1e33a04e446ac"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3335",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763335",
+   "dump": "00037633355000fbf9a3f42db55458"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3336",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763336",
+   "dump": "000376333650005223f4fe04603b6f"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3337",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763337",
+   "dump": "00037633375000ec1bb4302d31299b"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3338",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763338",
+   "dump": "00037633385000e1abbc13a0b0f971"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3339",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763339",
+   "dump": "000376333950005f93fcdd89e1eb85"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a34",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7634",
+   "dump": "0002763450006ba081d12e7daef6"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3430",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763430",
+   "dump": "00037634305000af0a8da689b9a9da"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3431",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763431",
+   "dump": "000376343150001132cd68a0e8bb2e"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3432",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763432",
+   "dump": "00037634325000b8e89a62893dd419"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3433",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763433",
+   "dump": "0003763433500006d0daaca06cc6ed"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3434",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763434",
+   "dump": "00037634345000ea5d3576db970b77"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3435",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763435",
+   "dump": "00037634355000546575b8f2c61983"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3436",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763436",
+   "dump": "00037634365000fdbf22b2db1376b4"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3437",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763437",
+   "dump": "000376343750004387627cf2426440"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3438",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763438",
+   "dump": "000376343850004e376a5f7fc3b4aa"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a3439",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 4,
+   "freq": 5,
+   "value": "763439",
+   "dump": "00037634395000f00f2a915692a65e"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a35",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7635",
+   "dump": "000276355000d598c11f072cbc02"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a36",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 7,
+   "value": "7636",
+   "dump": "0002763650007c4296152ef9d335"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a37",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 6,
+   "value": "7637",
+   "dump": "000276375000c27ad6db07a8c1c1"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a38",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 7,
+   "value": "7638",
+   "dump": "000276385000cfcadef88a29112b"
+  },
+  {
+   "db": 0,
+   "key": "746f7563683a39",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 3,
+   "freq": 7,
+   "value": "7639",
+   "dump": "00027639500071f29e36a37803df"
+  },
+  {
+   "db": 0,
+   "key": "7a7365743a736d616c6c",
+   "type": "zset",
+   "encoding": "listpack",
+   "expire": null,
+   "serializedLength": 77,
+   "freq": 5,
+   "value": [
+    [
+     "626f74746f6d",
+     "-inf"
+    ],
+    [
+     "6d696e7573207468726565",
+     "-3"
+    ],
+    [
+     "6f6e65",
+     "1"
+    ],
+    [
+     "746f70",
+     "inf"
+    ],
+    [
+     "74776f20616e6420612068616c66",
+     "2.5"
+    ]
+   ],
+   "dump": "11404b4b0000000a0086626f74746f6d07842d696e66058b6d696e75732074687265650cdffd02836f6e650401018e74776f20616e6420612068616c660f83322e350483746f700483696e6604ff5000117768c947652497"
+  },
+  {
+   "db": 1,
+   "key": "6462313a68617368",
+   "type": "hash",
+   "encoding": "listpack",
+   "expire": null,
+   "serializedLength": 14,
+   "freq": 5,
+   "value": [
+    [
+     "66",
+     "76",
+     null
+    ]
+   ],
+   "dump": "100d0d0000000200816602817602ff5000efdbf4d5bd066f69"
+  },
+  {
+   "db": 1,
+   "key": "6462313a6b6579",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": null,
+   "serializedLength": 14,
+   "freq": 5,
+   "value": "696e2064617461626173652031",
+   "dump": "000d696e20646174616261736520315000cf995c397f0c16cb"
+  },
+  {
+   "db": 7,
+   "key": "6462373a6b6579",
+   "type": "string",
+   "encoding": "embstr",
+   "expire": 4102444800001,
+   "serializedLength": 14,
+   "freq": 6,
+   "value": "696e2064617461626173652037",
+   "dump": "000d696e206461746162617365203750009d2cf32d2da6c9a5"
+  }
+ ],
+ "functions": [
+  "kvstest"
+ ]
+}
