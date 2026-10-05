@@ -38,10 +38,10 @@ Load a snapshot or drop it on the page. The page reads it in steps and shows a p
 - **The file.** Keys, size, how many keys expire, which server and version wrote it and when, how much memory the server used then, and whether the checksum is right. Function libraries, module data, cluster slot records and hash templates are listed when the file has them.
 - **Where the bytes go.** Bytes in the file by data type, and by encoding.
 - **The biggest keys**, by bytes in the file.
-- **Prefixes.** Keys and bytes per prefix, the part of the key before its first colon.
+- **Prefixes.** Keys and bytes per prefix: the key up to its first colon, or up to its first dot, slash or bar when it has no colon. The first 100,000 prefixes are listed, and the keys under any more are counted together.
 - **Expiries.** Time left on expiring keys, counted from when the file was written.
 - **Idle time or access frequency**, when the server's `maxmemory-policy` uses LRU or LFU, since the file records them then.
-- **Downloads.** Every key as CSV (database, key, type, encoding, elements, bytes, expiry), or just the key names, which the [Keyspace Map](../keyspace/) reads to find the naming patterns.
+- **Downloads.** Every key as CSV (database, key, type, encoding, elements, bytes, expiry), or just the key names, which the [Keyspace Map](../keyspace/) reads to find the naming patterns. A key that starts with `=`, `+`, `-` or `@` gets a `'` in front in the CSV, so a spreadsheet doesn't run it as a formula.
 
 Below that, browse the keys: filter by part of the name or by type, and pick a key to see its value the way `redis-cli` prints it, up to 1,000 elements.
 
@@ -57,11 +57,13 @@ redis-cli CONFIG GET dir        # the folder where the server keeps its own dump
 
 `--rdb` makes the server fork and write a fresh snapshot, as it does for a new replica. On a busy primary with a lot of data, the fork needs spare memory, so prefer a replica or an existing backup.
 
+One catch with Valkey 9.1.2: `valkey-cli --rdb` doesn't tell the server its version the way a replica does, so the server falls back to RDB 11, which can't hold hashes with field expiries. The transfer stops at the first such key, the server's log says `Can't store key (db 9) in RDB version 11`, and the file ends in the middle. Copy the server's own `dump.rdb` instead, after a `BGSAVE` if it needs to be fresh.
+
 Nothing you load leaves the page. The tool doesn't send anything anywhere, and the page's security policy stops it from fetching or loading anything from another site.
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install. The command line reads the file piece by piece, so snapshots of any size work.
+You need Node.js 20 or newer. Nothing to install. The command line reads the file piece by piece and writes no faster than the program reading its output, so snapshots of any size work, and `| head` stops it early. It exits with 1 when the checksum doesn't match.
 
 ```sh
 $ node snapshot/cli.js dump.rdb
@@ -136,7 +138,7 @@ Seven real servers, built from source in October 2026: Valkey 9.1.2 and Redis 8.
 
 - **Values.** For all 234 keys in the seven snapshots, the viewer's value, type and expiry matched what the server said, and for every hash, list, set and sorted set the encoding matched `OBJECT ENCODING`. That covers the old encodings too: linked lists, ziplists and sorted sets with text scores from Redis 2.8 and 3.2.
 - **Sizes.** The bytes the viewer counts for each value matched `DEBUG OBJECT`'s `serializedlength`, with two Redis 8.10.2 exceptions below.
-- **DUMP payloads.** Every key's payload decoded to the same value, with a correct checksum.
+- **DUMP payloads.** The payloads of 374 of the 416 keys decoded to the same value, with a correct checksum. The other 42, the biggest values, are kept in the test files as a SHA-256 of the payload only, to keep the files small.
 - **Access data.** With `allkeys-lfu`, the counters in a Valkey 9.1.2 snapshot matched `OBJECT FREQ` for all 77 keys. With `allkeys-lru`, the idle times in a Redis 8.10.2 snapshot were within 2 seconds of `OBJECT IDLETIME` for all 105 keys.
 - **Other files.** Snapshots from a Redis 8.10.2 and a Valkey 9.1.2 cluster node, a Valkey snapshot written with `rdbchecksum no` and `rdbcompression no`, and an AOF file with an RDB preamble from Redis 6.2.24 all read correctly, and so did a copy fetched with `redis-cli --rdb`.
 

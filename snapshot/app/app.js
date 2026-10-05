@@ -62,7 +62,8 @@
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  function csvCell(s) { return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  // Spreadsheets run a cell that starts with = + - or @ as a formula, so such a key gets a ' in front.
+  function csvCell(s) { if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 
   // How long until an expiry, from when the snapshot was written.
   function ttlText(expire, now) {
@@ -74,6 +75,7 @@
     if (s < 7200) return 'in ' + Math.round(s / 60) + ' min';
     if (s < 172800) return 'in ' + Math.round(s / 3600) + ' h';
     if (s < 365 * 86400) return 'in ' + Math.round(s / 86400) + ' days';
+    if (!(Math.abs(Number(expire)) <= 8.64e15)) return 'past the year 275760';
     return R.fmtTime(expire).slice(0, 10);
   }
 
@@ -214,11 +216,16 @@
     const split = el('div', { class: 'split' });
     const left = el('div'), right = el('div');
     left.append(el('h3', { text: 'Prefixes' }));
-    left.append(el('p', { class: 'muted small', text: `The key up to its first colon. ${plural(s.prefixCount, 'prefix', 'prefixes')} in all.` }));
+    left.append(el('p', { class: 'muted small', text: 'The key up to its first colon, or its first dot, slash or bar when it has no colon. ' + (s.prefixOverflow
+      ? `More than ${plural(s.prefixCount, 'prefix', 'prefixes')}; the ${plural(s.prefixOverflow, 'key', 'keys')} under the rest aren't listed.`
+      : `${plural(s.prefixCount, 'prefix', 'prefixes')} in all.`) }));
     left.append(table(['Prefix', 'Keys', 'Bytes'], s.prefixes.slice(0, 15).map((p) => [el('span', { class: 'mono', text: p.prefix }), fmt(p.keys), sizeText(p.bytes)]), [1, 2]));
     right.append(el('h3', { text: 'Expiries' }));
     if (!s.expiring) right.append(el('p', { class: 'muted', text: 'No key has an expiry.' }));
-    else {
+    else if (s.snapshotTime === null) {
+      // RDB 6 files don't say when they were written, so there's no time to count from.
+      right.append(el('p', { class: 'muted small', text: `${plural(s.expiring, 'key has', 'keys have')} an expiry. The file doesn't record when it was written, so the time left can't be worked out; each key's expiry date is in its row.` }));
+    } else {
       right.append(el('p', { class: 'muted small', text: `${plural(s.expiring, 'key has', 'keys have')} an expiry. Time left, counted from when the file was written:` }));
       const rows = Object.entries(s.ttl).filter(([, n]) => n).map(([b, n]) => [b, fmt(n)]);
       if (s.expired) rows.unshift(['already expired', fmt(s.expired)]);
@@ -236,7 +243,7 @@
     const b1 = el('button', { type: 'button', class: 'btn primary', text: 'Download every key as CSV' });
     b1.addEventListener('click', () => {
       const lines = ['db,key,type,encoding,elements,bytes,expires'];
-      for (const e of entries) lines.push([e.db, csvCell(keyText(e.key)), e.type, csvCell(e.encoding), e.length === null ? '' : e.length, e.size, e.expire === null ? '' : R.fmtTime(e.expire)].join(','));
+      for (const e of entries) lines.push([e.db, csvCell(keyText(e.key)), e.type, csvCell(e.encoding), e.length === null ? '' : e.length, e.size, e.expire === null ? '' : csvCell(R.fmtTime(e.expire))].join(','));
       download(name.replace(/\.[^.]*$/, '') + '-keys.csv', lines.join('\n') + '\n', 'text/csv');
     });
     const b2 = el('button', { type: 'button', class: 'btn', text: 'Download the key names' });

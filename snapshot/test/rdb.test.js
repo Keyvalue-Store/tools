@@ -192,3 +192,61 @@ test('totals: keys by type and database, biggest keys, prefixes and expiries', (
   assert.equal(s.modules.vectorset, 1);
   assert.equal(s.fieldTtls, 102);
 });
+
+test('stream IDs past 2^63 and whole doubles in arrays, from DUMP payloads the servers wrote', () => {
+  // XADD k 1-1 a 1, then XADD k 18446744073709551614-5 a late, on Redis 8.10.2 and Valkey 9.1.2.
+  for (const h of ['1b0110000000000000000100000000000000012b2b0000000f000201000101018161020001020100010001010104010201dffd020401846c617465050401ff0281fffffffffffffffe05010100000200406440640000000f00a85615fead9e3d0a',
+    '150110000000000000000100000000000000012b2b0000000f000201000101018161020001020100010001010104010201dffd020401846c617465050401ff0281fffffffffffffffe0501010000020050003ac5b2d22df3b7d9']) {
+    const d = R.readDump(new Uint8Array(Buffer.from(h, 'hex')));
+    assert.equal(d.checksum, 'ok');
+    assert.deepEqual(d.value.entries.map((e) => e[0]), ['1-1', '18446744073709551614-5']);
+  }
+  // ARSET k 4 2.0 and ARSET k 6 7 on Redis 8.10.2, which gives back "2.0" and "7".
+  const a = R.readDump(new Uint8Array(Buffer.from('1c020004020000000000000040060107000000000000000f00287a4c526a15b1da', 'hex')));
+  assert.equal(R.show(a, a.value), '[4] (double) 2.0\n[6] (integer) 7');
+});
+
+test('crafted files that claim more than they hold fail quickly and clearly', () => {
+  const read = (h) => R.read(R.bufferSource(new Uint8Array(Buffer.from(h, 'hex'))), { values: true, onKey: () => {} });
+  // A stream entry that says it has a billion fields.
+  assert.throws(() => read('524544495330303131fa0972656469732d76657205372e322e34fe0015017301100000000000000000000000000000000026260000000c000101000101018166020001000100010101f300ca9a3b058161028162020301ff010001000100000100ff4747396bce0fbcc3'), /stream listpack is damaged/);
+  // A hash compressed with LZF that says it unpacks to 2 GB from 3 bytes.
+  assert.throws(() => read('524544495330303131fa0972656469732d76657205372e322e34fe00100168c303807fffffff016162ffcee8da999b501768'), /more than 3 compressed bytes can/);
+  // An expiry past what a date can hold still prints.
+  assert.match(R.fmtTime(9000000000000000), /past the year 275760/);
+});
+
+test('prefixes past the first 100,000 are counted together', () => {
+  const sum = R.summary();
+  for (let i = 0; i < 100005; i++) sum.add({ db: 0, key: new TextEncoder().encode('p' + i + ':x'), type: 'string', encoding: 'raw', size: 10, length: 1, expire: null, idle: null, freq: null });
+  const s = sum.result();
+  assert.equal(s.prefixCount, 100000);
+  assert.equal(s.prefixOverflow, 5);
+  assert.equal(s.prefixOverflowBytes, 50);
+});
+
+test('the command line: CSV that spreadsheets can open safely, raw DUMP output, a bad checksum and bad options', () => {
+  const cli = path.join(__dirname, '..', 'cli.js');
+  const run = (args, input) => require('node:child_process').spawnSync(process.execPath, [cli].concat(args), { input: input, encoding: 'latin1' });
+  // The Redis 8.10.2 snapshot's keys, written as CSV; none starts with a formula character unguarded.
+  let r = run([path.join(__dirname, 'fixtures', 'redis-8.10.2.rdb'), '--keys']);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout.split('\n').filter((l) => /^\d+,[=+\-@]/.test(l)).length, 0);
+  // What redis-cli --raw DUMP printed on Redis 8.10.2 for an intset whose payload starts with 0x0b 0x22, a quote.
+  r = run(['--dump', '-'], Buffer.concat([Buffer.from('0b22020000000d000000e8860d96dfb13dc371d9fbf2efffd3003713e72e7145a05b17790f00f0502c81a6841b71', 'hex'), Buffer.from('\n')]));
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /^set, intset, 13 elements; RDB version 15; checksum ok/);
+  // A damaged byte: the totals print, and the exit code says so.
+  const damaged = Buffer.from(fixture('valkey-9.1.2.rdb'));
+  damaged[damaged.length - 20] ^= 1;
+  const tmp = path.join(require('node:os').tmpdir(), 'kvs-damaged-' + process.pid + '.rdb');
+  fs.writeFileSync(tmp, damaged);
+  r = run([tmp]);
+  fs.unlinkSync(tmp);
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /Checksum: mismatch/);
+  r = run([path.join(__dirname, 'fixtures', 'redis-8.10.2.rdb'), '--top', '-5']);
+  assert.equal(r.status, 2);
+  r = run(['/no/such/file.rdb']);
+  assert.match(r.stderr, /No such file/);
+});

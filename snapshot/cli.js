@@ -72,7 +72,11 @@ function bytes(n) {
   if (n < 1073741824) return (n / 1048576).toFixed(1) + ' MB';
   return (n / 1073741824).toFixed(2) + ' GB';
 }
-function csv(s) { return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+// Spreadsheets run a cell that starts with = + - or @ as a formula, so
+// such a key gets a ' in front, the usual guard.
+function csv(s) { if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+// A whole number from an option, or NaN when it isn't one.
+const number = (s) => (/^\d+$/.test(s || '') ? parseInt(s, 10) : NaN);
 // A key for CSV: its text when it is valid UTF-8, otherwise redis-cli's quoted form.
 function csvKey(b) { try { return csv(strict.decode(b)); } catch (e) { return csv(R.showBytes(b)); } }
 
@@ -108,29 +112,38 @@ function jsonValue(e) {
   return null;
 }
 
-function main(argv) {
+async function main(argv) {
   let file = null, mode = 'summary', keyName = null, db = 0, top = 20, json = false, dump = null;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--help' || a === '-h') { console.log(HELP); return 0; }
     else if (a === '--keys') mode = 'keys';
     else if (a === '--json-lines') mode = 'lines';
-    else if (a === '--key') { mode = 'key'; keyName = argv[++i]; }
-    else if (a === '--db') db = parseInt(argv[++i], 10);
-    else if (a === '--top') top = parseInt(argv[++i], 10);
     else if (a === '--json') json = true;
-    else if (a === '--dump') dump = argv[++i];
+    else if (a === '--key' || a === '--db' || a === '--top' || a === '--dump') {
+      if (i + 1 >= argv.length) { console.error(a + ' needs a value after it. Try --help.'); return 2; }
+      const v = argv[++i];
+      if (a === '--key') { mode = 'key'; keyName = v; }
+      else if (a === '--dump') dump = v;
+      else if (a === '--db') db = number(v);
+      else top = number(v);
+    }
     else if (a.startsWith('--')) { console.error('Unknown option ' + a + '. Try --help.'); return 2; }
     else file = a;
   }
+  if (!(db >= 0)) { console.error('--db needs a database number.'); return 2; }
+  if (!(top >= 1)) { console.error('--top needs a number of 1 or more.'); return 2; }
 
   if (dump) {
     const raw = fs.readFileSync(dump === '-' ? 0 : dump);
+    // redis-cli's quoted form is printable ASCII in quotes, and hex is hex
+    // digits. Anything else, such as what redis-cli --raw printed, is the
+    // payload's own bytes.
     const asText = raw.toString('latin1');
-    const looksText = /^[\s0-9a-fA-Fx"\\]*$/.test(asText.slice(0, 4000)) || /^\s*"/.test(asText);
+    const looksText = /^\s*"[\x20-\x7e]*"\s*$/.test(asText) || /^\s*(0x)?[0-9a-fA-F\s]+$/.test(asText);
     const payload = looksText ? R.bytesFromText(raw.toString('utf8')).bytes : new Uint8Array(raw);
     const d = R.readDump(payload);
-    console.log(`${d.type}, ${d.encoding}${d.detail ? ' (' + d.detail + ')' : ''}, ${fmt(d.length)} ${d.type === 'string' ? 'bytes' : 'elements'}; RDB version ${d.version}; checksum ${d.checksum}`);
+    console.log(`${d.type}, ${d.encoding}${d.detail ? ' (' + d.detail + ')' : ''}, ${d.type === 'string' ? plural(d.length, 'byte', 'bytes') : plural(d.length, 'element', 'elements')}; RDB version ${d.version}; checksum ${d.checksum}`);
     if (json) console.log(JSON.stringify(jsonValue(d)));
     else console.log(R.show(d, d.value, 1e9));
     return d.checksum === 'mismatch' ? 1 : 0;
@@ -142,7 +155,16 @@ function main(argv) {
   let info = null;
   const target = keyName === null ? null : Buffer.from(keyName);
   let found = null, nowSet = false;
-  if (mode === 'keys') console.log('db,key,type,encoding,elements,bytes,expires');
+  // Lines for standard output, written after each step as fast as the
+  // reader takes them, so a pipe never makes them pile up in memory.
+  const out = process.stdout;
+  let pending = mode === 'keys' ? ['db,key,type,encoding,elements,bytes,expires\n'] : [];
+  async function flush() {
+    if (!pending.length) return;
+    const ok = out.write(pending.join(''));
+    pending = [];
+    if (!ok) await new Promise((done) => out.once('drain', done));
+  }
   const p = R.parser(src, {
     values: mode === 'lines',
     onKey(e) {
@@ -150,13 +172,13 @@ function main(argv) {
         if (!nowSet) { nowSet = true; const ct = R.auxValue(p.info, 'ctime'); if (ct) sum.setNow(Number(ct) * 1000); }
         sum.add(e);
       } else if (mode === 'keys') {
-        console.log([e.db, csvKey(e.key), e.type, csv(e.encoding), e.length === null ? '' : e.length, e.size, e.expire === null ? '' : R.fmtTime(e.expire)].join(','));
+        pending.push([e.db, csvKey(e.key), e.type, csv(e.encoding), e.length === null ? '' : e.length, e.size, e.expire === null ? '' : csv(R.fmtTime(e.expire))].join(',') + '\n');
       } else if (mode === 'lines') {
         const o = { db: e.db, key: jsonBytes(e.key), type: e.type };
         if (e.expire !== null) o.expire = jsonNumber(e.expire);
         o.value = jsonValue(e);
         if (e.module) o.module = e.module;
-        process.stdout.write(JSON.stringify(o) + '\n');
+        pending.push(JSON.stringify(o) + '\n');
       } else if (mode === 'key' && e.db === db && Buffer.compare(Buffer.from(e.key), target) === 0) {
         found = e;
       }
@@ -170,34 +192,39 @@ function main(argv) {
     again.skip(found.valueOffset);
     const value = R.readValueFrom(again, found, p.info);
     again.close();
-    console.log(`${found.type}, ${found.encoding}${found.detail ? ' (' + found.detail + ')' : ''}, ${fmt(found.length)} ${found.type === 'string' ? 'bytes' : 'elements'}, ${fmt(found.size)} bytes in the file${found.expire !== null ? ', expires ' + R.fmtTime(found.expire) : ''}`);
+    console.log(`${found.type}, ${found.encoding}${found.detail ? ' (' + found.detail + ')' : ''}, ${found.type === 'string' ? plural(found.length, 'byte', 'bytes') : plural(found.length, 'element', 'elements')}, ${plural(found.size, 'byte', 'bytes')} in the file${found.expire !== null ? ', expires ' + R.fmtTime(found.expire) : ''}`);
     console.log(R.show(found, value, 1e9));
     return 0;
   }
   while (!p.done) {
     if (src.atEnd()) throw new R.RdbError('The file ends before its end marker', src.pos);
-    p.step(100000);
+    p.step(mode === 'lines' ? 500 : mode === 'keys' ? 10000 : 100000);
+    await flush();
   }
   info = p.info;
   src.close();
-  if (mode !== 'summary') return 0;
+  const damaged = info.checksum && info.checksum.status === 'mismatch';
+  if (mode !== 'summary') {
+    if (damaged) console.error('The checksum at the end of the file does not match, so the file may be damaged.');
+    return damaged ? 1 : 0;
+  }
 
   const s = sum.result();
   if (json) {
-    const out = Object.assign({}, s, {
+    const totals = Object.assign({}, s, {
       file: { name: file, bytes: src.size, magic: info.magic, version: info.version, checksum: info.checksum, trailing: info.trailing },
       aux: info.aux, functions: info.functions.map(R.functionName), moduleAux: info.moduleAux,
       largest: s.largest.map((x) => Object.assign({}, x, { key: R.showKey(x.key) })),
       longest: s.longest.map((x) => Object.assign({}, x, { key: R.showKey(x.key) }))
     });
-    console.log(JSON.stringify(out, (k, v) => (typeof v === 'bigint' ? v.toString() : v), 2));
-    return 0;
+    console.log(JSON.stringify(totals, (k, v) => (typeof v === 'bigint' ? v.toString() : v), 2));
+    return damaged ? 1 : 0;
   }
   const ver = R.auxValue(info, 'valkey-ver') ? 'Valkey ' + R.auxValue(info, 'valkey-ver') : R.auxValue(info, 'redis-ver') ? 'Redis ' + R.auxValue(info, 'redis-ver') : 'unknown server';
   const ctime = R.auxValue(info, 'ctime');
   console.log(`${file}: ${bytes(src.size)}, RDB version ${info.version}, written by ${ver}${ctime ? ' on ' + R.fmtTime(Number(ctime) * 1000) : ''}`);
   console.log(`Checksum: ${info.checksum ? info.checksum.status : 'none in this version'}${info.trailing ? '. ' + fmt(info.trailing) + ' bytes follow the snapshot (an AOF file with an RDB preamble keeps its commands there)' : ''}`);
-  console.log(`\n${fmt(s.keys)} keys, ${bytes(s.bytes)} of keys and values, ${fmt(s.expiring)} with an expiry${s.expired ? ' (' + fmt(s.expired) + ' already expired when the file was written)' : ''}`);
+  console.log(`\n${plural(s.keys, 'key', 'keys')}, ${bytes(s.bytes)} of keys and values, ${fmt(s.expiring)} with an expiry${s.expired ? ' (' + fmt(s.expired) + ' already expired when the file was written)' : ''}`);
   console.log('\nBy type');
   for (const [t, v] of Object.entries(s.byType).sort((a, b) => b[1].bytes - a[1].bytes)) {
     console.log(`  ${t.padEnd(8)} ${plural(v.keys, 'key ', 'keys').padStart(17)} ${bytes(v.bytes).padStart(10)}${t === 'string' || t === 'module' ? '' : '  ' + plural(v.elements, 'element', 'elements')}`);
@@ -210,7 +237,7 @@ function main(argv) {
   }
   console.log(`\nBiggest keys`);
   for (const x of s.largest.slice(0, top)) console.log(`  ${bytes(x.size).padStart(10)}  ${x.type.padEnd(7)} ${x.length === null ? ''.padStart(19) : (fmt(x.length).padStart(10) + ' ' + (x.type === 'string' ? 'bytes   ' : 'elements'))}  db${x.db} ${R.showKey(x.key)}`);
-  console.log(`\nPrefixes (${fmt(s.prefixCount)} in all)`);
+  console.log(s.prefixOverflow ? `\nPrefixes (more than ${fmt(s.prefixCount)}; ${plural(s.prefixOverflow, 'key', 'keys')} with ${bytes(s.prefixOverflowBytes)} under the rest aren't listed)` : `\nPrefixes (${fmt(s.prefixCount)} in all)`);
   for (const x of s.prefixes.slice(0, top)) console.log(`  ${plural(x.keys, 'key ', 'keys').padStart(17)} ${bytes(x.bytes).padStart(10)}  ${x.prefix}`);
   if (s.expiring && s.snapshotTime) {
     console.log('\nTime left on expiring keys, from when the file was written');
@@ -223,14 +250,12 @@ function main(argv) {
   if (info.functions.length) console.log('\nFunction libraries: ' + info.functions.map(R.functionName).join(', '));
   const slotAux = info.aux.filter((a) => a[0] === 'slot-info').length;
   if (info.slotInfo || slotAux) console.log(`\nCluster: sizes recorded for ${fmt(info.slotInfo || slotAux)} slots`);
-  return 0;
+  return damaged ? 1 : 0;
 }
 
 // Stop quietly when the output is piped into something like head that closes early.
 process.stdout.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); throw e; });
-try {
-  process.exitCode = main(process.argv.slice(2));
-} catch (e) {
-  console.error(e instanceof R.RdbError ? 'Could not read the file: ' + e.message : e.stack);
+main(process.argv.slice(2)).then((code) => { process.exitCode = code; }, (e) => {
+  console.error(e.code === 'ENOENT' ? 'No such file: ' + e.path : e.code === 'EISDIR' ? 'That is a folder, not a file.' : 'Could not read the file: ' + e.message);
   process.exitCode = 2;
-}
+});

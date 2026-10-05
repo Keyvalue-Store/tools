@@ -86,7 +86,13 @@
 
   // ---- LZF, the compression RDB uses for strings ----
 
+  // A back-reference of 3 bytes makes at most 264, so LZF can't grow data
+  // more than 88 times. A length past that, or past 1 GB, is damage, and
+  // refusing it early keeps a small crafted file from taking all memory.
+  const MAX_VALUE = 1024 * 1024 * 1024;
   function lzf(input, outLen) {
+    if (outLen > input.length * 88 + 64) throw new RdbError('Compressed data says it holds ' + outLen.toLocaleString('en-US') + ' bytes, more than ' + input.length.toLocaleString('en-US') + ' compressed bytes can');
+    if (outLen > MAX_VALUE) throw new RdbError('A compressed value of ' + outLen.toLocaleString('en-US') + ' bytes is more than this tool opens');
     const out = new Uint8Array(outLen);
     let ip = 0, op = 0;
     while (ip < input.length) {
@@ -132,12 +138,13 @@
   const readLenBig = (src) => lenFrom(src, src.byte(), true);
 
   // A string. Returns { bytes, length, enc } where enc is 'raw', 'int' or
-  // 'lzf'. With skipLzf, compressed strings are skipped rather than
-  // decompressed, and bytes is null.
-  function readStringInfo(src, skipLzf) {
+  // 'lzf'. With skip, the bytes of raw and compressed strings are passed
+  // over rather than read, and bytes is null.
+  function readStringInfo(src, skip) {
     const b = src.byte();
     if (b >> 6 !== 3) {
       const n = lenFrom(src, b, false);
+      if (skip) { src.skip(n); return { bytes: null, length: n, enc: 'raw' }; }
       return { bytes: src.bytes(n), length: n, enc: 'raw' };
     }
     const enc = b & 0x3f;
@@ -147,8 +154,8 @@
     else if (enc === 2) { const x = src.bytes(4); v = view(x).getInt32(0, true); }
     else if (enc === 3) {
       const clen = readLen(src), ulen = readLen(src);
-      const c = src.bytes(clen);
-      return { bytes: skipLzf ? null : lzf(c, ulen), length: ulen, enc: 'lzf', compressed: clen };
+      if (skip) { src.skip(clen); return { bytes: null, length: ulen, enc: 'lzf', compressed: clen }; }
+      return { bytes: lzf(src.bytes(clen), ulen), length: ulen, enc: 'lzf', compressed: clen };
     } else throw new RdbError('Unknown string encoding ' + enc, src.pos - 1);
     const bytes = encoder.encode(String(v));
     return { bytes: bytes, length: bytes.length, enc: 'int' };
@@ -192,7 +199,24 @@
     }
     return out;
   }
-  const ziplistCount = (zl) => { const n = zl.length >= 10 ? zl[8] | (zl[9] << 8) : 0; return n < 65535 ? n : ziplist(zl).length; };
+  // The header holds the count, or 65535 when there are more; then the
+  // entries are counted one by one without building them.
+  function ziplistCount(zl) {
+    const n = zl.length >= 10 ? zl[8] | (zl[9] << 8) : 0;
+    if (n < 65535) return n;
+    let p = 10, c = 0;
+    while (p < zl.length && zl[p] !== 0xff) {
+      p += zl[p] < 254 ? 1 : 5;
+      const e = zl[p];
+      if (e >> 6 === 0) p += 1 + (e & 0x3f);
+      else if (e >> 6 === 1) p += 2 + (((e & 0x3f) << 8) | zl[p + 1]);
+      else if (e >> 6 === 2) p += 5 + u32be(zl, p + 1);
+      else p += e === 0xc0 ? 3 : e === 0xd0 ? 5 : e === 0xe0 ? 9 : e === 0xf0 ? 4 : e === 0xfe ? 2 : 1;
+      if (p > zl.length) throw new RdbError('A ziplist entry runs past its end');
+      c++;
+    }
+    return c;
+  }
 
   function listpack(lp) {
     if (lp.length < 7) throw new RdbError('A listpack is too short');
@@ -217,7 +241,21 @@
     }
     return out;
   }
-  const listpackCount = (lp) => { const n = lp.length >= 6 ? lp[4] | (lp[5] << 8) : 0; return n < 65535 ? n : listpack(lp).length; };
+  function listpackCount(lp) {
+    const n = lp.length >= 6 ? lp[4] | (lp[5] << 8) : 0;
+    if (n < 65535) return n;
+    let p = 6, c = 0;
+    while (p < lp.length && lp[p] !== 0xff) {
+      const e = lp[p];
+      const len = (e & 0x80) === 0 ? 1 : (e & 0xc0) === 0x80 ? 1 + (e & 0x3f) : (e & 0xe0) === 0xc0 ? 2 : (e & 0xf0) === 0xe0 ? 2 + (((e & 0x0f) << 8) | lp[p + 1])
+        : e === 0xf0 ? 5 + view(lp).getUint32(p + 1, true) : e === 0xf1 ? 3 : e === 0xf2 ? 4 : e === 0xf3 ? 5 : e === 0xf4 ? 9 : -1;
+      if (len < 0) throw new RdbError('Unknown listpack entry encoding 0x' + e.toString(16));
+      p += len + (len < 128 ? 1 : len < 16384 ? 2 : len < 2097152 ? 3 : len < 268435456 ? 4 : 5);
+      if (p > lp.length) throw new RdbError('A listpack entry runs past its end');
+      c++;
+    }
+    return c;
+  }
 
   function intset(b) {
     if (b.length < 8) throw new RdbError('An intset is too short');
@@ -313,18 +351,29 @@
     if (key.length !== 16) throw new RdbError('A stream node key is not 16 bytes');
     const ms = u64be(key, 0), seq = u64be(key, 8);
     const items = listpack(lp);
-    const num = (x) => Number(x);
-    let i = 0;
-    i += 2;                                                      // count, deleted
+    const bad = () => { throw new RdbError('A stream listpack is damaged'); };
+    const num = (x) => { if (x === undefined) bad(); return Number(x); };
+    const int = (x) => { if (x === undefined) bad(); try { return asInt(x); } catch (e) { return bad(); } };
+    let i = 2;                                                   // count, deleted
     const nf = num(items[i++]);
+    if (!(nf >= 0) || i + nf + 1 > items.length) bad();
     const master = items.slice(i, i + nf); i += nf;
     i++;                                                         // master terminator
     while (i < items.length) {
+      if (i + 3 > items.length) bad();
       const flags = num(items[i++]);
-      const id = (ms + asInt(items[i++])) + '-' + (seq + asInt(items[i++]));
+      // Offsets from the node's ID, added the way the server adds them, in 64 bits.
+      const id = BigInt.asUintN(64, ms + int(items[i++])) + '-' + BigInt.asUintN(64, seq + int(items[i++]));
       const fields = [];
-      if (flags & 2) { for (let k = 0; k < nf; k++) fields.push([master[k], asBytes(items[i++])]); }
-      else { const n = num(items[i++]); for (let k = 0; k < n; k++) { fields.push([asBytes(items[i]), asBytes(items[i + 1])]); i += 2; } }
+      if (flags & 2) {
+        if (i + nf > items.length) bad();
+        for (let k = 0; k < nf; k++) fields.push([master[k], asBytes(items[i++])]);
+      } else {
+        const n = num(items[i++]);
+        if (!(n >= 0) || i + n * 2 > items.length) bad();
+        for (let k = 0; k < n; k++) { fields.push([asBytes(items[i]), asBytes(items[i + 1])]); i += 2; }
+      }
+      if (i >= items.length) bad();
       i++;                                                       // lp-count
       if (!(flags & 1) && out) out.push([id, fields.map((f) => [asBytes(f[0]), f[1]])]);
     }
@@ -521,7 +570,7 @@
             else if (tag === 1) v = small(view(src.bytes(8)).getBigInt64(0, true));
             else if (tag === 2) v = readBinaryDouble(src);
             else throw new RdbError('Unknown array element tag ' + tag, src.pos);
-            if (want) out.push([idx, v]);
+            if (want) out.push(tag === 2 ? [idx, v, 'double'] : [idx, v]);
           }
           return { value: out, length: count, insertIndex: insertIndex };
         }
@@ -813,7 +862,12 @@
     if (x === -Infinity) return '-inf';
     return String(x);
   }
-  function fmtTime(ms) { return ms === null || ms === undefined ? '' : new Date(Number(ms)).toISOString().replace('.000Z', 'Z'); }
+  function fmtTime(ms) {
+    if (ms === null || ms === undefined) return '';
+    const n = Number(ms);
+    if (!(Math.abs(n) <= 8.64e15)) return String(ms) + ' ms after 1970 (past the year 275760)';
+    return new Date(n).toISOString().replace('.000Z', 'Z');
+  }
 
   // A decoded value in redis-cli's style, at most max elements.
   function show(entry, value, max) {
@@ -833,7 +887,7 @@
       value.slice(0, max).forEach((v, i) => lines.push((i + 1) + ') ' + showBytes(v[0]) + ' => ' + showBytes(v[1]) + (v[2] ? '  (expires ' + fmtTime(v[2]) + ')' : '')));
       more(value.length);
     } else if (type === 'array') {
-      value.slice(0, max).forEach((v) => lines.push('[' + v[0] + '] ' + (v[1] instanceof Uint8Array ? showBytes(v[1]) : typeof v[1] === 'number' && !Number.isInteger(v[1]) ? '(double) ' + v[1] : '(integer) ' + v[1])));
+      value.slice(0, max).forEach((v) => lines.push('[' + v[0] + '] ' + (v[1] instanceof Uint8Array ? showBytes(v[1]) : v[2] === 'double' || (typeof v[1] === 'number' && !Number.isInteger(v[1])) ? '(double) ' + (Number.isInteger(v[1]) ? v[1].toFixed(1) : v[1]) : '(integer) ' + v[1])));
       more(value.length);
     } else if (type === 'stream') {
       const s = value;
@@ -860,7 +914,7 @@
     const s = {
       keys: 0, bytes: 0, elements: 0, byType: {}, byEncoding: {}, byDb: {}, expiring: 0, expired: 0,
       ttl: { 'under 1 minute': 0, 'under 1 hour': 0, 'under 1 day': 0, 'under 1 week': 0, 'under 30 days': 0, 'longer': 0 },
-      largest: [], longest: [], prefixes: new Map(), prefixOverflow: 0, modules: {}, fieldTtls: 0, idle: null, freq: null,
+      largest: [], longest: [], prefixes: new Map(), prefixOverflow: 0, prefixOverflowBytes: 0, modules: {}, fieldTtls: 0, idle: null, freq: null,
       streamEntries: 0, streamGroups: 0, streamPending: 0
     };
     let now = opts.snapshotTime || null;
@@ -904,7 +958,7 @@
         const p = s.prefixes.get(prefix);
         if (p) { p.keys++; p.bytes += e.size; }
         else if (s.prefixes.size < 100000) s.prefixes.set(prefix, { keys: 1, bytes: e.size });
-        else s.prefixOverflow++;
+        else { s.prefixOverflow++; s.prefixOverflowBytes += e.size; }
         if (e.module) s.modules[e.module] = (s.modules[e.module] || 0) + 1;
         if (e.fieldTtls) s.fieldTtls += e.fieldTtls;
         if (e.idle !== null) {
