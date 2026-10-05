@@ -1,0 +1,122 @@
+{
+  "server": "valkey",
+  "version": "9.1.2",
+  "when": "2026-10-05T13:22:22.539Z",
+  "runs": [
+    {
+      "name": "CSV to hashes with an expiry",
+      "records": 2000,
+      "commands": 4000,
+      "bytes": 372495,
+      "pipe": {
+        "errors": 0,
+        "replies": 4000,
+        "output": "errors: 0, replies: 4000"
+      },
+      "mismatches": 0,
+      "ttlChecked": 200,
+      "ttlBad": 0
+    },
+    {
+      "name": "CSV to lists, loaded twice with each key cleared first",
+      "records": 3000,
+      "keys": 150,
+      "commands": 3150,
+      "pipe": [
+        {
+          "errors": 0,
+          "replies": 3150,
+          "output": "errors: 0, replies: 3150"
+        },
+        {
+          "errors": 0,
+          "replies": 3150,
+          "output": "errors: 0, replies: 3150"
+        }
+      ],
+      "mismatches": 0
+    },
+    {
+      "name": "JSON Lines to sets",
+      "records": 2500,
+      "keys": 300,
+      "commands": 2500,
+      "pipe": {
+        "errors": 0,
+        "replies": 2500,
+        "output": "errors: 0, replies: 2500"
+      },
+      "mismatches": 0
+    },
+    {
+      "name": "CSV to sorted sets",
+      "records": 2000,
+      "skipped": 113,
+      "expectedSkipped": 113,
+      "commands": 1887,
+      "pipe": {
+        "errors": 0,
+        "replies": 1887,
+        "output": "errors: 0, replies: 1887"
+      },
+      "mismatches": 0
+    },
+    {
+      "name": "JSON to strings, whole record as the value",
+      "records": 1500,
+      "commands": 1500,
+      "pipe": {
+        "errors": 0,
+        "replies": 1500,
+        "output": "errors: 0, replies: 1500"
+      },
+      "mismatches": 0
+    },
+    {
+      "name": "Command lines with quotes, escapes and binary bytes",
+      "commands": 1000,
+      "pipe": {
+        "errors": 0,
+        "replies": 1000,
+        "output": "errors: 0, replies: 1000"
+      },
+      "mismatches": 0
+    }
+  ],
+  "decodeReplies": {
+    "RESP2": {
+      "replies": 39,
+      "mismatches": 0,
+      "types": [
+        "array",
+        "bulk",
+        "error",
+        "integer",
+        "null",
+        "simple"
+      ]
+    },
+    "RESP3": {
+      "replies": 39,
+      "mismatches": 0,
+      "types": [
+        "array",
+        "bignum",
+        "boolean",
+        "bulk",
+        "double",
+        "error",
+        "integer",
+        "map",
+        "null",
+        "set",
+        "simple",
+        "verbatim"
+      ]
+    }
+  },
+  "decodeFiles": {
+    "files": 6,
+    "commands": 14037
+  }
+}

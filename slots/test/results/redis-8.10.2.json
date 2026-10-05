@@ -1,0 +1,449 @@
+{
+  "server": "redis",
+  "when": "2026-10-05T13:05:36.175Z",
+  "version": "8.10.2",
+  "keyslot": {
+    "keys": 10029,
+    "mismatches": 0,
+    "byCategory": {
+      "edge": {
+        "keys": 29,
+        "mismatches": 0
+      },
+      "ascii": {
+        "keys": 4000,
+        "mismatches": 0
+      },
+      "tagged": {
+        "keys": 2500,
+        "mismatches": 0
+      },
+      "utf8": {
+        "keys": 2000,
+        "mismatches": 0
+      },
+      "binary": {
+        "keys": 1500,
+        "mismatches": 0
+      }
+    }
+  },
+  "commandsUsed": [
+    "BITOP",
+    "BLMOVE",
+    "BLMOVEM",
+    "BLMPOP",
+    "BLPOP",
+    "BRPOP",
+    "BZMPOP",
+    "BZPOPMAX",
+    "BZPOPMIN",
+    "COPY",
+    "DEL",
+    "EVAL",
+    "EVALSHA",
+    "EVAL_RO",
+    "EXISTS",
+    "GEORADIUS",
+    "GEOSEARCHSTORE",
+    "LCS",
+    "LMOVE",
+    "LMOVEM",
+    "LMPOP",
+    "MGET",
+    "MSET",
+    "MSETEX",
+    "MSETNX",
+    "PFCOUNT",
+    "PFMERGE",
+    "RENAME",
+    "RENAMENX",
+    "RPOPLPUSH",
+    "SDIFF",
+    "SDIFFCARD",
+    "SDIFFSTORE",
+    "SINTERCARD",
+    "SINTERSTORE",
+    "SMOVE",
+    "SORT",
+    "SUNION",
+    "SUNIONCARD",
+    "SUNIONSTORE",
+    "TOUCH",
+    "UNLINK",
+    "XREAD",
+    "XREADGROUP",
+    "ZDIFF",
+    "ZDIFFSTORE",
+    "ZINTER",
+    "ZINTERCARD",
+    "ZINTERSTORE",
+    "ZMPOP",
+    "ZRANGESTORE",
+    "ZUNION",
+    "ZUNIONSTORE"
+  ],
+  "getkeys": {
+    "commands": 822,
+    "mismatches": 0
+  },
+  "multiKeyCommands": {
+    "server": [
+      "BITOP",
+      "BLMOVE",
+      "BLMOVEM",
+      "BLMPOP",
+      "BLPOP",
+      "BRPOP",
+      "BRPOPLPUSH",
+      "BZMPOP",
+      "BZPOPMAX",
+      "BZPOPMIN",
+      "COPY",
+      "DEL",
+      "EVAL",
+      "EVALSHA",
+      "EVALSHA_RO",
+      "EVAL_RO",
+      "EXISTS",
+      "FCALL",
+      "FCALL_RO",
+      "GEORADIUS",
+      "GEORADIUSBYMEMBER",
+      "GEOSEARCHSTORE",
+      "LCS",
+      "LMOVE",
+      "LMOVEM",
+      "LMPOP",
+      "MGET",
+      "MIGRATE",
+      "MSET",
+      "MSETEX",
+      "MSETNX",
+      "PFCOUNT",
+      "PFMERGE",
+      "RENAME",
+      "RENAMENX",
+      "RPOPLPUSH",
+      "SDIFF",
+      "SDIFFCARD",
+      "SDIFFSTORE",
+      "SINTER",
+      "SINTERCARD",
+      "SINTERSTORE",
+      "SMOVE",
+      "SORT",
+      "SORT_RO",
+      "SSUBSCRIBE",
+      "SUNION",
+      "SUNIONCARD",
+      "SUNIONSTORE",
+      "SUNSUBSCRIBE",
+      "TOUCH",
+      "UNLINK",
+      "WATCH",
+      "XREAD",
+      "XREADGROUP",
+      "ZDIFF",
+      "ZDIFFSTORE",
+      "ZINTER",
+      "ZINTERCARD",
+      "ZINTERSTORE",
+      "ZMPOP",
+      "ZRANGESTORE",
+      "ZUNION",
+      "ZUNIONSTORE"
+    ],
+    "missingFromTool": []
+  },
+  "clusterNodes": {
+    "primaries": 3,
+    "ranges": [
+      "0-5460",
+      "5461-10922",
+      "10923-16383"
+    ],
+    "evenSplit": [
+      "0-5460",
+      "5461-10922",
+      "10923-16383"
+    ],
+    "matchesEvenSplit": true
+  },
+  "ssubscribe": {
+    "checks": 40,
+    "mismatches": 0
+  },
+  "crossslot": {
+    "commands": 742,
+    "serverCrossSlot": 383,
+    "mismatches": 0,
+    "byCommand": {
+      "MGET": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "DEL": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "UNLINK": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "EXISTS": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "TOUCH": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "MSET": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "MSETNX": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "SUNION": {
+        "sent": 14,
+        "crossslot": 5,
+        "agree": 14
+      },
+      "SINTERSTORE": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "SDIFF": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "PFCOUNT": {
+        "sent": 14,
+        "crossslot": 5,
+        "agree": 14
+      },
+      "PFMERGE": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "RENAME": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "RENAMENX": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "RPOPLPUSH": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "LMOVE": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "BLMOVE": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "SMOVE": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "COPY": {
+        "sent": 14,
+        "crossslot": 4,
+        "agree": 14
+      },
+      "LCS": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "BLPOP": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "BRPOP": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "BZPOPMIN": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "BZPOPMAX": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "ZUNION": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "ZINTER": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "ZDIFF": {
+        "sent": 14,
+        "crossslot": 10,
+        "agree": 14
+      },
+      "ZINTERCARD": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "SINTERCARD": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "LMPOP": {
+        "sent": 14,
+        "crossslot": 3,
+        "agree": 14
+      },
+      "ZMPOP": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "BLMPOP": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "BZMPOP": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "ZUNIONSTORE": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "ZINTERSTORE": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "ZDIFFSTORE": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "EVAL": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "EVAL_RO": {
+        "sent": 14,
+        "crossslot": 11,
+        "agree": 14
+      },
+      "EVALSHA": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      },
+      "XREAD": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "XREADGROUP": {
+        "sent": 14,
+        "crossslot": 3,
+        "agree": 14
+      },
+      "BITOP": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "SORT": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "GEORADIUS": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "GEOSEARCHSTORE": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "ZRANGESTORE": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "MSETEX": {
+        "sent": 14,
+        "crossslot": 9,
+        "agree": 14
+      },
+      "LMOVEM": {
+        "sent": 14,
+        "crossslot": 7,
+        "agree": 14
+      },
+      "BLMOVEM": {
+        "sent": 14,
+        "crossslot": 10,
+        "agree": 14
+      },
+      "SDIFFCARD": {
+        "sent": 14,
+        "crossslot": 5,
+        "agree": 14
+      },
+      "SUNIONCARD": {
+        "sent": 14,
+        "crossslot": 8,
+        "agree": 14
+      },
+      "SUNIONSTORE": {
+        "sent": 14,
+        "crossslot": 4,
+        "agree": 14
+      },
+      "SDIFFSTORE": {
+        "sent": 14,
+        "crossslot": 6,
+        "agree": 14
+      }
+    }
+  }
+}

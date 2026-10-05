@@ -1,0 +1,34 @@
+MSETEX routing in a cluster: Valkey 9.1.2 and Redis 8.10.2, built from source, October 2026.
+Each server ran a three-primary cluster made with --cluster create:
+slots 0-5460 on the first node, 5461-10922 on the second, 10923-16383 on the third.
+
+== Valkey 9.1.2 (nodes on ports 7201, 7202, 7203)
+$ valkey-cli -p 7201 CLUSTER KEYSLOT mx:alpha  ->  9983    (slot 9983 belongs to 7202)
+$ valkey-cli -p 7201 CLUSTER KEYSLOT mx:beta   ->  10165   (slot 10165 belongs to 7202)
+$ valkey-cli -p 7201 MSETEX 2 mx:alpha v1 mx:beta v2 EX 600
+1
+$ valkey-cli -c -p 7201 GET mx:alpha   (follows redirects to the owner)
+""
+$ valkey-cli -c -p 7201 GET mx:beta
+""
+node 7201: keys in slot 9983 = 1, keys in slot 10165 = 1
+node 7202: keys in slot 9983 = 0, keys in slot 10165 = 0
+node 7203: keys in slot 9983 = 0, keys in slot 10165 = 0
+$ valkey-cli -p 7201 MSET mx:alpha v1 mx:beta v2   (for comparison)
+CROSSSLOT Keys in request don't hash to the same slot
+
+
+== Redis 8.10.2 (nodes on ports 7211, 7212, 7213)
+$ redis-cli -p 7211 MSETEX 2 mx:alpha v1 mx:beta v2 EX 600
+CROSSSLOT Keys in request don't hash to the same slot
+
+$ redis-cli -p 7211 MSETEX 1 mx:beta v2 EX 600
+MOVED 10165 127.0.0.1:7212
+
+
+Reading: Valkey 9.1.2 answered 1 (all keys set) on a node that owns neither slot,
+stored both keys there, and a GET through normal routing, which goes to 7202, found neither.
+Redis 8.10.2 refused the same command with CROSSSLOT, and redirected the one-key form with MOVED.
+Cause in the Valkey 9.1.2 source: src/commands/msetex.json declares MSETEX's keys with a
+keynum key spec but no get_keys_function, so getKeysFromCommand(), which cluster routing
+uses, falls back to the legacy key range (first key 0) and finds no keys.

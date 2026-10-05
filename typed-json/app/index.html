@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data: blob:; media-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'; manifest-src 'none'">
+<title>Typed JSON Converter | KeyValueStore.com</title>
+<meta name="description" content="Convert DynamoDB JSON to plain JSON and back in your browser, with every digit of every number kept. Reads Scan and Query output, exports to S3 and stream records.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/typed-json/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='11' cy='16' r='5' fill='none' stroke='%2350C4CC' stroke-width='3'/%3E%3Cpath d='M16 16h11M23 16v5M27 16v4' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../common/tool.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Typed JSON Converter</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/typed-json/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-conv">
+    <h2 id="h-conv">Convert DynamoDB JSON</h2>
+    <p class="lede">Paste typed JSON, such as the output of <code>aws dynamodb scan</code>, to get plain JSON. Paste plain JSON to get typed JSON you can send to DynamoDB. The direction is picked for you.</p>
+
+    <div class="row" role="radiogroup" aria-label="Direction">
+      <label class="check"><input type="radio" name="dir" value="auto" checked> Pick the direction for me</label>
+      <label class="check"><input type="radio" name="dir" value="toPlain"> Typed to plain</label>
+      <label class="check"><input type="radio" name="dir" value="toTyped"> Plain to typed</label>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="field">
+          <label for="in">From</label>
+          <textarea id="in" class="tall" spellcheck="false" placeholder='{"Items": [{"pk": {"S": "user#42"}, "visits": {"N": "17"}}]}'></textarea>
+        </div>
+        <div class="row">
+          <label class="btn" for="in-file">Load a file</label>
+          <input type="file" id="in-file" class="file-input" accept=".json,.jsonl,.txt,application/json">
+          <button type="button" class="btn" id="ex-typed">Typed example</button>
+          <button type="button" class="btn" id="ex-plain">Plain example</button>
+          <button type="button" class="btn" id="clear">Clear</button>
+        </div>
+      </div>
+      <div>
+        <div class="field">
+          <label for="out">To</label>
+          <textarea id="out" class="tall" spellcheck="false" readonly placeholder="The converted JSON appears here."></textarea>
+        </div>
+        <div class="row">
+          <button type="button" class="btn primary" id="copy" disabled>Copy</button>
+          <button type="button" class="btn" id="save" disabled>Download</button>
+          <label class="check"><input type="checkbox" id="compact"> One line per item</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="status" class="result" aria-live="polite"></div>
+
+    <h3>When the result is typed JSON</h3>
+    <div class="row">
+      <div class="field">
+        <label for="sets">Lists of unique values</label>
+        <select id="sets">
+          <option value="">Stay lists (L)</option>
+          <option value="strings">Strings become string sets (SS)</option>
+          <option value="numbers">Numbers become number sets (NS)</option>
+          <option value="both">Both become sets</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="output">Write</label>
+        <select id="output">
+          <option value="plain">Items</option>
+          <option value="batch">batch-write-item requests, 25 items each</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="table">Table name</label>
+        <input type="text" id="table" class="mono" value="my-table" spellcheck="false" style="width: 14em">
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser. This page tells the browser to block any network request it might make, so nothing you paste or load leaves it.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/typed-json">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../typedjson.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

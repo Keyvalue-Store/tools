@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data: blob:; media-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'; manifest-src 'none'">
+<title>Consistent Hashing Playground | KeyValueStore.com</title>
+<meta name="description" content="Compare modulo hashing, a hash ring with virtual nodes, rendezvous hashing and jump hash: add or remove a node and see how many keys move and how even the load stays.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/ring/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='11' cy='16' r='5' fill='none' stroke='%2350C4CC' stroke-width='3'/%3E%3Cpath d='M16 16h11M23 16v5M27 16v4' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../common/tool.css">
+<style>
+  .ring-wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (min-width: 900px) { .ring-wrap { grid-template-columns: minmax(0, 420px) 1fr; } }
+  .ring-svg { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .9rem; margin: 6px 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .multiples { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 14px; }
+  .multiples .card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .multiples h4 { margin: 0 0 4px; font-size: .95rem; color: var(--ink); }
+  input[type="range"] { width: 180px; accent-color: var(--accent); }
+  .ring-wrap th { white-space: normal; }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Consistent Hashing Playground</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/ring/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-play">
+    <h2 id="h-play">Add or remove a node</h2>
+    <p class="lede">Spread keys over a few nodes four ways, then change the nodes and count what moves. Every key that moves is data copied across the network, or a cache miss.</p>
+    <div class="row">
+      <div class="field">
+        <label for="nodes">Nodes: <span id="nodes-out">5</span></label>
+        <input type="range" id="nodes" min="2" max="8" value="5">
+      </div>
+      <div class="field">
+        <label for="vnodes">Virtual nodes on the ring: <span id="vnodes-out">160</span></label>
+        <input type="range" id="vnodes" min="1" max="400" value="160">
+      </div>
+      <div class="field">
+        <label for="count">Keys</label>
+        <select id="count">
+          <option value="1000">1,000</option>
+          <option value="20000" selected>20,000</option>
+          <option value="100000">100,000</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="change">Change</label>
+        <select id="change"></select>
+      </div>
+    </div>
+    <div id="result" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser. This page tells the browser to block any network request it might make.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/ring">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../ring.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

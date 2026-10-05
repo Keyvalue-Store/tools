@@ -1,0 +1,303 @@
+[
+ {
+  "type": "simple",
+  "value": "OK"
+ },
+ {
+  "type": "integer",
+  "value": "0"
+ },
+ {
+  "type": "integer",
+  "value": "0"
+ },
+ {
+  "type": "integer",
+  "value": "0"
+ },
+ {
+  "type": "integer",
+  "value": "4"
+ },
+ {
+  "type": "bulk",
+  "hex": "68656c6c6f"
+ },
+ {
+  "type": "null"
+ },
+ {
+  "type": "map",
+  "items": [
+   {
+    "type": "bulk",
+    "hex": "61"
+   },
+   {
+    "type": "bulk",
+    "hex": "31"
+   },
+   {
+    "type": "bulk",
+    "hex": "62"
+   },
+   {
+    "type": "bulk",
+    "hex": "32"
+   }
+  ]
+ },
+ {
+  "type": "set",
+  "items": [
+   {
+    "type": "bulk",
+    "hex": "78"
+   },
+   {
+    "type": "bulk",
+    "hex": "79"
+   }
+  ]
+ },
+ {
+  "type": "double",
+  "value": "1.5"
+ },
+ {
+  "type": "array",
+  "items": [
+   {
+    "type": "array",
+    "items": [
+     {
+      "type": "bulk",
+      "hex": "6d"
+     },
+     {
+      "type": "double",
+      "value": "1.5"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "type": "array",
+  "items": [
+   {
+    "type": "bulk",
+    "hex": "6f6e65"
+   },
+   {
+    "type": "bulk",
+    "hex": "74776f"
+   },
+   {
+    "type": "bulk",
+    "hex": "6f6e65"
+   },
+   {
+    "type": "bulk",
+    "hex": "74776f"
+   }
+  ]
+ },
+ {
+  "type": "integer",
+  "value": "2"
+ },
+ {
+  "type": "integer",
+  "value": "1"
+ },
+ {
+  "type": "integer",
+  "value": "1"
+ },
+ {
+  "type": "simple",
+  "value": "hash"
+ },
+ {
+  "type": "error",
+  "value": "ERR unknown command 'WRONGCOMMAND', with args beginning with: "
+ },
+ {
+  "type": "null"
+ },
+ {
+  "type": "map",
+  "items": [
+   {
+    "type": "bulk",
+    "hex": "6d61786d656d6f7279"
+   },
+   {
+    "type": "bulk",
+    "hex": "30"
+   }
+  ]
+ },
+ {
+  "type": "integer",
+  "value": "-1"
+ },
+ {
+  "type": "integer",
+  "value": "0"
+ },
+ {
+  "type": "array",
+  "items": [
+   {
+    "type": "bulk",
+    "hex": "68656c6c6f"
+   },
+   {
+    "type": "null"
+   }
+  ]
+ },
+ {
+  "type": "error",
+  "value": "ERR The ID specified in XADD is equal or smaller than the target stream top item"
+ },
+ {
+  "type": "array",
+  "items": [
+   {
+    "type": "array",
+    "items": [
+     {
+      "type": "bulk",
+      "hex": "312d31"
+     },
+     {
+      "type": "array",
+      "items": [
+       {
+        "type": "bulk",
+        "hex": "66"
+       },
+       {
+        "type": "bulk",
+        "hex": "76"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "type": "simple",
+  "value": "PONG"
+ },
+ {
+  "type": "bulk",
+  "hex": "c3a90d0a00"
+ },
+ {
+  "type": "verbatim",
+  "hex": "7478743a23204b657973706163650d0a6462303a6b6579733d343937372c657870697265733d333530302c6176675f74746c3d333536383531372c6b6579735f776974685f766f6c6174696c655f6974656d733d300d0a"
+ },
+ {
+  "type": "bulk",
+  "hex": "48656c6c6f20576f726c64"
+ },
+ {
+  "type": "integer",
+  "value": "12345"
+ },
+ {
+  "type": "double",
+  "value": "3.141"
+ },
+ {
+  "type": "bignum",
+  "value": "1234567999999999999999999999999999999"
+ },
+ {
+  "type": "null"
+ },
+ {
+  "type": "array",
+  "items": [
+   {
+    "type": "integer",
+    "value": "0"
+   },
+   {
+    "type": "integer",
+    "value": "1"
+   },
+   {
+    "type": "integer",
+    "value": "2"
+   }
+  ]
+ },
+ {
+  "type": "set",
+  "items": [
+   {
+    "type": "integer",
+    "value": "0"
+   },
+   {
+    "type": "integer",
+    "value": "1"
+   },
+   {
+    "type": "integer",
+    "value": "2"
+   }
+  ]
+ },
+ {
+  "type": "map",
+  "items": [
+   {
+    "type": "integer",
+    "value": "0"
+   },
+   {
+    "type": "boolean",
+    "value": "false"
+   },
+   {
+    "type": "integer",
+    "value": "1"
+   },
+   {
+    "type": "boolean",
+    "value": "true"
+   },
+   {
+    "type": "integer",
+    "value": "2"
+   },
+   {
+    "type": "boolean",
+    "value": "false"
+   }
+  ]
+ },
+ {
+  "type": "bulk",
+  "hex": "536f6d65207265616c207265706c7920666f6c6c6f77696e672074686520617474726962757465"
+ },
+ {
+  "type": "verbatim",
+  "hex": "7478743a54686973206973206120766572626174696d0a737472696e67"
+ },
+ {
+  "type": "boolean",
+  "value": "true"
+ },
+ {
+  "type": "boolean",
+  "value": "false"
+ }
+]

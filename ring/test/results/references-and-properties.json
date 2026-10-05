@@ -1,0 +1,160 @@
+{
+  "when": "2026-10-05T13:32:18.301Z",
+  "murmur3": {
+    "cases": 10000,
+    "mismatches": 0,
+    "oracle": "Python mmh3 5.3.1"
+  },
+  "jump": {
+    "cases": 20000,
+    "mismatches": 0,
+    "oracle": "C code from Lamping and Veach (2014), gcc 13"
+  },
+  "properties": {
+    "add-3": {
+      "idealPct": 25,
+      "modulo": {
+        "movedPct": 75.01,
+        "needless": 50012,
+        "maxOverMeanAfter": 1.007
+      },
+      "ring": {
+        "movedPct": 25.36,
+        "needless": 0,
+        "maxOverMeanAfter": 1.034
+      },
+      "rendezvous": {
+        "movedPct": 25,
+        "needless": 0,
+        "maxOverMeanAfter": 1.006
+      },
+      "jump": {
+        "movedPct": 25.02,
+        "needless": 0,
+        "maxOverMeanAfter": 1.004
+      }
+    },
+    "remove-node2-3": {
+      "idealPct": 33.33,
+      "modulo": {
+        "movedPct": 66.8,
+        "needless": 33209,
+        "maxOverMeanAfter": 1
+      },
+      "ring": {
+        "movedPct": 35.69,
+        "needless": 0,
+        "maxOverMeanAfter": 1.001
+      },
+      "rendezvous": {
+        "movedPct": 33.28,
+        "needless": 0,
+        "maxOverMeanAfter": 1.001
+      },
+      "jump": {
+        "movedPct": 33.58,
+        "needless": 0,
+        "maxOverMeanAfter": 1.002
+      }
+    },
+    "add-5": {
+      "idealPct": 16.67,
+      "modulo": {
+        "movedPct": 83.26,
+        "needless": 66724,
+        "maxOverMeanAfter": 1.014
+      },
+      "ring": {
+        "movedPct": 14.64,
+        "needless": 0,
+        "maxOverMeanAfter": 1.14
+      },
+      "rendezvous": {
+        "movedPct": 16.53,
+        "needless": 0,
+        "maxOverMeanAfter": 1.006
+      },
+      "jump": {
+        "movedPct": 16.68,
+        "needless": 0,
+        "maxOverMeanAfter": 1.011
+      }
+    },
+    "remove-node2-5": {
+      "idealPct": 20,
+      "modulo": {
+        "movedPct": 79.94,
+        "needless": 59975,
+        "maxOverMeanAfter": 1.007
+      },
+      "ring": {
+        "movedPct": 19.52,
+        "needless": 0,
+        "maxOverMeanAfter": 1.043
+      },
+      "rendezvous": {
+        "movedPct": 19.91,
+        "needless": 0,
+        "maxOverMeanAfter": 1.003
+      },
+      "jump": {
+        "movedPct": 20.08,
+        "needless": 0,
+        "maxOverMeanAfter": 1.004
+      }
+    },
+    "add-10": {
+      "idealPct": 9.09,
+      "modulo": {
+        "movedPct": 91.12,
+        "needless": 81842,
+        "maxOverMeanAfter": 1.02
+      },
+      "ring": {
+        "movedPct": 8.89,
+        "needless": 0,
+        "maxOverMeanAfter": 1.057
+      },
+      "rendezvous": {
+        "movedPct": 9.09,
+        "needless": 0,
+        "maxOverMeanAfter": 1.015
+      },
+      "jump": {
+        "movedPct": 9.05,
+        "needless": 0,
+        "maxOverMeanAfter": 1.014
+      }
+    },
+    "remove-node2-10": {
+      "idealPct": 10,
+      "modulo": {
+        "movedPct": 90,
+        "needless": 80077,
+        "maxOverMeanAfter": 1.01
+      },
+      "ring": {
+        "movedPct": 10.19,
+        "needless": 0,
+        "maxOverMeanAfter": 1.068
+      },
+      "rendezvous": {
+        "movedPct": 10.03,
+        "needless": 0,
+        "maxOverMeanAfter": 1.012
+      },
+      "jump": {
+        "movedPct": 10,
+        "needless": 0,
+        "maxOverMeanAfter": 1.01
+      }
+    }
+  },
+  "ringVnodesMaxOverMean": {
+    "1": 2.841,
+    "10": 1.464,
+    "40": 1.236,
+    "160": 1.082,
+    "640": 1.071
+  }
+}

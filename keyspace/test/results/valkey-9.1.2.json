@@ -1,0 +1,34 @@
+{
+  "server": "valkey",
+  "when": "2026-10-05T13:28:13.510Z",
+  "keys": 9161,
+  "pipe": "errors: 0, replies: 9161",
+  "forms": {
+    "raw": {
+      "keysRead": 9161,
+      "separator": ":",
+      "patterns": 13,
+      "mismatches": 0,
+      "prefixesChecked": 12,
+      "prefixMismatches": 0,
+      "findings": [
+        "noSeparator:3",
+        "case:1",
+        "near:1"
+      ]
+    },
+    "quoted": {
+      "keysRead": 9161,
+      "separator": ":",
+      "patterns": 13,
+      "mismatches": 0,
+      "prefixesChecked": 12,
+      "prefixMismatches": 0,
+      "findings": [
+        "noSeparator:3",
+        "case:1",
+        "near:1"
+      ]
+    }
+  }
+}

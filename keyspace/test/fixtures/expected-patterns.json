@@ -1,0 +1,15 @@
+{
+  "user:<id>:profile": 3000,
+  "user:<id>:settings": 2000,
+  "session:<hex>": 1500,
+  "cart:{<id>}:items": 800,
+  "order:<uuid>": 700,
+  "feed:<date>:<id>": 600,
+  "member:<*>:avatar": 300,
+  "rate:<ip>": 250,
+  "usr:<id>:profile": 5,
+  "User:<id>:profile": 3,
+  "config": 1,
+  "version": 1,
+  "maintenance": 1
+}

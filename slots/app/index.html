@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data: blob:; media-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'; manifest-src 'none'">
+<title>Hash Slot Calculator | KeyValueStore.com</title>
+<meta name="description" content="Find the Redis or Valkey cluster slot and node for any key, check multi-key commands for CROSSSLOT errors, and see how a list of keys spreads across a cluster. Runs in your browser.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/slots/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='11' cy='16' r='5' fill='none' stroke='%2350C4CC' stroke-width='3'/%3E%3Cpath d='M16 16h11M23 16v5M27 16v4' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../common/tool.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Hash Slot Calculator</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/slots/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-one">
+    <h2 id="h-one">Find a key's slot</h2>
+    <p class="lede">A cluster splits its keys into 16,384 slots and gives each primary a share of them. Type a key to see its slot and the primary that holds it.</p>
+    <div class="field">
+      <label for="one-key">Key</label>
+      <input type="text" id="one-key" class="mono" value="user:{42}:cart" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="one-result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-cmd">
+    <h2 id="h-cmd">Check a command</h2>
+    <p class="lede">A command that touches several keys only runs when every key is in the same slot. Otherwise the cluster answers CROSSSLOT. Paste a command to check it before your code sends it.</p>
+    <div class="field">
+      <label for="cmd">Command</label>
+      <input type="text" id="cmd" class="mono" value="MSET user:{42}:name Ana user:{42}:plan pro" autocomplete="off" spellcheck="false">
+      <span class="hint">Quote arguments with spaces, as in redis-cli: <code>MGET "my key" other</code></span>
+    </div>
+    <div id="cmd-result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-many">
+    <h2 id="h-many">See how many keys spread</h2>
+    <p class="lede">Paste a list of keys, one per line, or load a file. The output of <code>redis-cli --scan</code> or <code>valkey-cli --scan</code> works as it is, and so does quoted output such as <code>1) "user:42"</code>.</p>
+    <div class="field">
+      <label for="many">Keys</label>
+      <textarea id="many" spellcheck="false" placeholder="user:1001:profile&#10;user:1002:profile&#10;cart:{1001}:items"></textarea>
+    </div>
+    <div class="row">
+      <label class="btn" for="many-file">Load a file</label>
+      <input type="file" id="many-file" class="file-input" accept=".txt,.csv,.log,text/plain">
+      <button type="button" class="btn" id="many-example">Try an example</button>
+      <button type="button" class="btn" id="many-clear">Clear</button>
+      <span class="spacer"></span>
+      <label class="check"><input type="checkbox" id="raw"> Take each line exactly as written</label>
+    </div>
+    <div id="many-result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-layout">
+    <h2 id="h-layout">Cluster layout</h2>
+    <p class="lede">Which primary owns which slots. The answers above use this layout.</p>
+    <div class="row">
+      <label class="check"><input type="radio" name="layout" value="split" id="layout-split" checked> A new cluster with</label>
+      <input type="number" id="split-n" min="1" max="1000" value="3" aria-label="Number of primaries">
+      <span>primaries, split the way <code>--cluster create</code> splits them</span>
+    </div>
+    <div class="row">
+      <label class="check"><input type="radio" name="layout" value="nodes" id="layout-nodes"> My cluster, from the output of <code>CLUSTER NODES</code></label>
+    </div>
+    <div class="field">
+      <label for="nodes-text" class="hint">Paste the output of <code>redis-cli -p 7000 CLUSTER NODES</code> here</label>
+      <textarea id="nodes-text" class="short" spellcheck="false" placeholder="07c37dfeb235213a872192d90877d0cd55635b91 10.0.0.4:6379@16379 master - 0 1726238317239 1 connected 0-5460"></textarea>
+    </div>
+    <div id="layout-result" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser. This page tells the browser to block any network request it might make, so nothing you paste or load leaves it.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/slots">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../slots.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

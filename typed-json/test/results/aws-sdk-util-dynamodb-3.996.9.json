@@ -1,0 +1,17 @@
+{
+  "sdk": "@aws-sdk/util-dynamodb 3.996.9",
+  "when": "2026-10-05T13:15:19.729Z",
+  "roundTrip": {
+    "documents": 3000,
+    "numbers": 10963,
+    "mismatches": 0
+  },
+  "bigNumbers": {
+    "checked": 7,
+    "mismatches": 0
+  },
+  "sets": {
+    "documents": 500,
+    "mismatches": 0
+  }
+}

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data: blob:; media-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'; manifest-src 'none'">
+<title>Mass Insert Builder | KeyValueStore.com</title>
+<meta name="description" content="Turn CSV, JSON or command lines into a protocol file for redis-cli --pipe or valkey-cli --pipe, the fast way to bulk-load data. Decode protocol bytes too. Runs in your browser.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/pipe/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='11' cy='16' r='5' fill='none' stroke='%2350C4CC' stroke-width='3'/%3E%3Cpath d='M16 16h11M23 16v5M27 16v4' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../common/tool.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Mass Insert Builder</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/pipe/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-build">
+    <h2 id="h-build">Build a file for --pipe</h2>
+    <p class="lede">Paste CSV, JSON or plain commands. You get a file in the Redis protocol that <code>redis-cli --pipe</code> or <code>valkey-cli --pipe</code> loads at full speed, without a round trip per command.</p>
+
+    <div class="row" role="radiogroup" aria-label="What you paste">
+      <label class="check"><input type="radio" name="src" value="csv" checked> CSV</label>
+      <label class="check"><input type="radio" name="src" value="json"> JSON</label>
+      <label class="check"><input type="radio" name="src" value="commands"> Commands, one per line</label>
+    </div>
+
+    <div class="field">
+      <label for="in">Data</label>
+      <textarea id="in" class="tall" spellcheck="false" placeholder="id,name,city&#10;1001,Ana,Lisbon&#10;1002,Ben,Lagos"></textarea>
+    </div>
+    <div class="row">
+      <label class="btn" for="in-file">Load a file</label>
+      <input type="file" id="in-file" class="file-input" accept=".csv,.tsv,.txt,.json,.jsonl,text/plain,application/json">
+      <button type="button" class="btn" id="example">Try an example</button>
+      <button type="button" class="btn" id="clear">Clear</button>
+      <span class="spacer"></span>
+      <label class="check" id="header-wrap"><input type="checkbox" id="header" checked> The first line names the columns</label>
+    </div>
+
+    <div id="mapping">
+      <h3>How each record is stored</h3>
+      <div class="field">
+        <label for="key">Key</label>
+        <input type="text" id="key" class="mono" value="user:${id}" spellcheck="false" autocomplete="off">
+        <span class="hint">Write <code>${name}</code> to take a field. A hash tag keeps related keys together in a cluster: <code>cart:{${user}}:items</code>.</span>
+        <div class="row" id="columns" aria-label="Fields you can use"></div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="type">Store as</label>
+          <select id="type">
+            <option value="hash">Hash (HSET)</option>
+            <option value="string">String (SET)</option>
+            <option value="list">List (RPUSH)</option>
+            <option value="set">Set (SADD)</option>
+            <option value="zset">Sorted set (ZADD)</option>
+          </select>
+        </div>
+        <div class="field" id="value-wrap">
+          <label for="value">Value</label>
+          <select id="value"></select>
+        </div>
+        <div class="field" id="score-wrap">
+          <label for="score">Score</label>
+          <select id="score"></select>
+        </div>
+        <div class="field" id="member-wrap">
+          <label for="member">Member</label>
+          <select id="member"></select>
+        </div>
+        <div class="field" id="fields-wrap">
+          <label for="fields">Hash fields</label>
+          <input type="text" id="fields" class="mono" placeholder="All fields not in the key" spellcheck="false" style="width: 21em">
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="ttl">Expire after (seconds)</label>
+          <input type="number" id="ttl" min="1" placeholder="Never">
+        </div>
+        <div class="field">
+          <label for="db">Database</label>
+          <input type="number" id="db" min="0" placeholder="Default">
+        </div>
+        <label class="check"><input type="checkbox" id="fresh"> Delete each key before writing it</label>
+      </div>
+    </div>
+
+    <div id="result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-read">
+    <h2 id="h-read">Read protocol bytes</h2>
+    <p class="lede">Paste protocol data to see it as commands and replies: a capture, a log line with <code>\r\n</code> written out, or a hex dump. Or load a file this page built.</p>
+    <div class="field">
+      <label for="raw">Protocol data</label>
+      <textarea id="raw" spellcheck="false" placeholder="*3\r\n$3\r\nSET\r\n$5\r\nhello\r\n$5\r\nworld\r\n"></textarea>
+    </div>
+    <div class="row">
+      <label class="btn" for="raw-file">Load a file</label>
+      <input type="file" id="raw-file" class="file-input">
+      <button type="button" class="btn" id="raw-example">Try an example</button>
+    </div>
+    <div id="raw-result" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser. This page tells the browser to block any network request it might make, so nothing you paste or load leaves it.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/pipe">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../pipe.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

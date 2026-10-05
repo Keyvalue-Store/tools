@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data: blob:; media-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'; manifest-src 'none'">
+<title>Keyspace Map | KeyValueStore.com</title>
+<meta name="description" content="Paste a list of Redis or Valkey keys and see what the keyspace holds: prefixes as a tree with counts, naming patterns with IDs folded, and naming slips. Runs in your browser.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/keyspace/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='11' cy='16' r='5' fill='none' stroke='%2350C4CC' stroke-width='3'/%3E%3Cpath d='M16 16h11M23 16v5M27 16v4' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script>if (window.self !== window.top) document.documentElement.className += ' embedded';</script>
+<link rel="stylesheet" href="../../common/tool.css">
+<style>
+  details.node { margin: 2px 0 2px 18px; }
+  details.node > summary { cursor: pointer; padding: 2px 0; font-family: var(--mono); font-size: .9rem; color: var(--ink); }
+  details.node > summary .n { color: var(--muted); font-family: var(--sans); font-size: .86rem; margin-left: 8px; }
+  .leaf { margin: 2px 0 2px 32px; font-family: var(--mono); font-size: .9rem; color: var(--ink); }
+  .leaf .n { color: var(--muted); font-family: var(--sans); font-size: .86rem; margin-left: 8px; }
+  .tree-root { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 10px 0; max-height: 520px; overflow: auto; }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Keyspace Map</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/keyspace/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-map">
+    <h2 id="h-map">Map a keyspace</h2>
+    <p class="lede">Paste a list of keys, one per line, or load a file. <code>redis-cli --scan &gt; keys.txt</code> or <code>valkey-cli --scan &gt; keys.txt</code> makes one without blocking the server.</p>
+    <div class="field">
+      <label for="in">Keys</label>
+      <textarea id="in" spellcheck="false" placeholder="user:1001:profile&#10;user:1002:profile&#10;session:9f86d081884c7d659a2feaa0c55ad015"></textarea>
+    </div>
+    <div class="row">
+      <label class="btn" for="in-file">Load a file</label>
+      <input type="file" id="in-file" class="file-input" accept=".txt,.log,.csv,text/plain">
+      <button type="button" class="btn" id="example">Try an example</button>
+      <button type="button" class="btn" id="clear">Clear</button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="sep">Separator</label>
+        <select id="sep">
+          <option value="auto">Guess it</option>
+          <option value=":">:</option>
+          <option value="/">/</option>
+          <option value=".">.</option>
+          <option value="|">|</option>
+          <option value="#">#</option>
+          <option value="_">_</option>
+          <option value="-">-</option>
+          <option value="">None</option>
+        </select>
+      </div>
+      <label class="check"><input type="checkbox" id="fold" checked> Fold IDs, hashes and dates</label>
+      <label class="check"><input type="checkbox" id="busy" checked> Fold levels of one-off names</label>
+      <label class="check"><input type="checkbox" id="raw"> Take each line exactly as written</label>
+    </div>
+    <div id="result" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser. This page tells the browser to block any network request it might make, so nothing you paste or load leaves it.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/keyspace">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../keyspace.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

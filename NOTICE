@@ -1,0 +1,10 @@
+KeyValueStore.com tools
+Copyright 2026 KeyValueStore.com
+
+This product includes software developed at KeyValueStore.com
+(https://keyvaluestore.com/).
+
+ring/ring.js includes a JavaScript version of MurmurHash3 (32-bit x86),
+written by Austin Appleby and placed in the public domain, and a version of
+the jump consistent hash algorithm described by John Lamping and Eric Veach
+in "A Fast, Minimal Memory, Consistent Hash Algorithm" (2014).
