@@ -16,7 +16,7 @@ Its logic is one JavaScript file, `traffic.js`, with no dependencies. The web pa
 1791218550.754174 [0 lua] "INCR" "rate:10.0.4.7"
 ```
 
-Each line has the time in seconds and microseconds, the database number, the client's address and port, and the command with its arguments in quotes. Quotes, backslashes, line breaks and tabs inside an argument are written as `\"`, `\\`, `\n` and `\t`, and any other byte that isn't printable ASCII as `\xHH`. Commands that a Lua script or a function ran show `lua` in place of the address, and clients on a Unix socket show `unix:` and the socket's path.
+Each line has the time in seconds and microseconds, the database number, the client's address and port, and the command with its arguments in quotes. Quotes, backslashes, line feeds, carriage returns, tabs, bells and backspaces inside an argument are written as `\"`, `\\`, `\n`, `\r`, `\t`, `\a` and `\b`, and any other byte that isn't printable ASCII as `\xHH`. Commands that a Lua script or a function ran show `lua` in place of the address. Clients on a Unix socket all show `unix:` and the server's socket path, so they can't be told apart, and the analyzer counts them as one connection.
 
 Some things never show up:
 
@@ -65,7 +65,7 @@ Redis and Valkey don't run an exact LRU. With `maxmemory-policy allkeys-lru`, th
 
 Load a capture or drop it on the page. It's read in steps with a progress bar, then:
 
-- **Totals.** Commands, how long the capture ran, the average and the busiest second, keys, connections, and the share of reads, writes, scripts and pub/sub.
+- **Totals.** Commands, how long the capture ran, the average and the busiest whole second inside the capture, keys, connections, and the share of reads, writes, scripts and pub/sub. A capture shorter than a second has no busiest second, and shows the rate while it ran instead.
 - **Commands per second**, as a chart. Point at it to see each second.
 - **The command mix**: every command, its kind and its share.
 - **The busiest keys**, with reads, writes and deletes.
@@ -74,7 +74,7 @@ Load a capture or drop it on the page. It's read in steps with a progress bar, t
 - **Spread over a cluster.** How the key accesses would land on 1 to 16 primaries with the slots `redis-cli --cluster create` would give them, and the busiest slots.
 - **Worth a look.** The findings described below, each with examples from the capture.
 - **Cache hit rate.** The curve, the cache size for 50%, 80%, 90%, 95% and 99% of the best hit rate, and a box to try any size.
-- **Downloads.** Every key with its counts as CSV, commands per second as CSV, and the curve as CSV.
+- **Downloads.** Every key with its counts as CSV, commands per second as CSV, and the curve as CSV. A key that starts with `=`, `+`, `-` or `@` gets a `'` in front in the CSV, so a spreadsheet doesn't run it as a formula.
 
 You can also paste lines instead of loading a file.
 
@@ -88,11 +88,11 @@ Nothing you load leaves the page. The tool doesn't send anything anywhere, and t
 | FLUSHALL and FLUSHDB | Any of them. |
 | Whole-collection reads | `HGETALL`, `HKEYS`, `HVALS`, `SMEMBERS`, `SUNION`, `SINTER`, `SDIFF`, and `LRANGE`, `ZRANGE` or `ZREVRANGE` from 0 to -1. Slow on big collections. |
 | Large values | An argument of 100 KB or more. |
-| Commands across cluster slots | A command whose keys hash to different slots. A cluster refuses it with `CROSSSLOT`. |
+| Commands across cluster slots | A command whose keys hash to different slots, or a script or function whose declared keys do. A cluster refuses them with `CROSSSLOT`. The commands such a script ran aren't counted again. |
 | A hot key | One key with 10% or more of all key accesses, in captures with at least 100. |
-| SET, then EXPIRE | `SET` without an expiry, followed on the same connection by `EXPIRE`, `PEXPIRE`, `EXPIREAT` or `PEXPIREAT` on the same key, outside a transaction. `SET ... EX` does both at once. |
+| SET, then EXPIRE | `SET` without an expiry or `SETNX`, followed on the same connection by `EXPIRE`, `PEXPIRE`, `EXPIREAT` or `PEXPIREAT` on the same key, outside a transaction. `SET ... EX` does both at once. Commands from scripts, which run in one go, and from the Unix socket, where clients can't be told apart, aren't counted. |
 | Scripts sent with EVAL | At least 10 `EVAL` calls, making up more than half the script calls. |
-| Connection setup | `AUTH`, `HELLO`, `SELECT`, `CLIENT SETNAME` and `CLIENT SETINFO` adding up to 10% or more of the commands, which usually means connections opened over and over. |
+| Connection setup | `AUTH`, `HELLO`, `SELECT`, `CLIENT SETNAME` and `CLIENT SETINFO` adding up to at least 20 commands and 10% or more of all of them, which usually means connections opened over and over. |
 | Databases other than 0 | Commands in another database. Redis Cluster only has database 0. |
 | Commands not in the table | Commands that aren't in Valkey 9.1 or Redis 8.10, often from a module. They're counted, but their keys aren't. |
 
@@ -150,21 +150,21 @@ In a page, load `traffic.js` with a script tag and use `window.KVTraffic`.
 
 ## What it reads
 
-Lines in the format above, as `redis-cli` and `valkey-cli` print them, from Redis 2.6 on and every Valkey. A leading `OK` is skipped, and so are a `+` at the start of a line, which shows up when `MONITOR` is read straight off the socket, and Windows line endings. Lines that don't fit the format are counted and skipped, and the first few are shown.
+Lines in the format above, as `redis-cli` and `valkey-cli` print them, from Redis 2.6 on and every Valkey, with ten digits of seconds and six of microseconds. A leading `OK` is skipped, and so are a `+` at the start of a line, which shows up when `MONITOR` is read straight off the socket, and Windows line endings. Lines that don't fit the format, such as a first line cut short by `split` or `tail -c`, are counted and skipped, and the first few are shown. A single line can be hundreds of megabytes, like a `SET` of a huge value, and still reads in a few seconds.
 
-To know which arguments are keys and whether a command reads or writes, it carries a table of every command and subcommand of Valkey 9.1.2 and Redis 8.10.2, 463 in all, with the key positions and flags `COMMAND` reports. Twenty-eight commands keep their keys in places a table can't describe, such as `EVAL`'s key count, `ZUNIONSTORE`'s destination, the keys after `STREAMS` in `XREAD`, `SORT ... STORE` and `MIGRATE ... KEYS`, and those have their own rules. Reads are commands the server marks read-only, deletes are `DEL`, `UNLINK` and `GETDEL`, and the other commands the server marks as writes count as writes. Scripts aren't counted as key accesses, since the commands they run come right after them as `lua` lines. Pub/sub channels aren't keys, and neither are the arguments of `WATCH`, which doesn't touch the value.
+To know which arguments are keys and whether a command reads or writes, it carries a table of every command and subcommand of Valkey 9.1.2 and Redis 8.10.2, 463 in all, with the key positions and flags `COMMAND` reports. Twenty-eight commands keep their keys in places a table can't describe, such as `EVAL`'s key count, `ZUNIONSTORE`'s destination, the keys after `STREAMS` in `XREAD`, `SORT ... STORE` and `MIGRATE ... KEYS`, and those have their own rules, the same ones the servers use. Valkey's `CLUSTERSCAN` takes a cursor where the table shows a key, and it isn't counted as one. Reads are commands the server marks read-only, deletes are `DEL`, `UNLINK` and `GETDEL`, and the other commands the server marks as writes count as writes. Scripts aren't counted as key accesses, since the commands they run come right after them as `lua` lines. Pub/sub channels aren't keys, and neither are the arguments of `WATCH`, which doesn't touch the value.
 
 ## How it was tested
 
 Five servers, built from source in October 2026: Valkey 9.1.2 and Redis 8.10.2, 7.2.16, 6.2.24 and 2.8.24. A script ran the same kind of workload on each from six addresses on the loopback network: three web servers reading users, sessions, carts and prices, a background worker with a job queue in database 2, streams and pub/sub, a nightly job sweeping through users with `HGETALL`, `KEYS` and a `FLUSHDB` in database 9, and a cron host opening a new connection every time. The mix had 61 different commands, among them transactions, Lua scripts loaded and inline, a function, binary and UTF-8 keys, a 110 KB value, blocking pops, a script command that fails, and admin commands. `valkey-cli` or `redis-cli` recorded `MONITOR` the whole time. The script kept what every connection sent and asked the server `COMMAND GETKEYS` for every command, and a cluster node `CLUSTER KEYSLOT` for every key.
 
 - **Reading.** All 4,757 lines of the five captures read back byte for byte as sent, each in its connection's order, and the lines every script ran came right after the script.
-- **Keys.** For every command, the keys matched `COMMAND GETKEYS`. Redis 2.8 has no `GETKEYS`, so Valkey 9.1.2 answered for its commands. Another 60 command forms with keys in unusual places matched `GETKEYS` on both Valkey 9.1.2 and Redis 8.10.2.
+- **Keys.** For every command, the keys matched `COMMAND GETKEYS`. Redis 2.8 has no `GETKEYS`, so Valkey 9.1.2 answered for its commands. Another 68 command forms with keys in unusual places, such as a consumer group named `streams` and `MIGRATE` with a password, matched `GETKEYS` on both Valkey 9.1.2 and Redis 8.10.2.
 - **Totals.** The counts per command, per key and per client, and every finding, matched counts worked out from what was sent.
 - **Slots.** Key slots matched `CLUSTER KEYSLOT` for all 1,492 keys.
 - **The curve.** It matched a simulated LRU cache at ten sizes for each capture, and at every size on 20 random workloads full of deletes and flushes.
 - **A real cache.** Valkey 9.1.2 with `allkeys-lru`, 4 MB of memory and the default 5 samples ran 720,000 reads from a skewed workload over 300,000 keys, setting each key it missed, while `MONITOR` recorded. It held about 21,850 keys and served 57.3% of the reads. The curve built from the capture says 57.6% for that many keys. With 10 samples the server served 57.5%, and the curve says 57.6%.
-- **Speed.** A capture of 3 million commands over a million different keys took 11 seconds on the command line with Node.js 22, using 333 MB of memory.
+- **Speed.** A capture of 3 million commands over a million different keys took 12 seconds on the command line with Node.js 22, using 330 MB of memory.
 
 What `MONITOR` left out matched the list above. Every command the server flags as admin was missing, on all five servers, though the flags changed over the years: Redis 2.8.24 showed `CLIENT LIST` and `SLOWLOG GET`, which it doesn't flag as admin, and Redis 6.2.24 left out `CLIENT SETNAME`, since `CLIENT` as a whole was an admin command then. `QUIT` showed up on Valkey 9.1.2, Redis 8.10.2 and 7.2.16, but not on 6.2.24 or 2.8.24. A command a script ran that failed, `EXPIRE` with a time that isn't a number, still showed up. In a separate check on Valkey 9.1.2 and Redis 8.10.2, an `INCR` that failed showed up, while an unknown command, a `GET` without its key and `DEBUG SLEEP` didn't, and `HELLO 3 AUTH default secret` came out as `"HELLO" "3" "AUTH" "(redacted)" "(redacted)"`.
 

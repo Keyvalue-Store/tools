@@ -987,6 +987,144 @@
     "a",
     "b"
    ]
+  },
+  {
+   "args": [
+    "XREADGROUP",
+    "GROUP",
+    "streams",
+    "c1",
+    "STREAMS",
+    "s1",
+    ">"
+   ],
+   "valkey": [
+    "s1"
+   ],
+   "redis": [
+    "s1"
+   ]
+  },
+  {
+   "args": [
+    "XREADGROUP",
+    "GROUP",
+    "g",
+    "STREAMS",
+    "NOACK",
+    "STREAMS",
+    "s1",
+    ">"
+   ],
+   "valkey": [
+    "s1"
+   ],
+   "redis": [
+    "s1"
+   ]
+  },
+  {
+   "args": [
+    "XREAD",
+    "COUNT",
+    "2",
+    "STREAMS",
+    "a",
+    "b",
+    "0",
+    "0"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "CLUSTERSCAN",
+    "0"
+   ],
+   "valkey": null,
+   "redis": null
+  },
+  {
+   "args": [
+    "MIGRATE",
+    "h",
+    "1",
+    "",
+    "0",
+    "5",
+    "AUTH",
+    "keys",
+    "KEYS",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "MIGRATE",
+    "h",
+    "1",
+    "",
+    "0",
+    "5",
+    "AUTH2",
+    "u",
+    "keys",
+    "KEYS",
+    "a"
+   ],
+   "valkey": [
+    "a"
+   ],
+   "redis": [
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "MIGRATE",
+    "h",
+    "1",
+    "k",
+    "0",
+    "5",
+    "KEYS",
+    "a"
+   ],
+   "valkey": null,
+   "redis": null
+  },
+  {
+   "args": [
+    "EVALSHA",
+    "e0e1f9fabfc9d4800c877a703b823ac0578ff8db",
+    "2",
+    "user:1",
+    "user:2"
+   ],
+   "valkey": [
+    "user:1",
+    "user:2"
+   ],
+   "redis": [
+    "user:1",
+    "user:2"
+   ]
   }
  ]
 }

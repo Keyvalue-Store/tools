@@ -64,7 +64,8 @@
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  function csvCell(s) { return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+  // Spreadsheets run a cell that starts with = + - or @ as a formula, so such a key gets a ' in front.
+  function csvCell(s) { if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
   const strict = new TextDecoder('utf-8', { fatal: true });
   function csvKey(bytes) { try { return csvCell(strict.decode(bytes)); } catch (e) { return csvCell(T.showKey(bytes)); } }
   const clock = (sec) => new Date(sec * 1000).toISOString().slice(11, 19);
@@ -335,8 +336,8 @@
     out.append(el('div', { class: 'figures' }, [
       figure(fmt(r.commands), 'commands'),
       figure(duration(r.duration), 'captured'),
-      figure(fmt1(r.average), 'a second on average'),
-      figure(fmt(r.peak.count), 'in the busiest second'),
+      r.duration >= 1 ? figure(fmt1(r.average), 'a second on average') : r.duration >= 0.01 ? figure(fmt1(r.average), 'a second while it ran') : null,
+      r.peak ? figure(fmt(r.peak.count), 'in the busiest second') : null,
       figure(fmt(r.keys.distinct), r.keys.distinct === 1 ? 'key' : 'keys'),
       figure(fmt(r.connections), r.connections === 1 ? 'connection' : 'connections')
     ]));

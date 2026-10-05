@@ -37,9 +37,13 @@ const fmt = (n) => Number(n).toLocaleString('en-US');
 const pct = (x) => (100 * x).toFixed(1) + '%';
 const plural = (n, one, many) => fmt(n) + ' ' + (n === 1 ? one : many);
 const strict = new TextDecoder('utf-8', { fatal: true });
-function csv(s) { return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+// Spreadsheets run a cell that starts with = + - or @ as a formula, so
+// such a key gets a ' in front, the usual guard.
+function csv(s) { if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 // A key for CSV: its text when it is valid UTF-8, otherwise quoted with \xHH escapes.
 function csvKey(b) { try { return csv(strict.decode(b)); } catch (e) { return csv(T.showKey(b)); } }
+// A whole number from an option, or NaN when it isn't one.
+const number = (s) => (/^\d+$/.test(s || '') ? parseInt(s, 10) : NaN);
 function clock(ms) { return new Date(ms).toISOString().replace('T', ' ').slice(0, 19); }
 function duration(s) {
   if (s < 1) return Math.round(s * 1000) + ' ms';
@@ -56,9 +60,9 @@ async function main(argv) {
     else if (a === '--keys') mode = 'keys';
     else if (a === '--curve') mode = 'curve';
     else if (a === '--seconds') mode = 'seconds';
-    else if (a === '--cache') { mode = 'cache'; cache = parseInt(argv[++i], 10); }
-    else if (a === '--top') top = parseInt(argv[++i], 10);
-    else if (a === '--primaries') primaries = parseInt(argv[++i], 10);
+    else if (a === '--cache') { mode = 'cache'; cache = number(argv[++i]); }
+    else if (a === '--top') top = number(argv[++i]);
+    else if (a === '--primaries') primaries = number(argv[++i]);
     else if (a === '--json') json = true;
     else if (a === '--no-curve') curve = false;
     else if (a.startsWith('--')) { console.error('Unknown option ' + a + '. Try --help.'); return 2; }
@@ -67,6 +71,7 @@ async function main(argv) {
   if (!file) { console.error('Name a capture file, or - for standard input. Try --help.'); return 2; }
   if ((mode === 'curve' || mode === 'cache') && !curve) { console.error('--curve and --cache need the curve.'); return 2; }
   if (mode === 'cache' && !(cache >= 0)) { console.error('--cache needs a number of keys.'); return 2; }
+  if (!(top >= 1)) { console.error('--top needs a number of 1 or more.'); return 2; }
   if (!(primaries >= 1 && primaries <= 16384)) { console.error('--primaries needs a number from 1 to 16384.'); return 2; }
 
   // Read in pieces, so captures of any length work.
@@ -82,13 +87,15 @@ async function main(argv) {
   }
 
   if (mode === 'keys') {
-    console.log('db,key,reads,writes,deletes');
-    const lines = [];
-    an.eachKey((db, key, reads, writes, deletes) => {
+    // Written as fast as the reader takes it, so a pipe doesn't fill memory.
+    const out = process.stdout;
+    let lines = ['db,key,reads,writes,deletes'];
+    for (let i = 0, n = an.keyCount(); i < n; i++) {
+      const [db, key, reads, writes, deletes] = an.keyAt(i);
       lines.push([db, csvKey(T.fromLatin1(key)), reads, writes, deletes].join(','));
-      if (lines.length === 10000) { process.stdout.write(lines.join('\n') + '\n'); lines.length = 0; }
-    });
-    if (lines.length) process.stdout.write(lines.join('\n') + '\n');
+      if (lines.length >= 10000) { if (!out.write(lines.join('\n') + '\n')) await new Promise((done) => out.once('drain', done)); lines = []; }
+    }
+    if (lines.length) out.write(lines.join('\n') + '\n');
     return 0;
   }
   if (mode === 'seconds') {
@@ -119,11 +126,15 @@ async function main(argv) {
 
   const name = file === '-' ? 'standard input' : file;
   console.log(`${name}: ${plural(r.commands, 'command', 'commands')} in ${duration(r.duration)}, from ${clock(r.start)} to ${clock(r.end)} UTC`);
-  console.log(`Average ${r.average.toLocaleString('en-US', { maximumFractionDigits: 1 })} commands a second, peak ${fmt(r.peak.count)} at ${clock(r.peak.time * 1000).slice(11)}`);
+  // The peak is the busiest whole second inside the capture, so a capture
+  // shorter than that has none.
+  const average = r.average.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  if (r.duration >= 1) console.log(`Average ${average} commands a second` + (r.peak ? `, peak ${fmt(r.peak.count)} at ${clock(r.peak.time * 1000).slice(11)}` : ''));
+  else if (r.duration >= 0.01) console.log(`About ${average} commands a second while it ran`);
   const k = r.kinds;
   console.log(`Reads ${pct(k.read / r.commands)}, writes ${pct(k.write / r.commands)}, scripts ${pct(k.script / r.commands)}, pub/sub ${pct(k.pubsub / r.commands)}, other ${pct(k.other / r.commands)}`);
   console.log(`${plural(r.keys.distinct, 'key', 'keys')}, ${plural(r.keys.accesses, 'key access', 'key accesses')} (${plural(r.keys.reads, 'read', 'reads')}, ${plural(r.keys.writes, 'write', 'writes')}, ${plural(r.keys.deletes, 'delete', 'deletes')}), ${plural(r.connections, 'connection', 'connections')} from ${plural(r.hostCount, 'address', 'addresses')}`);
-  if (r.unparsed) console.log(`${plural(r.unparsed, 'line', 'lines')} weren't MONITOR lines and were skipped, such as: ${r.unparsedExamples[0]}`);
+  if (r.unparsed) console.log(r.unparsed === 1 ? `1 line wasn't a MONITOR line and was skipped: ${r.unparsedExamples[0]}` : `${fmt(r.unparsed)} lines weren't MONITOR lines and were skipped, such as: ${r.unparsedExamples[0]}`);
 
   console.log('\nCommands');
   console.log('     count   share  kind     command');
@@ -178,6 +189,6 @@ async function main(argv) {
 // Stop quietly when the output is piped into something like head that closes early.
 process.stdout.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); throw e; });
 main(process.argv.slice(2)).then((code) => { process.exitCode = code; }, (e) => {
-  console.error(e.code === 'ENOENT' ? 'No such file: ' + e.path : e.stack);
+  console.error(e.code === 'ENOENT' ? 'No such file: ' + e.path : e.code === 'EISDIR' ? 'That is a folder, not a file.' : 'Could not read the capture: ' + e.message);
   process.exitCode = 2;
 });

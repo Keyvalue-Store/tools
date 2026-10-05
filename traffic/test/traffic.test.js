@@ -123,7 +123,12 @@ for (const name of CAPTURES) {
     // Every key: reads, writes and deletes.
     const want = new Map();
     let cross = 0;
+    let crossScript = false;
     for (const s of steps) {
+      // Scripts and functions count as across slots when their declared
+      // keys are, and then the commands they ran don't count again.
+      if (s.cmd.client !== 'lua') crossScript = false;
+      if ((exp.flags[s.exp.n] || '').includes('x')) { crossScript = new Set(s.exp.k.map((k) => exp.slots[k])).size > 1; if (crossScript) cross++; continue; }
       const a = accessesOf(s, exp.flags);
       if (!a || a.flush !== undefined) continue;
       const slots = new Set();
@@ -134,7 +139,7 @@ for (const name of CAPTURES) {
         want.set(id, w);
         slots.add(exp.slots[k]);
       }
-      if (slots.size > 1) cross++;
+      if (slots.size > 1 && !(s.cmd.client === 'lua' && crossScript)) cross++;
     }
     const got = new Map(an.keyStats().map((k) => [k.db + ':' + Buffer.from(k.key).toString('hex'), [k.reads, k.writes, k.deletes]]));
     assert.deepEqual(got, want);
@@ -151,13 +156,19 @@ for (const name of CAPTURES) {
     assert.equal(count('whole'), steps.filter((s) => ['SMEMBERS', 'HGETALL', 'HKEYS', 'HVALS', 'SUNION', 'SINTER', 'SDIFF'].includes(s.exp.n) ||
       (['LRANGE', 'ZRANGE', 'ZREVRANGE'].includes(s.exp.n) && text(s.cmd.args[2]) === '0' && text(s.cmd.args[3]) === '-1')).length);
     assert.equal(count('databases'), steps.filter((s) => s.cmd.db !== 0 && s.exp.n !== 'SELECT').length);
-    // SET without an expiry, then EXPIRE on the same key, from one connection.
-    const last = new Map();
+    // SET or SETNX without an expiry, then EXPIRE on the same key, from one
+    // connection, outside a transaction. Script lines and the Unix socket,
+    // which every socket client shares, don't count.
+    const last = new Map(), inMulti = new Set();
     let setExpire = 0;
     for (const { cmd, exp: e } of steps) {
+      if (cmd.client === 'lua' || cmd.client.startsWith('unix:')) continue;
       const prev = last.get(cmd.client);
       if (/^P?EXPIRE(AT)?$/.test(e.n) && prev && prev === cmd.db + ':' + text(cmd.args[1])) setExpire++;
-      last.set(cmd.client, e.n === 'SET' && !cmd.args.slice(3).some((a) => /^(EX|PX|EXAT|PXAT|KEEPTTL)$/i.test(text(a))) ? cmd.db + ':' + text(cmd.args[1]) : null);
+      if (e.n === 'MULTI') inMulti.add(cmd.client);
+      else if (e.n === 'EXEC' || e.n === 'DISCARD') inMulti.delete(cmd.client);
+      const plainSet = e.n === 'SETNX' || (e.n === 'SET' && !cmd.args.slice(3).some((a) => /^(EX|PX|EXAT|PXAT|KEEPTTL)$/i.test(text(a))));
+      last.set(cmd.client, plainSet && !inMulti.has(cmd.client) ? cmd.db + ':' + text(cmd.args[1]) : null);
     }
     assert.equal(count('set-expire'), setExpire);
     // The busiest key.
@@ -243,15 +254,17 @@ test('MONITOR lines: escapes, clients, and lines that are not commands', () => {
   assert.deepEqual(Buffer.from(p.args[1]), Buffer.from('bin\x00key', 'latin1'));
   assert.equal(Buffer.from(p.args[2]).toString(), 'line\nbreak "quote" \\ \t\x07\x08\r');
   // Straight off the socket, with a + and CRLF; an IPv6 client; a Unix socket.
-  assert.deepEqual(T.parseLine('+1791218550.1 [3 [::1]:6000] "GET" "k"\r').args.map((a) => Buffer.from(a).toString()), ['GET', 'k']);
-  assert.equal(T.parseLine('+1791218550.1 [3 [::1]:6000] "GET" "k"\r').usec, 100000);
+  assert.deepEqual(T.parseLine('+1791218550.100000 [3 [::1]:6000] "GET" "k"\r').args.map((a) => Buffer.from(a).toString()), ['GET', 'k']);
+  assert.equal(T.parseLine('+1791218550.100000 [3 [::1]:6000] "GET" "k"\r').usec, 100000);
   assert.equal(T.parseLine('1791218550.100000 [12 [::1]:6000] "GET" "k"').client, '[::1]:6000');
   assert.equal(T.parseLine('1791218550.100000 [0 unix:/tmp/redis.sock] "PING"').client, 'unix:/tmp/redis.sock');
   // A capture saved as UTF-8 text by some other tool.
   assert.equal(Buffer.from(T.parseLine('1791218550.100000 [0 lua] "SET" "café" "\u{1F525}"').args[2]).toString(), '\u{1F525}');
-  for (const bad of ['OK', '', 'hello', '1791218550.1 [0 127.0.0.1:1] "GET" "unterminated', '1791218550.1 [0 127.0.0.1:1] GET k', '1791218550 [0 x] "GET"']) assert.equal(T.parseLine(bad), null, bad);
+  // Not lines: a cut start, as split -b or tail -c leave it, and times the servers can't print.
+  for (const bad of ['OK', '', 'hello', '1791218550.100000 [0 127.0.0.1:1] "GET" "unterminated', '1791218550.100000 [0 127.0.0.1:1] GET k', '1791218550 [0 x] "GET"',
+    '18550.753456 [0 127.0.0.1:1] "GET" "a"', '9999999999999.000000 [0 127.0.0.1:1] "GET" "c"', '1791218550.1 [0 127.0.0.1:1] "GET" "k"']) assert.equal(T.parseLine(bad), null, bad);
   const an = T.analyzer();
-  an.addText('OK\n1791218550.1 [0 127.0.0.1:1] "GET" "k"\nnot a command\n1791218550.2 [0 127.0.0.1:1] "MODULE.CMD" "x"\n');
+  an.addText('OK\n1791218550.100000 [0 127.0.0.1:1] "GET" "k"\nnot a command\n1791218550.200000 [0 127.0.0.1:1] "MODULE.CMD" "x"\n');
   const r = an.result();
   assert.equal(r.commands, 2);
   assert.equal(r.unparsed, 1);

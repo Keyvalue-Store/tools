@@ -27,7 +27,7 @@
     "hot-key": 179,
     "whole": 149,
     "databases": 57,
-    "cross-slot": 36,
+    "cross-slot": 37,
     "eval": 34,
     "set-expire": 8,
     "keys": 2,
@@ -73,7 +73,7 @@
     "hot-key": 179,
     "whole": 149,
     "databases": 57,
-    "cross-slot": 36,
+    "cross-slot": 37,
     "eval": 34,
     "set-expire": 8,
     "keys": 2,
@@ -119,7 +119,7 @@
     "hot-key": 76,
     "whole": 67,
     "databases": 21,
-    "cross-slot": 16,
+    "cross-slot": 17,
     "keys": 2,
     "flush": 1,
     "set-expire": 1
@@ -165,7 +165,7 @@
     "hot-key": 74,
     "whole": 67,
     "databases": 24,
-    "cross-slot": 15,
+    "cross-slot": 16,
     "keys": 2,
     "flush": 1,
     "set-expire": 1
@@ -208,7 +208,7 @@
     "hot-key": 59,
     "whole": 45,
     "databases": 30,
-    "cross-slot": 7,
+    "cross-slot": 8,
     "keys": 2,
     "flush": 1,
     "set-expire": 1
@@ -252,7 +252,7 @@
     "hot-key": 190,
     "whole": 164,
     "databases": 72,
-    "cross-slot": 46,
+    "cross-slot": 47,
     "eval": 38,
     "set-expire": 16,
     "keys": 2,
@@ -273,8 +273,8 @@
   }
  ],
  "getkeys": {
-  "forms": 60,
-  "matchingBothServers": 60
+  "forms": 68,
+  "matchingBothServers": 68
  },
  "eviction": [
   {
@@ -324,8 +324,8 @@
   "commands": 3000000,
   "keys": 1029473,
   "fileBytes": 224142954,
-  "seconds": 11,
-  "rssMB": 333,
+  "seconds": 12,
+  "rssMB": 330,
   "node": "v22.22.0",
   "how": "node traffic/cli.js on a generated capture: GET, SET with EX, HINCRBY and DEL from 1,400 connections, keys from a skewed distribution over 2 million names"
  }

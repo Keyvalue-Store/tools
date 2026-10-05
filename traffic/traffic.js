@@ -202,9 +202,16 @@
     GEORADIUS: georadius, GEORADIUSBYMEMBER: georadius,
     // MIGRATE host port key|"" db timeout [COPY] [REPLACE] [AUTH ...] [KEYS key ...]
     MIGRATE: (a) => {
-      if (a.length > 3 && a[3].length === 0) { for (let i = 6; i < a.length; i++) if (upper(a[i]) === 'KEYS') return range(i + 1, a.length); return []; }
-      return a.length > 3 ? [3] : [];
+      for (let i = 6; i < a.length; i++) {
+        const t = upper(a[i]);
+        if (t === 'KEYS') return a[3].length ? [] : range(i + 1, a.length);
+        if (t === 'AUTH') i += 1;
+        else if (t === 'AUTH2') i += 2;
+      }
+      return a.length > 3 && a[3].length ? [3] : [];
     },
+    // Valkey's CLUSTERSCAN takes a cursor where the table says a key would be.
+    CLUSTERSCAN: () => [],
     // MSETEX numkeys key value [key value ...] [options]
     MSETEX: (a) => {
       const n = parseInt(a[1] || '', 10);
@@ -212,8 +219,17 @@
       return range(0, n).map((i) => 2 + i * 2);
     }
   };
+  // XREAD and XREADGROUP: the options before STREAMS are skipped the way
+  // the servers do it, since a group or consumer can be named STREAMS too.
   function streams(a) {
-    for (let i = 1; i < a.length; i++) if (upper(a[i]) === 'STREAMS') { const rest = a.length - i - 1; return range(i + 1, i + 1 + Math.floor(rest / 2)); }
+    for (let i = 1; i < a.length; i++) {
+      const t = upper(a[i]);
+      if (t === 'BLOCK' || t === 'COUNT' || t === 'MAXCOUNT' || t === 'MAXSIZE' || t === 'CLAIM') i++;
+      else if (t === 'GROUP') i += 2;
+      else if (t === 'NOACK') continue;
+      else if (t === 'STREAMS') { const rest = a.length - i - 1; return rest && rest % 2 === 0 ? range(i + 1, i + 1 + rest / 2) : []; }
+      else return [];
+    }
     return [];
   }
   // SORT key [BY pattern] [LIMIT offset count] [GET pattern ...] [ASC|DESC] [ALPHA] [STORE destination]
@@ -252,7 +268,10 @@
 
   // ---- Reading MONITOR lines ----
 
-  const HEAD = /^(\d+)\.(\d{1,6}) \[(\d+) /;
+  // Seconds and microseconds, printed as %ld.%06ld: ten digits from 2001 to
+  // 2286. A line cut short at the front, as split -b or tail -c leave it,
+  // doesn't match.
+  const HEAD = /^(\d{10})\.(\d{6}) \[(\d+) /;
   const ESC = { n: '\n', r: '\r', t: '\t', a: '\x07', b: '\x08', '"': '"', '\\': '\\' };
   const HEX = (c) => (c >= 48 && c <= 57 ? c - 48 : c >= 97 && c <= 102 ? c - 87 : c >= 65 && c <= 70 ? c - 55 : -1);
   // Characters beyond ASCII, as in a capture some other tool saved as UTF-8,
@@ -279,7 +298,7 @@
       const c = line.charCodeAt(i);
       if (c === 32) { i++; continue; }
       if (c !== 34) return null;
-      let start = ++i, parts = null, done = false;
+      let start = ++i, parts = null, pieces = null, done = false;
       while (i < end) {
         const ch = line.charCodeAt(i);
         if (ch === 34) { done = true; break; }
@@ -294,6 +313,7 @@
           if (rep !== null) {
             const lit = line.slice(start, i);
             (parts || (parts = [])).push(wide ? utf8(lit) : lit, rep);
+            if (parts.length >= 8192) { (pieces || (pieces = [])).push(parts.join('')); parts = []; }
             i += skip; start = i;
             continue;
           }
@@ -302,11 +322,12 @@
       }
       if (!done) return null;
       const lit = line.slice(start, i);
-      args.push(parts ? (parts.push(wide ? utf8(lit) : lit), parts.join('')) : wide ? utf8(lit) : lit);
+      if (parts) { parts.push(wide ? utf8(lit) : lit); if (pieces) { pieces.push(parts.join('')); args.push(pieces.join('')); } else args.push(parts.join('')); }
+      else args.push(wide ? utf8(lit) : lit);
       i++;
     }
     if (!args.length) return null;
-    return { sec: +m[1], usec: +m[2].padEnd(6, '0'), db: +m[3], client: client, args: args };
+    return { sec: +m[1], usec: +m[2], db: +m[3], client: client, args: args };
   }
   // The same, with each argument as a Uint8Array.
   function parseLine(line) {
@@ -451,10 +472,10 @@
       keyIds: new Map(), names: [], dbs: growable(Int32Array), reads: growable(Uint32Array), writes: growable(Uint32Array), deletes: growable(Uint32Array),
       slots: new Float64Array(16384), slotKeys: 0, bytes: 0,
       crossSlot: 0, crossSlotExamples: [], kinds: { read: 0, write: 0, script: 0, pubsub: 0, other: 0 },
-      risky: new Map(), multi: 0, luaLines: 0, scripts: 0, evalCalls: 0, setup: 0,
+      risky: new Map(), multi: 0, luaLines: 0, scripts: 0, evalCalls: 0, setup: 0, crossScript: false,
       accKeys: growable(Int32Array), accOps: growable(Uint8Array), partial: false, unknown: new Map()
     };
-    let carry = '';
+    let pending = []; // the start of a line that hasn't ended yet, in pieces
     const note = (id, example) => {
       const r = st.risky.get(id) || { count: 0, examples: [] };
       r.count++;
@@ -491,6 +512,7 @@
 
       // Who sent it: the connection, and its address without the port.
       if (cmd.client === 'lua') st.luaLines++;
+      else st.crossScript = false;
       let conn = st.conns.get(cmd.client);
       if (!conn) {
         const host = cmd.client === 'lua' ? 'lua' : cmd.client.replace(/:\d+$/, '').replace(/^\[(.*)\]$/, '$1');
@@ -519,11 +541,23 @@
       if (cmd.db !== 0 && base !== 'SELECT') note('databases', 'database ' + cmd.db);
       const lastSet = conn.lastSet;
       conn.lastSet = -1;
+      // A script runs as one step, and every client on the Unix socket shows
+      // the same address, so neither can leave a key between SET and EXPIRE.
+      const ownConnection = cmd.client !== 'lua' && !cmd.client.startsWith('unix:');
 
       // Keys. Scripts name their keys, but the commands they run show up as
       // their own lines from "lua", so only those count. Pub/sub channels
       // aren't keys, and WATCH doesn't touch the value.
-      if (flags.includes('x') || flags.includes('p')) return;
+      if (flags.includes('x')) {
+        // A cluster refuses a script or function whose declared keys are in
+        // different slots. The commands it ran then aren't counted again.
+        let firstSlot = -1, cross = false;
+        for (const p of positions(args, inf)) { const slot = slotOf(args[p]); if (firstSlot < 0) firstSlot = slot; else if (slot !== firstSlot) cross = true; }
+        if (cross) { st.crossSlot++; if (st.crossSlotExamples.length < 3) st.crossSlotExamples.push(copy(short(args))); }
+        st.crossScript = cross;
+        return;
+      }
+      if (flags.includes('p')) return;
       if (base === 'FLUSHALL' || base === 'FLUSHDB') { record(base === 'FLUSHALL' ? -1 : -2 - cmd.db, FLUSH); return; }
       if (!flags.includes('r') && !flags.includes('w')) return;
       const pos = positions(args, inf);
@@ -551,10 +585,10 @@
         if (firstSlot < 0) firstSlot = slot; else if (slot !== firstSlot) cross = true;
         record(k, op);
       }
-      if (cross) { st.crossSlot++; if (st.crossSlotExamples.length < 3) st.crossSlotExamples.push(copy(short(args))); }
+      if (cross && !(cmd.client === 'lua' && st.crossScript)) { st.crossSlot++; if (st.crossSlotExamples.length < 3) st.crossSlotExamples.push(copy(short(args))); }
       // SET and then EXPIRE on the same key, outside a transaction.
       if (lastSet >= 0 && firstKey === lastSet && EXPIRES.has(base)) note('set-expire', showKey(args[1]));
-      if ((base === 'SET' || base === 'SETNX') && !conn.multi) {
+      if ((base === 'SET' || base === 'SETNX') && !conn.multi && ownConnection) {
         let ttl = false;
         if (base === 'SET') for (let i = 3; i < args.length; i++) if (TTL_OPTION.test(args[i])) ttl = true;
         if (!ttl) conn.lastSet = firstKey;
@@ -579,11 +613,16 @@
     function addText(text) { addChunk(text, true); }
     // Pieces of a file in order; final is true for the last one.
     function addChunk(text, final) {
-      const s = carry + text;
-      let start = 0, nl;
-      while ((nl = s.indexOf('\n', start)) >= 0) { addLine(s.slice(start, nl)); start = nl + 1; }
-      carry = s.slice(start);
-      if (final) { if (carry) addLine(carry); carry = ''; }
+      let start = 0, nl = text.indexOf('\n');
+      if (nl >= 0 && pending.length) {
+        pending.push(text.slice(0, nl));
+        addLine(pending.join(''));
+        pending = [];
+        start = nl + 1;
+      }
+      while ((nl = text.indexOf('\n', start)) >= 0) { addLine(text.slice(start, nl)); start = nl + 1; }
+      if (start < text.length) pending.push(text.slice(start));
+      if (final) { if (pending.length) addLine(pending.join('')); pending = []; }
     }
 
     // Key accesses per primary of a new cluster with n primaries.
@@ -615,8 +654,10 @@
         for (let i = 0; i < nb; i++) counts.push(0);
         for (const [t, n] of st.perSecond) counts[Math.floor((t - startSec) / step)] += n;
       }
-      let peak = { time: null, count: 0 };
-      for (const [t, n] of st.perSecond) if (n > peak.count || (n === peak.count && t < peak.time)) peak = { time: t, count: n };
+      // The busiest second that the capture covers from start to end. The
+      // first and last seconds are usually covered only in part.
+      let peak = null;
+      for (const [t, n] of st.perSecond) if (t > startSec && t < endSec && (!peak || n > peak.count || (n === peak.count && t < peak.time))) peak = { time: t, count: n };
       const byCommand = Array.from(st.byCommand.entries()).map(([name, v]) => ({ name: name, count: v.count, kind: v.kind, bytes: v.bytes }))
         .sort((a, b) => b.count - a.count || (a.name < b.name ? -1 : 1));
       const hosts = Array.from(st.hosts.entries()).map(([host, v]) => ({
@@ -703,6 +744,9 @@
       result: result, curve: curve, spread: spread,
       // Every key: fn(db, key as a byte string, reads, writes, deletes).
       eachKey: (fn) => { for (let i = 0; i < st.names.length; i++) fn(st.dbs.at(i), st.names[i], st.reads.at(i), st.writes.at(i), st.deletes.at(i)); },
+      // The same one key at a time: keyCount(), then keyAt(i) as [db, key, reads, writes, deletes].
+      keyCount: () => st.names.length,
+      keyAt: (i) => [st.dbs.at(i), st.names[i], st.reads.at(i), st.writes.at(i), st.deletes.at(i)],
       keyStats: () => st.names.map((_, i) => keyRecord(i))
     };
   }
