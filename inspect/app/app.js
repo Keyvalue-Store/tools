@@ -59,7 +59,7 @@
     // The layers, outside in, when there's anything wrapped around the value.
     const chain = el('div', { class: 'chain', 'aria-label': 'Layers, from the outside in' });
     for (const l of a.layers) {
-      const check = l.check === 'ok' || l.check === 'size ok' ? ', checksum ok' : l.check === 'mismatch' ? ', checksum wrong' : '';
+      const check = l.check === 'ok' ? ', checksum ok' : l.check === 'size ok' ? ', size matches' : l.check === 'mismatch' ? ', checksum wrong' : '';
       chain.append(el('div', { class: 'step' }, [el('strong', { text: l.name }), el('span', { text: size(l.size) + ' to ' + size(l.out) + check })]), el('span', { class: 'arrow', 'aria-hidden': 'true', text: '›' }));
     }
     chain.append(el('div', { class: 'step final' }, [el('strong', { text: r.name }), el('span', { text: size(a.bytes.length) })]));

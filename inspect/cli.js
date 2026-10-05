@@ -73,7 +73,7 @@ function main(argv) {
     }, null, 2));
     return 0;
   }
-  const chain = a.layers.map((l) => l.name + (l.check ? ' (' + (l.check === 'ok' || l.check === 'size ok' ? 'checksum ok' : 'checksum does not match') + ')' : '')).concat([r.name]);
+  const chain = a.layers.map((l) => l.name + (l.check ? ' (' + (l.check === 'ok' ? 'checksum ok' : l.check === 'size ok' ? 'size matches' : 'checksum does not match') + ')' : '')).concat([r.name]);
   console.log(chain.join(' > ') + `, ${bytes.length.toLocaleString('en-US')} bytes${form === 'quoted' ? ' read from redis-cli\'s quoted form' : form === 'hex' ? ' read from hex' : ''}`);
   for (const l of a.layers) for (const f of l.facts) console.log('  ' + l.name + ': ' + f);
   if (r.value) console.log('\n' + I.show(r.value));

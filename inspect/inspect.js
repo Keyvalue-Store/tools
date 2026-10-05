@@ -1400,10 +1400,14 @@
     return null;
   }
 
-  function parsePickle(b) {
+  // Opcodes protocol 1 added. Pickles from protocol 2 on say their protocol
+  // in a PROTO opcode, so these tell protocol 1 from protocol 0.
+  const PICKLE_1 = new Set([0x29, 0x31, 0x47, 0x4a, 0x4b, 0x4d, 0x51, 0x54, 0x55, 0x58, 0x5d, 0x65, 0x68, 0x6a, 0x6f, 0x71, 0x72, 0x75, 0x7d]);
+  function parsePickle(b) { return readPickle(b).value; }
+  function readPickle(b) {
     const r = new Reader(b);
     const stack = [], marks = [], memo = new Map();
-    let proto = 0;
+    let proto = 0, binary = 0;
     const fail = (what) => { throw new FormatError('pickle: ' + what, r.pos); };
     const top = () => { if (!stack.length) fail('the stack is empty'); return stack[stack.length - 1]; };
     const pop = () => { if (!stack.length || (marks.length && marks[marks.length - 1] === stack.length)) fail('the stack is empty'); return stack.pop(); };
@@ -1498,15 +1502,14 @@
     for (let guard = 0; ; guard++) {
       if (guard > 50000000) fail('too long');
       const op = r.u8();
+      if (PICKLE_1.has(op)) binary = 1;
       switch (op) {
         case 0x80: proto = r.u8(); if (proto > 5) fail('protocol ' + proto + ' is newer than this reader'); break;
         case 0x95: r.bytes(8); break;
         case 0x2e: {
           if (stack.length !== 1 || marks.length) fail('the stack does not end with one value');
           if (r.left) fail('more after the end');
-          const v = stack[0];
-          v.note = (v.note ? v.note + '; ' : '') + 'protocol ' + proto;
-          return v;
+          return { value: stack[0], protocol: proto || binary };
         }
         case 0x28: marks.push(stack.length); break;
         case 0x4e: stack.push(V.nul()); break;
@@ -1824,6 +1827,7 @@
   function identify(b, depth) {
     const tryLayer = (id, name, f) => { try { const x = f(); return Object.assign({ layer: true, id: id, name: name }, x); } catch (e) { return null; } };
     const tryValue = (id, name, f) => { try { return { id: id, name: name, value: f() }; } catch (e) { return null; } };
+    const tryPickle = () => { try { const p = readPickle(b); return { id: 'pickle', name: 'Python pickle', value: p.value, notes: ['Pickle protocol ' + p.protocol + '.'] }; } catch (e) { return null; } };
     let x;
     if (!b.length) return { id: 'empty', name: 'An empty value', value: V.str('') };
 
@@ -1838,7 +1842,7 @@
 
     // Serializers with a signature.
     if (b[0] === 0xac && b[1] === 0xed && b[2] === 0 && (x = tryValue('java', 'Java serialization', () => parseJava(b)))) return x;
-    if (b[0] === 0x80 && b[1] >= 2 && b[1] <= 5 && b[b.length - 1] === 0x2e && (x = tryValue('pickle', 'Python pickle', () => parsePickle(b)))) return x;
+    if (b[0] === 0x80 && b[1] >= 2 && b[1] <= 5 && b[b.length - 1] === 0x2e && (x = tryPickle())) return x;
     if (b[0] === 4 && b[1] === 8 && (x = tryValue('marshal', 'Ruby Marshal', () => parseMarshal(b)))) return x;
     if (b[0] === 0 && b[1] === 0 && b[2] === 0 && (b[3] === 1 || b[3] === 2) && (x = tryValue('igbinary', 'PHP igbinary', () => parseIgbinary(b)))) return x;
     if (b.length >= 5 && u32le0(b) === b.length && b[b.length - 1] === 0 && (x = tryValue('bson', 'BSON', () => parseBSON(b)))) return x;
@@ -1851,7 +1855,7 @@
     const noNewline = b[b.length - 1] === 10 ? b.subarray(0, b.length - (b[b.length - 2] === 13 ? 2 : 1)) : b;
     if (PHP_START.test(head)) for (const v of [b, noNewline]) if ((x = tryValue('php', 'PHP serialize', () => parsePHP(v)))) return x;
     if (/^[A-Za-z0-9_.-]+\|/.test(head) && (x = tryValue('php-session', 'PHP session', () => parsePHPSession(noNewline)))) return x;
-    if (b[b.length - 1] === 0x2e && '(]})cIlLSVNKJFdtUXTMG'.includes(head[0]) && (x = tryValue('pickle', 'Python pickle', () => parsePickle(b)))) return x;
+    if (b[b.length - 1] === 0x2e && '(]})cIlLSVNKJFdtUXTMG'.includes(head[0]) && (x = tryPickle())) return x;
 
     // Text.
     let text = utf8(b);

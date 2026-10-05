@@ -186,6 +186,16 @@ test('a pickle that would run a command is only described', () => {
   assert.equal(a.result.id, 'pickle');
   assert.equal(a.result.value.cls, 'posix.system');
   assert.equal(a.result.value.items[0].v, 'echo hi');
+  assert.match(I.show(a.result.value), /arguments: \["echo hi"\]/);
+  assert.deepEqual(I.plain(a.result.value), { $class: 'posix.system', $arguments: ['echo hi'] });
+});
+
+test('the pickle protocol is reported, protocol 1 included', () => {
+  // Protocols 0 and 1 have no PROTO opcode; protocol 1 uses binary opcodes.
+  for (const p of [0, 1, 2, 3, 4, 5]) {
+    const a = I.analyze(bin('pickle-protocol-' + p));
+    assert.deepEqual(a.result.notes, ['Pickle protocol ' + p + '.'], 'protocol ' + p);
+  }
 });
 
 test('random and damaged input never throws and always finishes', () => {
