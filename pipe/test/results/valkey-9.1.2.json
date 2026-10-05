@@ -118,5 +118,69 @@
   "decodeFiles": {
     "files": 6,
     "commands": 14037
+  },
+  "pushAndAttributes": {
+    "when": "2026-10-05T14:32:22.882Z",
+    "sent": [
+      "HELLO 3",
+      "DEBUG PROTOCOL attrib",
+      "DEBUG PROTOCOL push",
+      "SUBSCRIBE news",
+      "UNSUBSCRIBE news",
+      "PING"
+    ],
+    "replies": 7,
+    "types": [
+      "map",
+      "bulk",
+      "bulk",
+      "push",
+      "push",
+      "push",
+      "simple"
+    ],
+    "attributesKeptWithReply": true,
+    "fixture": "test/fixtures/push-attr-valkey.bin"
+  },
+  "hexDumps": {
+    "when": "2026-10-05T14:32:22.882Z",
+    "session": "valkey-cli against Valkey 9.1.2: SET cache:blob (64 bytes), GET, HSET user:1001, HGETALL, DEL, captured with tcpdump",
+    "runs": [
+      {
+        "command": "hexdump -C",
+        "version": "hexdump from util-linux 2.39.3",
+        "fixture": "dump-hexdump-C.txt",
+        "bytes": 281,
+        "exact": true
+      },
+      {
+        "command": "xxd",
+        "version": "xxd 2023-10-25 (Vim 9.1)",
+        "fixture": "dump-xxd.txt",
+        "bytes": 281,
+        "exact": true
+      },
+      {
+        "command": "od -A x -t x1z",
+        "version": "od (GNU coreutils) 9.4",
+        "fixture": "dump-od-x1z.txt",
+        "bytes": 281,
+        "exact": true
+      },
+      {
+        "command": "od -t x1",
+        "version": "od (GNU coreutils) 9.4",
+        "fixture": "dump-od-octal.txt",
+        "bytes": 281,
+        "exact": true
+      },
+      {
+        "command": "tshark -q -z follow,tcp,hex,0",
+        "version": "TShark (Wireshark) 4.2.2",
+        "fixture": "dump-wireshark-follow.txt",
+        "bytes": 413,
+        "exact": true
+      }
+    ]
   }
 }

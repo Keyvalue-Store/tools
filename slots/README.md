@@ -4,7 +4,7 @@ Find which slot of a Redis or Valkey cluster a key lands in, and which primary h
 
 Try it in your browser at https://keyvaluestore.com/tools/slots/, or open `slots/app/index.html` from a copy of this repository.
 
-It's one JavaScript file with no dependencies. The same file runs the web page, the command line and the tests.
+Its logic is one JavaScript file, `slots.js`, with no dependencies. The web page, the command line and the tests all load it.
 
 ## How hash slots work
 
@@ -16,7 +16,7 @@ Moving data between primaries means moving whole slots. That's why adding a prim
 
 ### Hash tags
 
-Sometimes keys have to sit together. A command that touches several keys, such as `MGET` or `MSET`, only runs if every key is in the same slot. So are transactions and Lua scripts. If the keys are spread out, the cluster answers:
+Sometimes keys have to sit together. A command that touches several keys, such as `MGET` or `MSET`, only runs if every key is in the same slot. The same goes for transactions and Lua scripts. If the keys are spread out, the cluster answers:
 
 ```
 (error) CROSSSLOT Keys in request don't hash to the same slot
@@ -44,7 +44,7 @@ valkey-cli -h 10.0.0.4 -p 6379 --scan --pattern 'user:*' > keys.txt
 
 The page reads the output as it is. It also reads quoted output, the form `redis-cli` prints in a terminal, as in `1) "user:\xe2\x82\xac"`. If your keys can contain any byte, use quoted output: add `--no-raw`. Raw output stops each key at its first zero byte, and a key with a line break in it can't be told apart from two keys.
 
-Nothing you paste or load leaves the page. The page tells the browser to block every network request it could make, so even a mistake in the code couldn't send your keys anywhere.
+Nothing you paste or load leaves the page. The tool doesn't send anything anywhere, and the page's security policy stops it from fetching or loading anything from another site.
 
 ## Use it from the command line
 
@@ -89,15 +89,17 @@ In a page, load `slots.js` with a script tag and use `window.KVSlots`.
 
 ## How it was tested
 
-The tests compare the tool with real servers: Valkey 9.1.2 and Redis 8.10.2, both built from source, in October 2026. The results files in `test/results/` hold the full numbers.
+The tool was checked against real servers, Valkey 9.1.2 and Redis 8.10.2, both built from source, in October 2026. The results files in `test/results/` hold the full numbers.
 
 - **Slots.** 10,029 keys went through `CLUSTER KEYSLOT` on both servers: random text with stray braces, hash-tagged keys, UTF-8 in many scripts, raw binary and 29 edge cases. The tool gave the same slot as both servers for every key.
-- **Which arguments are keys.** For 766 commands on Valkey and 822 on Redis, covering 50 command names on Valkey and 54 on Redis, the tool picked out the same keys as the server's `COMMAND GETKEYS`.
-- **CROSSSLOT.** 686 multi-key commands went to a live three-primary Valkey cluster and 742 to a Redis one, about half of them across slots. The tool predicted every CROSSSLOT answer, with one exception on Valkey, below. Sharded pub/sub (`SSUBSCRIBE`) was checked the same way, 40 times on each.
+- **Which arguments are keys.** For 868 commands on Valkey and 924 on Redis, the tool picked out the same keys as the server's `COMMAND GETKEYS`. They cover 58 of Valkey's 60 multi-key commands and 62 of Redis's 64, including options that change which arguments are keys, such as `SORT` with `BY`, `GET`, `LIMIT` and two `STORE`s. The other two, `SSUBSCRIBE` and `SUNSUBSCRIBE`, take shard channels, which `GETKEYS` doesn't list, so they were checked on the clusters instead.
+- **Where the servers disagree.** A `SORT` destination named `LIMIT`, `GET`, `BY` or `STORE` is read again as an option by Valkey 9.1.2 but not by Redis 8.10.2. The tool shows the Redis reading and adds a note with Valkey's. Both servers' answers for 8 such commands are in `test/fixtures/sort-store-names.jsonl`.
+- **CROSSSLOT.** 686 multi-key commands went to a live three-primary Valkey cluster and 742 to a Redis one, about half of them across slots. The tool predicted every answer, with one exception: Valkey ran all 9 cross-slot `MSETEX` commands instead of refusing them (see below).
+- **Shard channels.** `SSUBSCRIBE` went to each cluster 40 times and `SUNSUBSCRIBE` 20 times, half of them with channels in different slots. Both servers refused `SSUBSCRIBE` across slots, as the tool predicts. Valkey refused `SUNSUBSCRIBE` across slots too, but Redis 8.10.2 ran it on any node, whatever the slots, so the tool adds a note about the difference.
 - **Even split.** The ranges the tool gives a new cluster matched what `valkey-cli --cluster create` assigned to real clusters of 3 to 10 primaries.
 - **Pasted output.** Real `valkey-cli --scan` output, raw and quoted, read back as the exact keys that were stored.
 
-The fixtures in `test/fixtures/` are those server answers, so the tests run without a server:
+The tests replay the recorded answers in `test/fixtures/`, so they run without a server. The fixtures hold every command checked with `GETKEYS`, with the cluster's CROSSSLOT answer where it was sent to one, and 1,457 of the 10,029 keys: every seventh one and all the edge cases. The shard channel checks are only in the results files.
 
 ```sh
 node --test slots/test/slots.test.js
@@ -113,7 +115,7 @@ So the tool adds a note to every `MSETEX`. Keep its keys in one slot with a hash
 
 ## Limits
 
-- The tool knows which arguments are keys for every multi-key command in Redis 8.10.2 and Valkey 9.1.2. Commands it doesn't know are read as single-key commands, and the page says so.
+- The tool knows which arguments are keys for every multi-key command in Redis 8.10.2 and Valkey 9.1.2. Commands it doesn't know are read as single-key commands, and the page says so. That includes commands from modules, such as `JSON.MGET` in Redis builds that load the JSON module.
 - A slot is the same on every cluster, but the primary for it depends on the layout you give the tool. Pasted `CLUSTER NODES` output is a snapshot: slots move when a cluster is resharded.
 - Slots that are being migrated show up as `[slot->-node]` in `CLUSTER NODES`. The tool ignores those markers and counts the slot where it is now.
 

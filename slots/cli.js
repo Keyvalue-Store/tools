@@ -47,7 +47,7 @@ function main(argv) {
       console.log(JSON.stringify({ command: r.command, crossSlot: r.crossSlot, slots: r.slots,
         keys: r.keys.map((k) => ({ key: S.displayKey(k.bytes), slot: k.slot, hashTag: k.tagged })), notes: r.notes }, null, 2));
     } else {
-      if (!r.keys.length) console.log(r.command + ' takes no keys, so any node can run it.');
+      if (!r.keys.length) console.log((r.multiKey ? 'This ' + r.command + ' has no keys' : r.command + ' takes no keys') + ', so any node can run it.');
       for (const k of r.keys) console.log(k.slot + '\t' + S.displayKey(k.bytes));
       if (r.keys.length) console.log(r.crossSlot ? 'CROSSSLOT: the keys are in ' + r.slots.length + ' different slots.'
         : 'OK: every key is in slot ' + r.slots[0] + '.');

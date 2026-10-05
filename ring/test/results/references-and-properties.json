@@ -8,7 +8,7 @@
   "jump": {
     "cases": 20000,
     "mismatches": 0,
-    "oracle": "C code from Lamping and Veach (2014), gcc 13"
+    "oracle": "The function printed in Lamping and Veach (2014), its two C++ casts written the C way, compiled with gcc 13"
   },
   "properties": {
     "add-3": {

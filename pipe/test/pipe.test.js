@@ -117,6 +117,58 @@ test('decodes real replies from Valkey and Redis, RESP2 and RESP3', () => {
   }
 });
 
+test('RESP3 push replies and attributes, as Valkey 9.1.2 and Redis 8.10.2 send them', () => {
+  // Recorded after HELLO 3: DEBUG PROTOCOL attrib, DEBUG PROTOCOL push,
+  // SUBSCRIBE news, UNSUBSCRIBE news, PING.
+  for (const server of ['valkey', 'redis']) {
+    const d = P.decode(new Uint8Array(fs.readFileSync(path.join(__dirname, 'fixtures', `push-attr-${server}.bin`))));
+    assert.equal(d.complete, true, server);
+    const v = d.values;
+    assert.deepEqual(v.map((x) => x.type), ['map', 'bulk', 'bulk', 'push', 'push', 'push', 'simple'], server);
+    // An attribute belongs to the reply that follows it.
+    assert.equal(Buffer.from(v[1].bytes).toString(), 'Some real reply following the attribute');
+    assert.equal(Buffer.from(v[1].attributes[0].bytes).toString(), 'key-popularity');
+    assert.equal(Buffer.from(v[2].bytes).toString(), 'Some real reply following the push reply');
+    assert.equal(P.show(v[3]), '1) "server-cpu-usage"\n2) (integer) 42');
+    assert.equal(P.show(v[4]), '1) "subscribe"\n2) "news"\n3) (integer) 1');
+    assert.equal(v[6].value, 'PONG');
+  }
+});
+
+test('hex dumps from hexdump -C, xxd, od and Wireshark read back as the exact bytes', () => {
+  const fx = (name) => fs.readFileSync(path.join(__dirname, 'fixtures', name));
+  // The client's side of a real valkey-cli session, dumped by each tool.
+  // hexdump and od print * in place of repeated lines; od's default offsets are octal.
+  for (const name of ['dump-hexdump-C.txt', 'dump-xxd.txt', 'dump-od-x1z.txt', 'dump-od-octal.txt']) {
+    const r = P.bytesFromText(fx(name).toString());
+    assert.equal(r.form, 'dump', name);
+    assert.deepEqual(Buffer.from(r.bytes), fx('dump-client.bin'), name);
+  }
+  // tshark -z follow,tcp,hex shows both sides, the server's indented.
+  const follow = P.bytesFromText(fx('dump-wireshark-follow.txt').toString());
+  assert.equal(follow.form, 'dump');
+  assert.deepEqual(Buffer.from(follow.bytes), fx('dump-stream.bin'));
+  const values = P.decode(follow.bytes).values;
+  const shown = values.map((v) => (P.isReply(v, follow.replies) ? null : P.asCommand(v)) || P.show(v));
+  assert.deepEqual(shown.slice(0, 3), ['SET "cache:blob" "' + 'a'.repeat(64) + '"', 'OK', 'GET "cache:blob"']);
+  // The server's side reads as replies, even a reply shaped like a command.
+  assert.equal(shown[7], '1) "name"\n2) "Ana Silva"\n3) "plan"\n4) "pro"');
+  const s = P.summarize(values, follow.replies);
+  assert.deepEqual([s.commands, s.replies], [5, 5]);
+  // od right after its first line prints *, and its offsets are octal.
+  const rep = P.bytesFromText(fx('dump-od-repeat.txt').toString());
+  assert.equal(Buffer.from(rep.bytes).toString(), ':1\r\n'.repeat(100));
+  // Text columns that hold | or > are still text columns.
+  const sym = P.bytesFromText(fx('dump-xxd-symbols.txt').toString());
+  assert.deepEqual(Buffer.from(sym.bytes), Buffer.from(P.encodeCommand(['SET', 'rule', 'xxxx10 > 9 | ok'])));
+  const ws = P.bytesFromText(fx('dump-wireshark-symbols.txt').toString());
+  assert.deepEqual(Buffer.from(ws.bytes), fx('dump-wireshark-symbols.bin'));
+  // Plain hex and protocol text are not mistaken for dumps.
+  for (const t of ['2a 31 0d 0a 24 34 0d 0a 50 49 4e 47 0d 0a', '2a31 0d0a 2434 0d0a', 'PING', 'dead beef', '*1\r\n$4\r\nPING\r\n']) {
+    assert.notEqual(P.bytesFromText(t).form, 'dump', t);
+  }
+});
+
 test('replies print the way redis-cli prints them', () => {
   const b = new TextEncoder().encode('*3\r\n$1\r\na\r\n:7\r\n*2\r\n$-1\r\n+OK\r\n%1\r\n+k\r\n,1.5\r\n-ERR no\r\n');
   const vals = P.decode(b).values;

@@ -391,11 +391,13 @@
 
   // ---- reading the protocol back ----
 
-  // Pasted protocol often arrives as text: with \r\n written out, as a hex
-  // dump, or with the carriage returns lost. This turns any of those back
-  // into bytes.
+  // Pasted protocol often arrives as text: with \r\n written out, as hex, as
+  // a hex dump with offsets, or with the carriage returns lost. This turns
+  // any of those back into bytes.
   function bytesFromText(text) {
     const t = String(text);
+    const dump = bytesFromDump(t);
+    if (dump) return { bytes: dump.bytes, form: 'dump', replies: dump.replies };
     const compact = t.replace(/\s+/g, '');
     if (compact.length >= 4 && compact.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(compact) && /^(2a|24|2b|2d|3a|5f|2c|23|21|3d|28|25|7e|3e|7c)/i.test(compact)) {
       const out = new Uint8Array(compact.length / 2);
@@ -420,6 +422,106 @@
       return { bytes: new Uint8Array(out), form: 'escaped' };
     }
     return { bytes: encoder.encode(t), form: 'text' };
+  }
+
+  // A hex dump with an offset at the start of every line, as hexdump -C, xxd,
+  // od and Wireshark print them, usually with the bytes repeated as text at
+  // the end of the line. Wireshark's Follow TCP Stream indents the server's
+  // side; both sides are kept, in the order they appear, and the server's
+  // byte ranges come back as replies so its values read as replies. Returns
+  // null if the text is not such a dump, or its offsets don't add up.
+  function bytesFromDump(text) {
+    const rows = [];
+    for (const line of String(text).split(/\r?\n/)) {
+      const s = line.trim();
+      if (!s || /^=+$/.test(s) || /^(Follow|Filter|Node \d+):/.test(s)) continue;
+      if (s === '*') { rows.push({ star: true }); continue; }
+      const m = /^(\s*)(?:0x)?([0-9a-fA-F]{4,16}):?(?=\s|$)(.*)$/.exec(line);
+      if (!m) return null;
+      const bytes = dumpRow(m[3]);
+      if (!bytes) return null;
+      rows.push({ side: m[1] ? 1 : 0, offset: m[2], bytes: bytes });
+    }
+    const data = rows.filter((r) => r.bytes && r.bytes.length);
+    if (!data.length) return null;
+    if (data.length === 1 && parseInt(data[0].offset, 16) !== 0) return null;
+    // Offsets are hex, except od's default: seven octal digits.
+    const lines = rows.filter((r) => !r.star);
+    const octal = lines.every((r) => /^[0-7]{7}$/.test(r.offset));
+    const octalDigits = lines.every((r) => /^[0-7]+$/.test(r.offset));
+    const joined = octal ? (joinRows(rows, 8) || joinRows(rows, 16))
+      : (joinRows(rows, 16) || (octalDigits ? joinRows(rows, 8) : null));
+    if (!joined) return null;
+    let replies = null;
+    if (new Set(lines.map((r) => r.side)).size === 2) {
+      replies = [];
+      for (const [a, b, side] of joined.runs) {
+        if (side !== 1 || a === b) continue;
+        const last = replies[replies.length - 1];
+        if (last && last[1] === a) last[1] = b; else replies.push([a, b]);
+      }
+    }
+    return { bytes: new Uint8Array(joined.out), replies: replies };
+  }
+
+  // The bytes of one dump line, after its offset: hex in groups of one or
+  // more bytes, then optionally the same bytes as text, which is left out.
+  // hexdump -C starts the text with |, od -t x1z with >; neither is hex.
+  function dumpRow(rest) {
+    const out = [];
+    const re = /(\s+)(\S+)/g;
+    let m;
+    while ((m = re.exec(rest))) {
+      if (out.length && m[1].length >= 2 && sameAsText(rest.slice(m.index), out)) break;
+      if (!/^(?:[0-9a-fA-F]{2})+$/.test(m[2])) {
+        if (!out.length) return null;
+        break;
+      }
+      for (let i = 0; i < m[2].length; i += 2) out.push(parseInt(m[2].substr(i, 2), 16));
+    }
+    return out;
+  }
+
+  // The text column shows each printable byte as itself and the rest as dots.
+  function sameAsText(rest, bytes) {
+    let t = '';
+    for (const b of bytes) t += b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : '.';
+    return rest.replace(/\s+/g, '') === t.replace(/ /g, '');
+  }
+
+  function joinRows(rows, base) {
+    const next = [null, null];     // the offset each side should continue at
+    const out = [];
+    const runs = [];               // [start, end, side] for each stretch of bytes
+    let prev = null, star = false;
+    for (const r of rows) {
+      if (r.star) { if (!prev) return null; star = true; continue; }
+      const off = parseInt(r.offset, base);
+      if (next[r.side] === null) next[r.side] = off;
+      const start = out.length;
+      if (star) {
+        // hexdump and od print * in place of lines that repeat the one above.
+        const gap = off - next[r.side];
+        if (gap < 0 || gap % prev.length) return null;
+        for (let k = 0; k < gap / prev.length; k++) for (const b of prev) out.push(b);
+        next[r.side] = off;
+        star = false;
+      }
+      if (off !== next[r.side]) return null;
+      for (const b of r.bytes) out.push(b);
+      next[r.side] += r.bytes.length;
+      runs.push([start, out.length, r.side]);
+      if (r.bytes.length) prev = r.bytes;
+    }
+    return out.length ? { out: out, runs: runs } : null;
+  }
+
+  // True if a value starts inside one of the byte ranges given, such as the
+  // replies of a two-sided dump.
+  function isReply(v, ranges) {
+    if (!ranges) return false;
+    for (const r of ranges) if (v.start >= r[0] && v.start < r[1]) return true;
+    return false;
   }
 
   // Decode RESP2 and RESP3. Lenient about line endings: a lone \n also ends a
@@ -586,11 +688,11 @@
   }
 
   // Summary of a decoded stream: how many of each command.
-  function summarize(values) {
+  function summarize(values, replyRanges) {
     const counts = Object.create(null);
     let commands = 0, replies = 0;
     for (const v of values) {
-      const c = asCommand(v);
+      const c = isReply(v, replyRanges) ? null : asCommand(v);
       if (c !== null) {
         commands++;
         const name = (v.type === 'inline' ? decoder.decode(v.args[0] || new Uint8Array()) : decoder.decode(v.items[0].bytes)).toUpperCase();
@@ -615,6 +717,8 @@
     splitArgs: splitArgs,
     buildFromCommands: buildFromCommands,
     bytesFromText: bytesFromText,
+    bytesFromDump: bytesFromDump,
+    isReply: isReply,
     decode: decode,
     asCommand: asCommand,
     show: show,

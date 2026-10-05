@@ -1,0 +1,4 @@
+# Test fixtures are server and tool output, byte for byte. Never change their
+# line endings, or the tests would compare against different bytes.
+**/test/fixtures/** -text
+**/test/results/** -text

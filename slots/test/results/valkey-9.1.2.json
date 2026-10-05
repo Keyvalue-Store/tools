@@ -80,8 +80,10 @@
     "ZUNIONSTORE"
   ],
   "getkeys": {
-    "commands": 766,
-    "mismatches": 0
+    "commands": 868,
+    "mismatches": 0,
+    "firstRun": 766,
+    "secondRun": 102
   },
   "multiKeyCommands": {
     "server": [
@@ -417,6 +419,70 @@
         "crossslot": 6,
         "agree": 14
       }
+    }
+  },
+  "secondRun": {
+    "when": "2026-10-05T14:19:48.608Z",
+    "why": "SORT and GEORADIUS with their options, the multi-key commands the first run did not send to COMMAND GETKEYS, scripts with zero keys, and SUNSUBSCRIBE on the live cluster.",
+    "getkeys": {
+      "commands": 102,
+      "mismatches": 0,
+      "commandsUsed": [
+        "BRPOPLPUSH",
+        "EVALSHA_RO",
+        "FCALL",
+        "FCALL_RO",
+        "GEORADIUS",
+        "GEORADIUSBYMEMBER",
+        "SINTER",
+        "SORT",
+        "SORT_RO",
+        "WATCH"
+      ]
+    },
+    "zeroKeys": [
+      {
+        "args": [
+          "EVAL",
+          "return 1",
+          "0"
+        ],
+        "server": "ran",
+        "toolKeys": 0,
+        "toolError": null
+      },
+      {
+        "args": [
+          "EVAL_RO",
+          "return 1",
+          "0"
+        ],
+        "server": "ran",
+        "toolKeys": 0,
+        "toolError": null
+      },
+      {
+        "args": [
+          "EVALSHA",
+          "e0e1f9fabfc9d4800c877a703b823ac0578ff8db",
+          "0"
+        ],
+        "server": "ran",
+        "toolKeys": 0,
+        "toolError": null
+      }
+    ],
+    "sunsubscribe": {
+      "checks": 20,
+      "agree": 20,
+      "acceptedAcrossSlots": 0,
+      "mismatches": 0
+    },
+    "sortDestinationNames": {
+      "commands": 8,
+      "serversDisagree": 4,
+      "fixture": "test/fixtures/sort-store-names.jsonl",
+      "note": "Redis 8.10.2 skips the destination after STORE; Valkey 9.1.2 reads a destination named LIMIT, GET, BY or STORE again as an option. The tool follows Redis and adds a note with the Valkey reading."
     }
   }
 }

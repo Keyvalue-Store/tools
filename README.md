@@ -14,9 +14,9 @@ Each folder's README is the tool's manual, with a plain-language explanation of 
 
 ## How the tools are built
 
-- **One file each.** Every tool is a single JavaScript file with no dependencies. The same file runs the web page, the command line and the tests. There's nothing to install and nothing to build.
-- **Your data stays with you.** The web pages tell the browser to block every network request they could make, so nothing you paste or load can leave the page.
-- **Checked against the real thing.** Each tool's tests compare it with real servers or reference code: Valkey 9.1.2 and Redis 8.10.2 built from source, the AWS SDK, the Python `mmh3` package, the C code from the jump hash paper. The recorded answers are in each tool's `test/fixtures/`, and the measurements in `test/results/`.
+- **One library file each.** Each tool's logic is one JavaScript file with no dependencies. The web page, the command line and the tests all load that same file. There's nothing to install and nothing to build.
+- **Your data stays with you.** The tools don't send anything anywhere, and each web page's security policy stops it from fetching or loading anything from another site: no fetch, no beacons, no scripts, styles or images from elsewhere.
+- **Checked against the real thing.** Each tool was checked against real servers or reference code: Valkey 9.1.2 and Redis 8.10.2 built from source, the AWS SDK, the Python `mmh3` package, the code printed in the jump hash paper. The tests replay the recorded answers, which are in each tool's `test/fixtures/`, and the full measurements are in `test/results/`.
 
 ## Run them
 
@@ -38,7 +38,7 @@ Each tool's page is in its `app/` folder. Open `app/index.html` straight from th
 node --test
 ```
 
-Node finds every test under the tool folders. They need no server and no network: the answers recorded from real servers are in the fixtures.
+Node finds every test under the tool folders. They need no server and no network, since they replay the answers recorded from the servers.
 
 ## License
 

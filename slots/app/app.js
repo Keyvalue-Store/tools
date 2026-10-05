@@ -192,7 +192,7 @@
     let r;
     try { r = S.checkCommand($('cmd').value); } catch (e) { r = { error: e.message }; }
     if (r.error) { out.append(verdict('warn', 'This command cannot be read', r.error)); return; }
-    if (!r.keys.length) { out.append(verdict('info', `${r.command} takes no keys`, 'Any node can run it.')); return; }
+    if (!r.keys.length) { out.append(verdict('info', r.multiKey ? `This ${r.command} has no keys` : `${r.command} takes no keys`, 'Any node can run it.')); return; }
     if (r.crossSlot) {
       out.append(verdict('bad', `CROSSSLOT: the keys are in ${r.slots.length} different slots`,
         'A cluster refuses this command. Give the keys a shared hash tag, the part in braces, as in user:{42}:name and user:{42}:plan, so they land in one slot.'));

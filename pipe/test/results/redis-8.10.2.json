@@ -118,5 +118,28 @@
   "decodeFiles": {
     "files": 6,
     "commands": 14037
+  },
+  "pushAndAttributes": {
+    "when": "2026-10-05T14:32:22.882Z",
+    "sent": [
+      "HELLO 3",
+      "DEBUG PROTOCOL attrib",
+      "DEBUG PROTOCOL push",
+      "SUBSCRIBE news",
+      "UNSUBSCRIBE news",
+      "PING"
+    ],
+    "replies": 7,
+    "types": [
+      "map",
+      "bulk",
+      "bulk",
+      "push",
+      "push",
+      "push",
+      "simple"
+    ],
+    "attributesKeptWithReply": true,
+    "fixture": "test/fixtures/push-attr-redis.bin"
   }
 }

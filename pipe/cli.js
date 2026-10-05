@@ -63,14 +63,20 @@ function main(argv) {
 
   if (mode === 'decode') {
     let bytes = new Uint8Array(raw.buffer, raw.byteOffset, raw.length);
-    const looksText = !bytes.includes(13) && /^[\s0-9a-fA-F]+$|\\r\\n/.test(raw.toString('latin1').slice(0, 2000));
-    if (looksText) bytes = P.bytesFromText(raw.toString('utf8')).bytes;
+    let replies = null;
+    const head = raw.toString('latin1', 0, 4000);
+    const firstLine = (head.split(/\r?\n/).find((l) => l.trim()) || '').trim();
+    const looksDump = /^(?:0x)?[0-9a-fA-F]{4,16}:?(\s|$)/.test(firstLine) || /^=+$/.test(firstLine);
+    const looksText = !bytes.includes(13) && /^[\s0-9a-fA-F]+$|\\r\\n/.test(head.slice(0, 2000));
+    const dump = looksDump ? P.bytesFromDump(raw.toString('utf8')) : null;
+    if (dump) { bytes = dump.bytes; replies = dump.replies; }
+    else if (looksText) bytes = P.bytesFromText(raw.toString('utf8')).bytes;
     const d = P.decode(bytes, opt.limit || 1e9);
     for (const v of d.values) {
-      const c = P.asCommand(v);
+      const c = P.isReply(v, replies) ? null : P.asCommand(v);
       console.log(c !== null ? c : P.show(v));
     }
-    const s = P.summarize(d.values);
+    const s = P.summarize(d.values, replies);
     const counts = Object.keys(s.counts).sort((a, b) => s.counts[b] - s.counts[a]).map((k) => k + ' ' + s.counts[k]).join(', ');
     const n = (x, one, many) => x + ' ' + (x === 1 ? one : many);
     console.error(`${n(s.commands, 'command', 'commands')}${counts ? ' (' + counts + ')' : ''}, ${n(s.replies, 'reply', 'replies')}.${d.complete ? '' : ' Stopped before the end of the file.'}`);

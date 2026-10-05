@@ -220,10 +220,11 @@
   const firstTwo = (n) => range(1, Math.min(3, n));
   const fromTwo = (n) => range(2, n);
   function range(a, b) { const r = []; for (let i = a; i < b; i++) r.push(i); return r; }
-  function numkeysAt(pos, extra) {
+  // zeroOk: scripts and functions may be called with no keys at all.
+  function numkeysAt(pos, extra, zeroOk) {
     return function (n, args) {
       const count = parseInt(text(args[pos]), 10);
-      if (!(count >= 1) || pos + 1 + count > n) throw new Error('The number of keys does not match the arguments');
+      if (!(count >= (zeroOk ? 0 : 1)) || pos + 1 + count > n) throw new Error('The number of keys does not match the arguments');
       const r = extra ? extra.slice() : [];
       for (let i = 0; i < count; i++) r.push(pos + 1 + i);
       return r;
@@ -239,11 +240,23 @@
     }
     throw new Error('STREAMS is missing');
   }
-  function sortStore(n, args) {
-    const r = [1];
-    for (let i = 2; i < n - 1; i++) if (text(args[i]).toUpperCase() === 'STORE') r.push(i + 1);
-    return r;
+  // SORT key [BY pattern] [LIMIT offset count] [GET pattern ...] [ASC|DESC] [ALPHA] [STORE destination]
+  // Read the way Redis 8.10.2 reads it: BY and GET take one argument and
+  // LIMIT two, and if STORE appears more than once, the last one counts.
+  // Valkey 9.1.2 doesn't skip the destination after STORE, so there a
+  // destination named LIMIT, GET, BY or STORE is read again as an option.
+  function sortKeys(n, args, skipDestination) {
+    if (n < 2) return [];
+    let store = 0;
+    for (let i = 2; i < n; i++) {
+      const t = text(args[i]).toUpperCase();
+      if (t === 'LIMIT') i += 2;
+      else if (t === 'STORE' && i + 1 < n) { store = i + 1; if (skipDestination) i += 1; }
+      else if (t === 'GET' || t === 'BY') i += 1;
+    }
+    return store ? [1, store] : [1];
   }
+  const sortStore = (n, args) => sortKeys(n, args, true);
   // MSETEX numkeys key value [key value ...] [options]
   function msetex(n, args) {
     const count = parseInt(text(args[1]), 10);
@@ -260,13 +273,19 @@
     }
     return n > 3 ? [3] : [];
   }
+  // GEORADIUS key longitude latitude radius unit [...] and
+  // GEORADIUSBYMEMBER key member radius unit [...]. The servers look for STORE
+  // or STOREDIST after the unit, and the last one counts. (For GEORADIUS,
+  // Redis 8.10.2 starts one argument later than Valkey 9.1.2, which only
+  // matters when the unit itself is STORE, which no server accepts.)
   function georadiusStore(n, args) {
-    const r = [1];
-    for (let i = 2; i < n - 1; i++) {
+    if (n < 2) return [];
+    let store = 0;
+    for (let i = 5; i < n; i++) {
       const t = text(args[i]).toUpperCase();
-      if (t === 'STORE' || t === 'STOREDIST') r.push(i + 1);
+      if ((t === 'STORE' || t === 'STOREDIST') && i + 1 < n) { store = i + 1; i += 1; }
     }
-    return r;
+    return store ? [1, store] : [1];
   }
 
   // Commands that take more than one key. Every other command is treated as
@@ -284,8 +303,8 @@
     SINTERCARD: numkeysAt(1), SUNIONCARD: numkeysAt(1), SDIFFCARD: numkeysAt(1), LMPOP: numkeysAt(1), ZMPOP: numkeysAt(1),
     BLMPOP: numkeysAt(2), BZMPOP: numkeysAt(2),
     ZUNIONSTORE: numkeysAt(2, [1]), ZINTERSTORE: numkeysAt(2, [1]), ZDIFFSTORE: numkeysAt(2, [1]),
-    EVAL: numkeysAt(2), EVALSHA: numkeysAt(2), EVAL_RO: numkeysAt(2), EVALSHA_RO: numkeysAt(2),
-    FCALL: numkeysAt(2), FCALL_RO: numkeysAt(2),
+    EVAL: numkeysAt(2, null, true), EVALSHA: numkeysAt(2, null, true), EVAL_RO: numkeysAt(2, null, true),
+    EVALSHA_RO: numkeysAt(2, null, true), FCALL: numkeysAt(2, null, true), FCALL_RO: numkeysAt(2, null, true),
     XREAD: streams, XREADGROUP: streams,
     BITOP: fromTwo,
     SORT: sortStore, SORT_RO: (n) => (n > 1 ? [1] : []),
@@ -323,8 +342,9 @@
     const slots = Array.from(new Set(keys.map((k) => k.slot)));
     const notes = [];
     if (name === 'MSETEX' && slots.length) notes.push(slots.length > 1 ? MSETEX_CROSS : MSETEX_ONE.replace('{slot}', slots[0]));
-    if ((name === 'SSUBSCRIBE' || name === 'SUNSUBSCRIBE') && keys.length) notes.push('These are shard channels, not keys, but a cluster places them in slots the same way and refuses channels from different slots in one call.');
-    return {
+    if (name === 'SSUBSCRIBE' && keys.length) notes.push('These are shard channels, not keys, but a cluster places them in slots the same way and refuses channels from different slots in one call.');
+    if (name === 'SUNSUBSCRIBE' && keys.length) notes.push(SUNSUBSCRIBE_NOTE);
+    const result = {
       command: name,
       multiKey: !!MULTI[name],
       known: known || NO_KEY.has(name),
@@ -333,6 +353,14 @@
       crossSlot: slots.length > 1,
       notes: notes
     };
+    if (name === 'SORT') {
+      const valkey = sortKeys(args.length, args, false);
+      if (valkey.join() !== positions.join()) {
+        result.valkeyKeys = valkey.map((p) => args[p]);
+        notes.push(SORT_NOTE.replace('{keys}', valkey.map((p) => displayKey(args[p])).join(', ')));
+      }
+    }
+    return result;
   }
 
   // Seen in testing, October 2026: Valkey 9.1.2 does not look at MSETEX keys
@@ -340,6 +368,11 @@
   // node that receives it writes the keys, whichever node owns their slots.
   const MSETEX_CROSS = 'Redis 8.10.2 answers CROSSSLOT here. Valkey 9.1.2 does not check MSETEX keys at all: in a test cluster the node that received the command wrote every key itself, even keys from slots other nodes own, and a later GET for those keys found nothing. Keep MSETEX keys in one slot.';
   const MSETEX_ONE = 'On Valkey 9.1.2, send MSETEX to the primary that owns slot {slot} yourself. That version does not redirect MSETEX: whichever node receives it writes the keys, even when it does not own their slot.';
+
+  // Also seen in testing: Redis 8.10.2 runs SUNSUBSCRIBE on whichever node
+  // receives it, while Valkey 9.1.2 routes it like SSUBSCRIBE.
+  const SORT_NOTE = 'Valkey 9.1.2 finds other keys in this command: {keys}. It reads a destination named LIMIT, GET, BY or STORE as another option, so a Valkey cluster checks the wrong keys and may refuse the command or route it by the wrong key. Redis 8.10.2 reads it as shown. Give the destination another name.';
+  const SUNSUBSCRIBE_NOTE = 'These are shard channels, not keys. Valkey 9.1.2 places them in slots like keys: channels from different slots get CROSSSLOT, and a node that does not own the slot answers MOVED. Redis 8.10.2 runs SUNSUBSCRIBE on any node, whatever the slots, since it only changes what this connection listens to.';
 
   // ---- Slot ranges and nodes ----
 

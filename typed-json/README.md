@@ -4,7 +4,7 @@ Turn DynamoDB's typed JSON into plain JSON, and plain JSON into typed JSON you c
 
 Try it in your browser at https://keyvaluestore.com/tools/typed-json/, or open `typed-json/app/index.html` from a copy of this repository.
 
-It's one JavaScript file with no dependencies. The same file runs the web page, the command line and the tests.
+Its logic is one JavaScript file, `typedjson.js`, with no dependencies. The web page, the command line and the tests all load it.
 
 ## What typed JSON is
 
@@ -40,7 +40,7 @@ When the result is typed JSON you can choose:
 - **Sets.** Plain JSON has no sets, only lists. By default lists become lists (`L`). You can have lists of unique strings become string sets (`SS`) and lists of unique numbers become number sets (`NS`). A list with a repeated value, or with mixed types, stays a list, because DynamoDB refuses duplicates in a set.
 - **batch-write-item requests.** Instead of items, write requests for `aws dynamodb batch-write-item`, 25 items each, the most one request may hold. Each request is one line. The page shows the shell loop that sends them.
 
-Nothing you paste or load leaves the page. The page tells the browser to block every network request it could make.
+Nothing you paste or load leaves the page. The tool doesn't send anything anywhere, and the page's security policy stops it from fetching or loading anything from another site.
 
 ## What it reads
 
@@ -90,13 +90,13 @@ In a page, load `typedjson.js` with a script tag and use `window.KVTypedJSON`. `
 
 ## How it was tested
 
-The tests compare the converter with the AWS SDK for JavaScript, `@aws-sdk/util-dynamodb` 3.996.9, the library AWS publishes for this job.
+The converter was checked against the AWS SDK for JavaScript, `@aws-sdk/util-dynamodb` 3.996.9, the library AWS publishes for this job.
 
 - **Both directions.** 3,000 random documents, with nested maps and lists, text in many scripts, and 10,963 numbers, went through the SDK's `marshall` and `unmarshall` and through the converter. The results were the same every time.
 - **Big numbers.** Seven numbers at DynamoDB's limits, such as 38-digit integers, `1E-130` and `9.9999999999999999999999999999999999999E+125`, matched the SDK's exact mode digit for digit and came back unchanged.
 - **Sets.** 500 documents with lists of unique strings and numbers became the same `SS` and `NS` sets the SDK makes from JavaScript `Set` objects.
 
-`test/fixtures/sdk-roundtrip.jsonl` holds 150 of those documents with the SDK's output, so the tests run without the SDK:
+`test/fixtures/sdk-roundtrip.jsonl` holds 150 of those documents with the SDK's output, and the tests replay them, so they run without the SDK:
 
 ```sh
 node --test typed-json/test/typedjson.test.js

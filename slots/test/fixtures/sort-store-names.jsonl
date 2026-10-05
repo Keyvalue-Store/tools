@@ -1,0 +1,8 @@
+{"args":["SORT","a","STORE","store","LIMIT","0","10"],"valkey":["a","LIMIT"],"redis":["a","store"]}
+{"args":["SORT","a","STORE","STORE","d"],"valkey":["a","d"],"redis":["a","STORE"]}
+{"args":["SORT","a","STORE","BY","STORE","d"],"valkey":["a","BY"],"redis":["a","d"]}
+{"args":["SORT","{store}src","STORE","store","DESC"],"valkey":["{store}src","DESC"],"redis":["{store}src","store"]}
+{"args":["SORT","a","STORE","limit","x","y","STORE","z"],"valkey":["a","z"],"redis":["a","z"]}
+{"args":["SORT","a","STORE","get","x"],"valkey":["a","get"],"redis":["a","get"]}
+{"args":["SORT","a","store","by","x","STORE","d"],"valkey":["a","d"],"redis":["a","d"]}
+{"args":["SORT","a","BY","w_*","GET","#","STORE","d"],"valkey":["a","d"],"redis":["a","d"]}

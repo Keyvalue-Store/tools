@@ -4,7 +4,7 @@ Spread keys over a set of nodes four ways, then add a node or take one away and 
 
 Try it in your browser at https://keyvaluestore.com/tools/ring/, or open `ring/app/index.html` from a copy of this repository.
 
-It's one JavaScript file with no dependencies. The same file runs the web page, the command line and the tests.
+Its logic is one JavaScript file, `ring.js`, with no dependencies. The web page, the command line and the tests all load it.
 
 ## Why consistent hashing exists
 
@@ -15,8 +15,8 @@ That works until the number of servers changes. Add a sixth server and the divis
 Consistent hashing is the family of rules that move only what has to move. Add a sixth server, and about a sixth of the keys move, all of them to the new server. Take a server away, and only its keys move. Four ways to do it:
 
 - **Hash ring.** Hash each server onto a circle, and each key too. A key belongs to the first server clockwise from it. A new server takes over only the stretch of circle just before it. With one point per server the stretches vary a lot in length, so the load is uneven. Each server therefore gets many points, called virtual nodes, which even it out. This is the scheme from Karger and others in 1997, and the one Amazon's Dynamo paper made famous.
-- **Rendezvous hashing.** For each key, score every server by hashing the key and the server together, and pick the highest score. Even with no tuning, and simple, but it looks at every server for every key.
-- **Jump consistent hash.** A short loop from Lamping and Veach at Google, 2014, that jumps a key forward through numbered buckets. No memory, very even, very fast. The catch: the buckets are numbered, so it can only add or remove the last one. It suits shards that are numbered, not servers that come and go.
+- **Rendezvous hashing.** For each key, score every server by hashing the key and the server together, and pick the highest score. It spreads keys evenly with no tuning and is simple to write, but it looks at every server for every key.
+- **Jump consistent hash.** A short loop from Lamping and Veach at Google, 2014, that jumps a key forward through numbered buckets. It needs no memory and spreads keys very evenly. The catch: the buckets are numbered, so it can only add or remove the last one. That suits a fixed set of numbered shards. Servers that join and leave in any order need one of the other methods.
 - **Modulo,** for comparison.
 
 Redis Cluster and Valkey Cluster use none of these directly. They put keys into 16,384 fixed slots and move whole slots between servers, which gets the same effect by hand. The [Hash Slot Calculator](../slots/) works out those slots.
@@ -69,11 +69,11 @@ In a page, load `ring.js` with a script tag and use `window.KVRing`. All four me
 ## How it was tested
 
 - **MurmurHash3.** 10,000 strings with random seeds, including text in many scripts, hashed the same as the Python `mmh3` package, version 5.3.1.
-- **Jump hash.** 20,000 random 64-bit keys and bucket counts gave the same buckets as the C code printed in Lamping and Veach's paper, compiled with gcc.
+- **Jump hash.** 20,000 random 64-bit keys and bucket counts gave the same buckets as the function printed in Lamping and Veach's paper, compiled with gcc. The paper's code is C++, so its two casts were written the C way.
 - **Behaviour.** With 100,000 keys and 3, 5 or 10 nodes, adding or removing a node never moved a key between two nodes that stayed, for the ring, rendezvous or jump hash. Rendezvous and jump hash moved within half a point of the ideal share each time. Modulo moved 67% to 91% of keys.
 - **Virtual nodes.** On 10 nodes, the busiest node held 2.84 times an even share with one virtual node each, 1.46 times with 10, and 1.08 times with 160.
 
-`test/results/` has the full figures, and `test/fixtures/` the reference answers, so the tests run without Python or a compiler:
+`test/results/` has the full figures. `test/fixtures/` holds 500 of the strings and 500 of the keys with their reference answers, and the tests replay them, so they run without Python or a compiler:
 
 ```sh
 node --test ring/test/ring.test.js

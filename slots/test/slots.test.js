@@ -126,11 +126,41 @@ test('counting many keys by slot and node', () => {
 
 test('commands that cannot be read return a clear error', () => {
   assert.match(S.checkCommand('ZUNIONSTORE out 3 a b').error, /number of keys/);
+  assert.match(S.checkCommand('ZUNION 0 a').error, /number of keys/);
   assert.match(S.checkCommand('XREAD STREAMS a b 0').error, /IDs/);
   assert.match(S.checkCommand('').error, /Type a command/);
   const r = S.checkCommand('GET user:1');
   assert.equal(r.crossSlot, false);
   assert.equal(r.keys.length, 1);
+});
+
+test('scripts and functions may have no keys', () => {
+  // Both servers ran these; COMMAND GETKEYS has nothing to list for them.
+  for (const c of ['EVAL "return 1" 0', 'EVAL_RO "return 1" 0', 'EVALSHA e0e1f9fabfc9d4800c877a703b823ac0578ff8db 0', 'FCALL f 0']) {
+    const r = S.checkCommand(c);
+    assert.equal(r.error, undefined, c);
+    assert.equal(r.keys.length, 0, c);
+    assert.equal(r.crossSlot, false, c);
+  }
+});
+
+test('SORT with a destination named like an option: both servers\' readings', () => {
+  // Recorded with COMMAND GETKEYS. Redis 8.10.2 skips the destination after
+  // STORE; Valkey 9.1.2 reads it again as an option.
+  for (const line of fixture('sort-store-names.jsonl').trim().split('\n')) {
+    const rec = JSON.parse(line);
+    const r = S.checkCommand(rec.args.map((a) => enc.encode(a)));
+    const keys = r.keys.map((k) => str(k.bytes));
+    assert.deepEqual(keys, rec.redis, rec.args.join(' '));
+    assert.deepEqual(r.valkeyKeys ? r.valkeyKeys.map(str) : keys, rec.valkey, rec.args.join(' '));
+    assert.equal(r.notes.some((n) => n.startsWith('Valkey 9.1.2 finds other keys')), !!r.valkeyKeys);
+  }
+});
+
+test('SUNSUBSCRIBE carries a note on how Redis and Valkey differ', () => {
+  const r = S.checkCommand('SUNSUBSCRIBE ch522612 ch469800');
+  assert.equal(r.crossSlot, true);
+  assert.ok(r.notes.some((n) => n.includes('Redis 8.10.2 runs SUNSUBSCRIBE on any node')));
 });
 
 test('real valkey-cli SCAN output reads back as the exact keys, raw or quoted', () => {

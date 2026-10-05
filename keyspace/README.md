@@ -4,7 +4,7 @@ Paste a list of keys from Redis, Valkey or any key-value store and see what's in
 
 Try it in your browser at https://keyvaluestore.com/tools/keyspace/, or open `keyspace/app/index.html` from a copy of this repository.
 
-It's one JavaScript file with no dependencies. The same file runs the web page, the command line and the tests.
+Its logic is one JavaScript file, `keyspace.js`, with no dependencies. The web page, the command line and the tests all load it.
 
 ## What a keyspace map shows
 
@@ -32,7 +32,7 @@ On a cluster, run it against each primary, since each one only lists its own key
 
 Paste the keys or load the file. The map updates as you type. You can set the separator yourself, and switch off either kind of folding to see the names as they are. The patterns download as CSV.
 
-Nothing you paste or load leaves the page. The page tells the browser to block every network request it could make.
+Nothing you paste or load leaves the page. The tool doesn't send anything anywhere, and the page's security policy stops it from fetching or loading anything from another site.
 
 ## Use it from the command line
 
@@ -80,7 +80,7 @@ Keys with known patterns went into real servers, Valkey 9.1.2 and Redis 8.10.2, 
 
 On both servers, from both kinds of output, the map found exactly the 13 patterns with exactly the right counts, the separator, the three keys with no separator, the `user`/`User` case pair and the `user`/`usr` near miss. The count under each top-level prefix matched the server's own `SCAN MATCH` for that prefix.
 
-The Valkey output is in `test/fixtures/`, so the tests run without a server:
+The Valkey output, raw and quoted, is in `test/fixtures/`, and the tests replay it, so they run without a server:
 
 ```sh
 node --test keyspace/test/keyspace.test.js

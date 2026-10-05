@@ -204,24 +204,24 @@
   function read() {
     const out = $('raw-result');
     out.textContent = '';
-    let bytes, form = 'file';
+    let bytes, form = 'file', replies = null;
     if (rawBytes) bytes = rawBytes;
     else {
       const t = $('raw').value;
       if (!t.trim()) return;
       const r = P.bytesFromText(t);
-      bytes = r.bytes; form = r.form;
+      bytes = r.bytes; form = r.form; replies = r.replies || null;
     }
     let d;
     try { d = P.decode(bytes, 2000); }
     catch (e) { out.append(verdict('bad', 'These bytes could not be read', e.message)); return; }
-    const s = P.summarize(d.values);
+    const s = P.summarize(d.values, replies);
     const counts = Object.keys(s.counts).sort((a, b) => s.counts[b] - s.counts[a]).slice(0, 8).map((k) => k + ' ' + fmt(s.counts[k])).join(', ');
-    const how = { hex: 'Read as a hex dump.', escaped: 'Read with \\r\\n and other escapes turned back into bytes.', text: '', file: '' }[form];
+    const how = { hex: 'Read as hex.', dump: 'Read as a hex dump, leaving out the offsets and the text column.' + (replies ? ' The indented lines were read as the server\'s replies.' : ''), escaped: 'Read with \\r\\n and other escapes turned back into bytes.', text: '', file: '' }[form];
     out.append(verdict('ok', `${plural(s.commands, 'command', 'commands')} and ${plural(s.replies, 'reply', 'replies')}`,
       [(counts ? 'Commands: ' + counts + '. ' : '') + how + (d.lfOnly ? ' Some lines ended in \\n alone, which servers do not send; they were read anyway.' : '')]));
     if (!d.complete) out.append(verdict('info', 'Showing the first 2,000 values', 'The rest of the data was not read.'));
-    out.append(el('div', { class: 'out', text: d.values.map((v) => { const c = P.asCommand(v); return c !== null ? c : P.show(v); }).join('\n') }));
+    out.append(el('div', { class: 'out', text: d.values.map((v) => { const c = P.isReply(v, replies) ? null : P.asCommand(v); return c !== null ? c : P.show(v); }).join('\n') }));
   }
   $('raw').addEventListener('input', debounce(() => { rawBytes = null; read(); }, 250));
   $('raw-file').addEventListener('change', (e) => {
