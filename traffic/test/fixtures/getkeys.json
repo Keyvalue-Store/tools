@@ -1,0 +1,992 @@
+{
+ "note": "COMMAND GETKEYS from Valkey 9.1.2 and Redis 8.10.2 for each form. null: the server says the command has no keys, or does not know it.",
+ "forms": [
+  {
+   "args": [
+    "MIGRATE",
+    "h",
+    "1",
+    "",
+    "0",
+    "5",
+    "COPY",
+    "KEYS",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "MIGRATE",
+    "h",
+    "1",
+    "",
+    "0",
+    "5",
+    "AUTH",
+    "pw",
+    "KEYS",
+    "a"
+   ],
+   "valkey": [
+    "a"
+   ],
+   "redis": [
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "MIGRATE",
+    "h",
+    "1",
+    "k",
+    "0",
+    "5"
+   ],
+   "valkey": [
+    "k"
+   ],
+   "redis": [
+    "k"
+   ]
+  },
+  {
+   "args": [
+    "XREADGROUP",
+    "GROUP",
+    "g",
+    "c",
+    "COUNT",
+    "1",
+    "STREAMS",
+    "s1",
+    "s2",
+    ">",
+    ">"
+   ],
+   "valkey": [
+    "s1",
+    "s2"
+   ],
+   "redis": [
+    "s1",
+    "s2"
+   ]
+  },
+  {
+   "args": [
+    "XREAD",
+    "BLOCK",
+    "0",
+    "STREAMS",
+    "s1",
+    "$"
+   ],
+   "valkey": [
+    "s1"
+   ],
+   "redis": [
+    "s1"
+   ]
+  },
+  {
+   "args": [
+    "BLMPOP",
+    "0",
+    "2",
+    "l1",
+    "l2",
+    "LEFT"
+   ],
+   "valkey": [
+    "l1",
+    "l2"
+   ],
+   "redis": [
+    "l1",
+    "l2"
+   ]
+  },
+  {
+   "args": [
+    "LMPOP",
+    "3",
+    "a",
+    "b",
+    "c",
+    "RIGHT",
+    "COUNT",
+    "2"
+   ],
+   "valkey": [
+    "a",
+    "b",
+    "c"
+   ],
+   "redis": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "args": [
+    "BZMPOP",
+    "1.5",
+    "1",
+    "z",
+    "MIN"
+   ],
+   "valkey": [
+    "z"
+   ],
+   "redis": [
+    "z"
+   ]
+  },
+  {
+   "args": [
+    "ZMPOP",
+    "2",
+    "z1",
+    "z2",
+    "MAX"
+   ],
+   "valkey": [
+    "z1",
+    "z2"
+   ],
+   "redis": [
+    "z1",
+    "z2"
+   ]
+  },
+  {
+   "args": [
+    "ZINTERSTORE",
+    "d",
+    "2",
+    "a",
+    "b",
+    "WEIGHTS",
+    "1",
+    "2"
+   ],
+   "valkey": [
+    "d",
+    "a",
+    "b"
+   ],
+   "redis": [
+    "d",
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "ZUNIONSTORE",
+    "d",
+    "1",
+    "a"
+   ],
+   "valkey": [
+    "d",
+    "a"
+   ],
+   "redis": [
+    "d",
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "ZDIFFSTORE",
+    "d",
+    "2",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "d",
+    "a",
+    "b"
+   ],
+   "redis": [
+    "d",
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "ZUNION",
+    "2",
+    "a",
+    "b",
+    "WITHSCORES"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "ZINTER",
+    "1",
+    "a"
+   ],
+   "valkey": [
+    "a"
+   ],
+   "redis": [
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "ZDIFF",
+    "3",
+    "a",
+    "b",
+    "c"
+   ],
+   "valkey": [
+    "a",
+    "b",
+    "c"
+   ],
+   "redis": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "args": [
+    "ZINTERCARD",
+    "2",
+    "a",
+    "b",
+    "LIMIT",
+    "5"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "SINTERCARD",
+    "3",
+    "a",
+    "b",
+    "c"
+   ],
+   "valkey": [
+    "a",
+    "b",
+    "c"
+   ],
+   "redis": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "args": [
+    "GEORADIUS",
+    "g",
+    "15",
+    "37",
+    "200",
+    "km",
+    "STORE",
+    "d"
+   ],
+   "valkey": [
+    "g",
+    "d"
+   ],
+   "redis": [
+    "g",
+    "d"
+   ]
+  },
+  {
+   "args": [
+    "GEORADIUS",
+    "g",
+    "15",
+    "37",
+    "200",
+    "km",
+    "STOREDIST",
+    "d",
+    "COUNT",
+    "3"
+   ],
+   "valkey": [
+    "g",
+    "d"
+   ],
+   "redis": [
+    "g",
+    "d"
+   ]
+  },
+  {
+   "args": [
+    "GEORADIUSBYMEMBER",
+    "g",
+    "m",
+    "5",
+    "km",
+    "STOREDIST",
+    "d"
+   ],
+   "valkey": [
+    "g",
+    "d"
+   ],
+   "redis": [
+    "g",
+    "d"
+   ]
+  },
+  {
+   "args": [
+    "GEORADIUSBYMEMBER",
+    "g",
+    "m",
+    "5",
+    "km",
+    "WITHDIST"
+   ],
+   "valkey": [
+    "g"
+   ],
+   "redis": [
+    "g"
+   ]
+  },
+  {
+   "args": [
+    "SORT",
+    "k",
+    "BY",
+    "w_*",
+    "LIMIT",
+    "0",
+    "5",
+    "GET",
+    "#",
+    "STORE",
+    "d"
+   ],
+   "valkey": [
+    "k",
+    "d"
+   ],
+   "redis": [
+    "k",
+    "d"
+   ]
+  },
+  {
+   "args": [
+    "SORT",
+    "k",
+    "ALPHA"
+   ],
+   "valkey": [
+    "k"
+   ],
+   "redis": [
+    "k"
+   ]
+  },
+  {
+   "args": [
+    "SORT_RO",
+    "k",
+    "ALPHA"
+   ],
+   "valkey": [
+    "k"
+   ],
+   "redis": [
+    "k"
+   ]
+  },
+  {
+   "args": [
+    "EVAL",
+    "return 1",
+    "0"
+   ],
+   "valkey": [],
+   "redis": []
+  },
+  {
+   "args": [
+    "EVAL",
+    "return 1",
+    "2",
+    "a",
+    "b",
+    "arg"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "EVALSHA",
+    "e0e1f9fabfc9d4800c877a703b823ac0578ff8db",
+    "1",
+    "a"
+   ],
+   "valkey": [
+    "a"
+   ],
+   "redis": [
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "FCALL",
+    "f",
+    "2",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "FCALL_RO",
+    "f",
+    "1",
+    "a",
+    "x"
+   ],
+   "valkey": [
+    "a"
+   ],
+   "redis": [
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "MSET",
+    "a",
+    "1",
+    "b",
+    "2"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "MSETNX",
+    "a",
+    "1",
+    "b",
+    "2"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "MGET",
+    "a",
+    "b",
+    "c"
+   ],
+   "valkey": [
+    "a",
+    "b",
+    "c"
+   ],
+   "redis": [
+    "a",
+    "b",
+    "c"
+   ]
+  },
+  {
+   "args": [
+    "DEL",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "EXISTS",
+    "a",
+    "a"
+   ],
+   "valkey": [
+    "a",
+    "a"
+   ],
+   "redis": [
+    "a",
+    "a"
+   ]
+  },
+  {
+   "args": [
+    "BLPOP",
+    "a",
+    "b",
+    "0"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "BZPOPMIN",
+    "a",
+    "b",
+    "1"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "BRPOPLPUSH",
+    "a",
+    "b",
+    "0"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "BLMOVE",
+    "a",
+    "b",
+    "LEFT",
+    "RIGHT",
+    "0"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "LMOVE",
+    "a",
+    "b",
+    "LEFT",
+    "RIGHT"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "RENAME",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "COPY",
+    "a",
+    "b",
+    "DB",
+    "1"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "SMOVE",
+    "a",
+    "b",
+    "m"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "BITOP",
+    "AND",
+    "d",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "d",
+    "a",
+    "b"
+   ],
+   "redis": [
+    "d",
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "PFMERGE",
+    "d",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "d",
+    "a",
+    "b"
+   ],
+   "redis": [
+    "d",
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "PFCOUNT",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "SUNIONSTORE",
+    "d",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "d",
+    "a",
+    "b"
+   ],
+   "redis": [
+    "d",
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "GEOSEARCHSTORE",
+    "d",
+    "g",
+    "FROMMEMBER",
+    "m",
+    "BYRADIUS",
+    "5",
+    "km"
+   ],
+   "valkey": [
+    "d",
+    "g"
+   ],
+   "redis": [
+    "d",
+    "g"
+   ]
+  },
+  {
+   "args": [
+    "ZRANGESTORE",
+    "d",
+    "z",
+    "0",
+    "-1"
+   ],
+   "valkey": [
+    "d",
+    "z"
+   ],
+   "redis": [
+    "d",
+    "z"
+   ]
+  },
+  {
+   "args": [
+    "LCS",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "OBJECT",
+    "ENCODING",
+    "k"
+   ],
+   "valkey": [
+    "k"
+   ],
+   "redis": [
+    "k"
+   ]
+  },
+  {
+   "args": [
+    "MEMORY",
+    "USAGE",
+    "k"
+   ],
+   "valkey": [
+    "k"
+   ],
+   "redis": [
+    "k"
+   ]
+  },
+  {
+   "args": [
+    "XINFO",
+    "STREAM",
+    "s"
+   ],
+   "valkey": [
+    "s"
+   ],
+   "redis": [
+    "s"
+   ]
+  },
+  {
+   "args": [
+    "XGROUP",
+    "CREATE",
+    "s",
+    "g",
+    "$"
+   ],
+   "valkey": [
+    "s"
+   ],
+   "redis": [
+    "s"
+   ]
+  },
+  {
+   "args": [
+    "WATCH",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "TOUCH",
+    "a",
+    "b"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  },
+  {
+   "args": [
+    "HGETALL",
+    "h"
+   ],
+   "valkey": [
+    "h"
+   ],
+   "redis": [
+    "h"
+   ]
+  },
+  {
+   "args": [
+    "SPUBLISH",
+    "ch",
+    "m"
+   ],
+   "valkey": null,
+   "redis": null
+  },
+  {
+   "args": [
+    "PUBLISH",
+    "ch",
+    "m"
+   ],
+   "valkey": null,
+   "redis": null
+  },
+  {
+   "args": [
+    "PING"
+   ],
+   "valkey": null,
+   "redis": null
+  },
+  {
+   "args": [
+    "MSETEX",
+    "2",
+    "a",
+    "1",
+    "b",
+    "2",
+    "EX",
+    "10"
+   ],
+   "valkey": [
+    "a",
+    "b"
+   ],
+   "redis": [
+    "a",
+    "b"
+   ]
+  }
+ ]
+}

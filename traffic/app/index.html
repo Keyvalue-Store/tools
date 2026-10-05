@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src data: blob:; form-action 'none'; base-uri 'none'">
+<title>Traffic Analyzer | KeyValueStore.com</title>
+<meta name="description" content="Load the output of MONITOR from Redis or Valkey and see what the traffic is made of: commands per second, the command mix, the busiest keys and clients, cluster spread, risky commands, and how big a cache needs to be. Nothing is uploaded.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/traffic/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='11' cy='16' r='5' fill='none' stroke='%2350C4CC' stroke-width='3'/%3E%3Cpath d='M16 16h11M23 16v5M27 16v4' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="../../common/embed.js"></script>
+<link rel="stylesheet" href="../../common/tool.css">
+<style>
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 22px 18px; text-align: center; background: var(--soft); }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop p { margin: 4px 0; }
+  details.paste { margin: 12px 0 0; }
+  details.paste summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+  .progress { height: 8px; border-radius: 4px; background: var(--line-soft); overflow: hidden; margin: 10px 0; }
+  .progress span { display: block; height: 100%; background: var(--accent); width: 0; }
+  .block { margin: 26px 0 0; }
+  .block > h3 { margin-top: 0; }
+  .block > .lede { color: var(--muted); max-width: 760px; }
+  .chart { position: relative; }
+  .chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+  .chart .area { fill: var(--accent); opacity: .12; }
+  .chart .ref { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+  .chart .cursor { stroke: var(--ink); stroke-width: 1; opacity: .5; }
+  .chart .dot { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+  .chart .hit { fill: transparent; cursor: crosshair; }
+  .chart .label { fill: var(--ink); font-weight: 600; }
+  .tip { position: absolute; pointer-events: none; background: var(--ink); color: #fff; font-size: .82rem; line-height: 1.35; padding: 6px 9px; border-radius: 7px; white-space: nowrap; transform: translate(-50%, -100%); margin-top: -10px; }
+  .share { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--accent); vertical-align: middle; margin-right: 8px; min-width: 2px; }
+  td.share-cell { white-space: nowrap; }
+  .kind { color: var(--muted); }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 8px 0 12px; font-size: .92rem; }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; overflow-wrap: anywhere; }
+  .examples { font-family: var(--mono); font-size: .84rem; margin: 6px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
+  .examples li { margin: 2px 0; }
+  .downloads { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
+  .keys-table td.key, .pattern-table td.key { min-width: 14ch; }
+  .client-table td.key { min-width: 13ch; }
+  @media (max-width: 640px) {
+    .keys-table th:nth-child(n+3):not(:last-child), .keys-table td:nth-child(n+3):not(:last-child) { display: none; }
+    .pattern-table th:nth-child(n+3):not(:last-child), .pattern-table td:nth-child(n+3):not(:last-child) { display: none; }
+    .client-table th:nth-child(3), .client-table td:nth-child(3) { display: none; }
+    .mix-table th:nth-child(2), .mix-table td:nth-child(2) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Traffic Analyzer</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/traffic/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-open">
+    <h2 id="h-open">Open a capture</h2>
+    <p class="lede">Load what <code>MONITOR</code> printed: run <code>redis-cli MONITOR &gt; monitor.txt</code> or <code>valkey-cli MONITOR &gt; monitor.txt</code> for a few seconds and stop it with Ctrl-C. Captures from Redis 2.6 to 8.10 and Valkey 7.2 to 9.1 work, and files of any size are read in steps.</p>
+    <div class="drop" id="drop">
+      <p><strong>Drop a capture here</strong>, or</p>
+      <div class="row" style="justify-content:center">
+        <label class="btn primary" for="file">Choose a file</label>
+        <input type="file" id="file" class="file-input">
+        <button type="button" class="btn" id="example">Try an example</button>
+      </div>
+    </div>
+    <details class="paste">
+      <summary>Paste lines instead</summary>
+      <div class="field">
+        <label for="paste">MONITOR lines</label>
+        <textarea id="paste" spellcheck="false" placeholder='1791218550.753456 [0 10.0.0.12:54650] "GET" "user:42"'></textarea>
+      </div>
+      <button type="button" class="btn" id="analyze">Analyze</button>
+    </details>
+    <div id="status" aria-live="polite"></div>
+    <div id="result" class="result"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser and sends nothing anywhere. The page's security policy stops it from fetching or loading anything from another site.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/traffic">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../traffic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

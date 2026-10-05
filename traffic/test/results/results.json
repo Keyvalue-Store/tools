@@ -1,0 +1,332 @@
+{
+ "note": "Measured in October 2026 with the captures in ../fixtures, recorded from servers built from source.",
+ "captures": [
+  {
+   "file": "test/fixtures/valkey-9.1.2.txt",
+   "server": "valkey 9.1.2",
+   "recordedWith": "valkey-cli",
+   "paced": null,
+   "sent": 1432,
+   "notShown": {
+    "CONFIG GET": 1,
+    "CLIENT LIST": 1,
+    "SLOWLOG GET": 1
+   },
+   "lines": 1521,
+   "scriptLines": 92,
+   "seconds": 0.057,
+   "commandNames": 58,
+   "connections": 31,
+   "addresses": 7,
+   "keys": 441,
+   "keyAccesses": 1351,
+   "reads": 677,
+   "writes": 653,
+   "deletes": 21,
+   "findings": {
+    "hot-key": 179,
+    "whole": 149,
+    "databases": 57,
+    "cross-slot": 36,
+    "eval": 34,
+    "set-expire": 8,
+    "keys": 2,
+    "flush": 1,
+    "large": 1
+   },
+   "hitRate": {
+    "reads": 677,
+    "firstReads": 202,
+    "best": 0.7016,
+    "keysFor": {
+     "50%": 6,
+     "80%": 38,
+     "90%": 114,
+     "95%": 199,
+     "99%": 310
+    }
+   }
+  },
+  {
+   "file": "test/fixtures/redis-8.10.2.txt",
+   "server": "redis 8.10.2",
+   "recordedWith": "redis-cli",
+   "paced": null,
+   "sent": 1432,
+   "notShown": {
+    "CONFIG GET": 1,
+    "CLIENT LIST": 1,
+    "SLOWLOG GET": 1
+   },
+   "lines": 1521,
+   "scriptLines": 92,
+   "seconds": 0.079,
+   "commandNames": 58,
+   "connections": 31,
+   "addresses": 7,
+   "keys": 441,
+   "keyAccesses": 1351,
+   "reads": 677,
+   "writes": 653,
+   "deletes": 21,
+   "findings": {
+    "hot-key": 179,
+    "whole": 149,
+    "databases": 57,
+    "cross-slot": 36,
+    "eval": 34,
+    "set-expire": 8,
+    "keys": 2,
+    "flush": 1,
+    "large": 1
+   },
+   "hitRate": {
+    "reads": 677,
+    "firstReads": 202,
+    "best": 0.7016,
+    "keysFor": {
+     "50%": 5,
+     "80%": 37,
+     "90%": 111,
+     "95%": 194,
+     "99%": 311
+    }
+   }
+  },
+  {
+   "file": "test/fixtures/redis-7.2.16.txt",
+   "server": "redis 7.2.16",
+   "recordedWith": "redis-cli",
+   "paced": null,
+   "sent": 602,
+   "notShown": {
+    "CONFIG GET": 1,
+    "CLIENT LIST": 1,
+    "SLOWLOG GET": 1
+   },
+   "lines": 644,
+   "scriptLines": 45,
+   "seconds": 0.033,
+   "commandNames": 55,
+   "connections": 16,
+   "addresses": 7,
+   "keys": 220,
+   "keyAccesses": 570,
+   "reads": 273,
+   "writes": 290,
+   "deletes": 7,
+   "findings": {
+    "hot-key": 76,
+    "whole": 67,
+    "databases": 21,
+    "cross-slot": 16,
+    "keys": 2,
+    "flush": 1,
+    "set-expire": 1
+   },
+   "hitRate": {
+    "reads": 273,
+    "firstReads": 95,
+    "best": 0.652,
+    "keysFor": {
+     "50%": 4,
+     "80%": 15,
+     "90%": 39,
+     "95%": 79,
+     "99%": 113
+    }
+   }
+  },
+  {
+   "file": "test/fixtures/redis-6.2.24.txt",
+   "server": "redis 6.2.24",
+   "recordedWith": "redis-cli",
+   "paced": null,
+   "sent": 579,
+   "notShown": {
+    "CLIENT SETNAME": 12,
+    "CONFIG GET": 1,
+    "CLIENT LIST": 1,
+    "SLOWLOG GET": 1,
+    "QUIT": 6
+   },
+   "lines": 596,
+   "scriptLines": 38,
+   "seconds": 0.032,
+   "commandNames": 52,
+   "connections": 16,
+   "addresses": 7,
+   "keys": 215,
+   "keyAccesses": 548,
+   "reads": 273,
+   "writes": 267,
+   "deletes": 8,
+   "findings": {
+    "hot-key": 74,
+    "whole": 67,
+    "databases": 24,
+    "cross-slot": 15,
+    "keys": 2,
+    "flush": 1,
+    "set-expire": 1
+   },
+   "hitRate": {
+    "reads": 273,
+    "firstReads": 98,
+    "best": 0.641,
+    "keysFor": {
+     "50%": 4,
+     "80%": 16,
+     "90%": 50,
+     "95%": 83,
+     "99%": 126
+    }
+   }
+  },
+  {
+   "file": "test/fixtures/redis-2.8.24.txt",
+   "server": "redis 2.8.24",
+   "recordedWith": "redis-cli",
+   "paced": null,
+   "sent": 452,
+   "notShown": {
+    "CONFIG GET": 1,
+    "QUIT": 5
+   },
+   "lines": 475,
+   "scriptLines": 29,
+   "seconds": 1.302,
+   "commandNames": 44,
+   "connections": 14,
+   "addresses": 7,
+   "keys": 170,
+   "keyAccesses": 411,
+   "reads": 203,
+   "writes": 201,
+   "deletes": 7,
+   "findings": {
+    "hot-key": 59,
+    "whole": 45,
+    "databases": 30,
+    "cross-slot": 7,
+    "keys": 2,
+    "flush": 1,
+    "set-expire": 1
+   },
+   "hitRate": {
+    "reads": 203,
+    "firstReads": 77,
+    "best": 0.6207,
+    "keysFor": {
+     "50%": 4,
+     "80%": 9,
+     "90%": 33,
+     "95%": 75,
+     "99%": 98
+    }
+   }
+  },
+  {
+   "file": "app/example.js",
+   "server": "valkey 9.1.2",
+   "recordedWith": "valkey-cli",
+   "paced": 45,
+   "sent": 1602,
+   "notShown": {
+    "CONFIG GET": 1,
+    "CLIENT LIST": 1,
+    "SLOWLOG GET": 1
+   },
+   "lines": 1723,
+   "scriptLines": 124,
+   "seconds": 45.021,
+   "commandNames": 58,
+   "connections": 29,
+   "addresses": 7,
+   "keys": 504,
+   "keyAccesses": 1546,
+   "reads": 772,
+   "writes": 749,
+   "deletes": 25,
+   "findings": {
+    "hot-key": 190,
+    "whole": 164,
+    "databases": 72,
+    "cross-slot": 46,
+    "eval": 38,
+    "set-expire": 16,
+    "keys": 2,
+    "flush": 1
+   },
+   "hitRate": {
+    "reads": 772,
+    "firstReads": 247,
+    "best": 0.6801,
+    "keysFor": {
+     "50%": 6,
+     "80%": 60,
+     "90%": 131,
+     "95%": 208,
+     "99%": 313
+    }
+   }
+  }
+ ],
+ "getkeys": {
+  "forms": 60,
+  "matchingBothServers": 60
+ },
+ "eviction": [
+  {
+   "server": "9.1.2",
+   "policy": "allkeys-lru",
+   "maxmemory": "4mb",
+   "maxmemorySamples": 5,
+   "rate": 8000,
+   "seconds": 90,
+   "universe": 300000,
+   "zipf": 0.9,
+   "requests": 720000,
+   "serverHits": 412612,
+   "serverMisses": 307388,
+   "serverHitRate": 0.5730722222222222,
+   "evicted": 285467,
+   "keysHeld": 21852,
+   "dbsizeEnd": 21850,
+   "captureCommands": 1027409,
+   "captureReads": 720000,
+   "curveHitRateAtKeysHeld": 0.5757069444444445,
+   "curveBest": 0.7780041666666667
+  },
+  {
+   "server": "9.1.2",
+   "policy": "allkeys-lru",
+   "maxmemory": "4mb",
+   "maxmemorySamples": 10,
+   "rate": 8000,
+   "seconds": 90,
+   "universe": 300000,
+   "zipf": 0.9,
+   "requests": 720000,
+   "serverHits": 413833,
+   "serverMisses": 306167,
+   "serverHitRate": 0.5747680555555555,
+   "evicted": 284184,
+   "keysHeld": 21890,
+   "dbsizeEnd": 21916,
+   "captureCommands": 1026188,
+   "captureReads": 720000,
+   "curveHitRateAtKeysHeld": 0.5758958333333334,
+   "curveBest": 0.7780041666666667
+  }
+ ],
+ "speed": {
+  "commands": 3000000,
+  "keys": 1029473,
+  "fileBytes": 224142954,
+  "seconds": 11,
+  "rssMB": 333,
+  "node": "v22.22.0",
+  "how": "node traffic/cli.js on a generated capture: GET, SET with EX, HINCRBY and DEL from 1,400 connections, keys from a skewed distribution over 2 million names"
+ }
+}

@@ -10,6 +10,7 @@ Free tools for the key-value stores you run: Redis and Valkey clusters, DynamoDB
 | [Keyspace Map](https://keyvaluestore.com/tools/keyspace/) | A key list from `--scan` as a tree of prefixes and naming patterns, with naming slips flagged | [`keyspace/`](keyspace/) |
 | [Consistent Hashing Playground](https://keyvaluestore.com/tools/ring/) | Modulo, hash ring, rendezvous and jump hash compared when a node joins or leaves | [`ring/`](ring/) |
 | [Snapshot Viewer](https://keyvaluestore.com/tools/snapshot/) | A Redis or Valkey `dump.rdb` or `DUMP` payload opened: keys by type, the biggest keys, prefixes, expiries and every value | [`snapshot/`](snapshot/) |
+| [Traffic Analyzer](https://keyvaluestore.com/tools/traffic/) | A `MONITOR` capture broken down: commands per second, the command mix, hot keys, clients, cluster spread, risky commands, and the cache size for a given hit rate | [`traffic/`](traffic/) |
 
 Each folder's README is the tool's manual, with a plain-language explanation of the technology behind it.
 
@@ -30,6 +31,7 @@ node pipe/cli.js --help
 node keyspace/cli.js --help
 node ring/cli.js --help
 node snapshot/cli.js --help
+node traffic/cli.js --help
 ```
 
 Each tool's page is in its `app/` folder. Open `app/index.html` straight from the folder, or serve the repository with any static web server.

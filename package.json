@@ -2,7 +2,7 @@
   "name": "keyvaluestore-tools",
   "version": "0.1.0",
   "private": true,
-  "description": "Free tools for key-value stores: hash slots, DynamoDB JSON, mass insert files, keyspace maps and consistent hashing.",
+  "description": "Free tools for key-value stores such as Redis, Valkey and DynamoDB.",
   "homepage": "https://keyvaluestore.com/tools/",
   "repository": "github:Keyvalue-Store/tools",
   "license": "Apache-2.0",
