@@ -32,7 +32,7 @@ The page has four parts:
 
 1. **Find a key's slot.** Type a key. You get its slot, the primary that holds it, the CRC16 value, and the key with the hashed part marked.
 2. **Check a command.** Paste a command, such as `MSET user:{42}:name Ana user:{42}:plan pro`. The page picks out the keys the way the server does, and tells you whether a cluster would run it or answer CROSSSLOT.
-3. **See how many keys spread.** Paste a list of keys or load a file, one key per line. You get the keys per primary, the busiest slots, the most used hash tags and every key's slot, which you can download as CSV.
+3. **See how a key list spreads.** Paste a list of keys or load a file, one key per line. You get the keys per primary, the busiest slots, the most used hash tags and every key's slot, which you can download as CSV.
 4. **Cluster layout.** By default the page assumes a new cluster of three primaries, split the way `--cluster create` splits it. Change the number, or paste the output of `CLUSTER NODES` from your own cluster.
 
 To get a list of keys from a server without slowing it down, use `--scan`, never `KEYS *`:
