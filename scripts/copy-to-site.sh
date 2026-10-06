@@ -19,7 +19,7 @@ OUT="$SITE/static/tools"
 rm -rf "$OUT"
 mkdir -p "$OUT/common"
 cp "$ROOT/common/"* "$OUT/common/"
-for tool in slots typed-json pipe keyspace ring snapshot traffic inspect; do
+for tool in slots typed-json pipe keyspace ring snapshot traffic inspect memory config acl expressions revisions; do
   mkdir -p "$OUT/$tool/app"
   lib=$(ls "$ROOT/$tool"/*.js | grep -v '/cli\.js$')
   cp $lib "$OUT/$tool/"
