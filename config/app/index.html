@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="../../common/tool.css">
 <style>
   #conf { min-height: 300px; font-family: var(--mono); font-size: .88rem; line-height: 1.45; white-space: pre; overflow-wrap: normal; overflow-x: auto; tab-size: 8; }
-  #conf.over { border-color: var(--accent); background: var(--accent-soft); }
+  #conf.over, #get-text.over { border-color: var(--accent); background: var(--accent-soft); }
   #get-text { min-height: 120px; }
   .printed { font-family: var(--mono); font-size: .86rem; white-space: pre-wrap; word-break: break-all; background: #1F2933; color: #F1F5F9; border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
   .lines-table td.num { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; width: 3.5em; }
@@ -66,20 +66,20 @@
       </div>
       <span class="spacer"></span>
       <button type="button" class="btn" id="open">Open a file</button>
-      <input type="file" id="file" class="file-input" accept=".conf,.txt,text/plain">
+      <input type="file" id="file" class="file-input" accept=".conf,.txt,text/plain" tabindex="-1" aria-hidden="true">
       <button type="button" class="btn" id="ex-typical">A typical file</button>
       <button type="button" class="btn" id="ex-mistakes">Mistakes</button>
       <button type="button" class="btn" id="ex-upgrade">An old file</button>
     </div>
     <div class="field">
-      <label for="conf" class="hint" id="conf-label">The file never leaves your browser.</label>
-      <textarea id="conf" spellcheck="false" autocomplete="off" placeholder="maxmemory 2gb&#10;maxmemory-policy allkeys-lru&#10;appendonly yes"></textarea>
+      <div class="hint" id="conf-hint">The file never leaves your browser.</div>
+      <textarea id="conf" aria-label="Config file" aria-describedby="conf-hint" spellcheck="false" autocomplete="off" placeholder="maxmemory 2gb&#10;maxmemory-policy allkeys-lru&#10;appendonly yes"></textarea>
     </div>
   </section>
 
   <section class="section" aria-labelledby="h-out">
     <h2 id="h-out">What the server does</h2>
-    <div id="result" class="result" aria-live="polite"></div>
+    <div id="result" class="result"></div>
   </section>
 
   <section class="section" aria-labelledby="h-get">
@@ -90,14 +90,15 @@
         <label for="get-version">Version</label>
         <select id="get-version"></select>
       </div>
-      <span id="get-guess" class="hint" aria-live="polite"></span>
+      <span id="get-guess" class="hint"></span>
     </div>
     <div class="field">
-      <label for="get-text" class="hint">redis-cli --raw CONFIG GET '*' &gt; config.txt</label>
-      <textarea id="get-text" class="mono" spellcheck="false" placeholder="1) &quot;maxmemory&quot;&#10;2) &quot;2147483648&quot;&#10;..."></textarea>
+      <div class="hint" id="get-hint">redis-cli --raw CONFIG GET '*' &gt; config.txt</div>
+      <textarea id="get-text" class="mono" aria-label="CONFIG GET output" aria-describedby="get-hint" spellcheck="false" placeholder="1) &quot;maxmemory&quot;&#10;2) &quot;2147483648&quot;&#10;..."></textarea>
     </div>
-    <div id="get-result" class="result" aria-live="polite"></div>
+    <div id="get-result" class="result"></div>
   </section>
+  <p id="announce" class="sr-only" role="status" aria-live="polite"></p>
 </main>
 
 <footer class="wrap privacy">

@@ -25,24 +25,36 @@ Some lines don't stop the server and still don't do what they seem to. A setting
 - **Every setting the file changes**, with the value CONFIG GET would report, the default, and the lines that set it. Sizes come out in bytes, old names under their new ones.
 - **What to look at**: no password with protected mode off, nothing saved to disk, no memory limit, an eviction policy that makes writes fail at the limit, commands renamed away, DEBUG or MODULE switched on, a short password, and others.
 - **Notes**: what the server logs or adjusts while starting, and the lines it can't judge from the file alone, such as a folder that must exist.
-- **A short file** with only the lines that change something, under current names.
-- **A running server's settings**, from the output of `CONFIG GET *`, against the defaults of its version. It works out the version from the names when you don't know it.
+- **A short file** with only the lines that change something, under current names, written so that the version you picked reads it back to the same settings. The lines the server stops at stay in it as comments, with the reason.
+- **A running server's settings**, from the output of `CONFIG GET *`, against the defaults of its version. It works out the version from the names when you don't know it, and the build as well: a server built with TLS lists the TLS settings. With only a few settings it can't tell the version, and says so.
 
 ## Use it in the browser
 
-1. **Paste the file** into the box, or open it or drop it there. It's read in your browser and never leaves it.
-2. **Pick the server** you run. For Redis 6.2 and 7.0, say whether it was built with TLS; for Redis 8.10, whether it was built with BUILD_COMPRESSION=yes. Those settings exist only in such builds.
+1. **Paste the file** into the box, or open it, or drop it anywhere on the page. It's read in your browser and never leaves it. The page reads files up to 1 MiB, about eight times the size of the default redis.conf. A file that isn't text, such as a dump.rdb opened by mistake, gets named for what it looks like instead.
+2. **Pick the server** you run. For Redis 6.2 and 7.0, say whether it was built with TLS; for Redis 8.10, whether it was built with BUILD_COMPRESSION=yes. Those settings exist only in such builds. The table of versions uses the same answers.
 3. **Read the verdict.** If the server stops, fix the lines in the list and watch the verdict change as you type.
 4. **Look at the rest**: what to look at, the settings the file sets, the file line by line, and the table of versions. Pick a version in the table to see its details.
 
-**Download the short file** gives the settings that differ from the defaults. **Download the report as JSON** gives everything on the page.
+**Download the short file** gives the lines that change something, under current names, in the order of the file. Each setting comes once, with its last value, where the last line that set it was. `include`, `rename-command`, `user`, `loadmodule` and `dir` lines and module settings stay where they were, so an included file still comes before or after the same settings. Values of several words are written the way the version you picked reads them, such as one `save` line per pair for Redis 6.2, and odd bytes as `\xHH` in quotes. When the server stops, the lines it stops at stay in the short file as comments, each with the reason.
+
+**Download the report as JSON** holds what the page shows:
+
+- `starts`, `error` (the line and what the server prints) and `problems`, every line it would stop at
+- `notes` and `unchecked`, with the line each comes from when there is one
+- `findings`, what to look at
+- `settings`, each setting the file sets with its value, default and lines; and `values`, every setting
+- `lines`, the file line by line with what the server does with each
+- `versions`, whether each of the 15 versions starts, and where it stops if not
+- `build`, the TLS and compression choices it was checked with
+
+Bytes that aren't UTF-8 become U+FFFD in it. The command line's `--json` gives the same for each version it checks, without `versions`.
 
 ## Use it from the command line
 
 ```sh
 node config/cli.js redis.conf                        # which of the 15 versions start with it
 node config/cli.js redis.conf --server valkey-9.1    # one version in detail
-node config/cli.js redis.conf --server 8 --minimal   # the lines that change something
+node config/cli.js redis.conf --server 8 --minimal   # the short file for that version
 node config/cli.js --get config.txt                  # CONFIG GET * output against the defaults
 ```
 
@@ -51,12 +63,12 @@ node config/cli.js --get config.txt                  # CONFIG GET * output again
 | `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x), a full version such as `8.4.7`, or `all` (the default) |
 | `--no-tls` | Redis 6.2 or 7.0 built without TLS, where the TLS settings don't exist |
 | `--compression` | Redis 8.10 built with BUILD_COMPRESSION=yes |
-| `--minimal` | Print the lines that change something, with current names |
-| `--get FILE` | Read the output of `CONFIG GET *` from FILE; with `--server`, against that version |
+| `--minimal` | Print the short file, as the page's download gives it. It needs `--server` with one version; with `--json`, it prints the version and the lines as JSON |
+| `--get FILE` | Read the output of `CONFIG GET *` from FILE; with `--server`, against that version. The build comes from the names in the output unless `--no-tls` or `--compression` is given |
 | `--versions` | List the versions |
 | `--json` | Print JSON |
 
-Exit status: 0 when the server starts with the file, with every version you asked about; 1 when it stops; 2 when the file can't be read or no version matches. A version the checker doesn't know exactly, such as 7.2.4, is checked as the newest release of the same minor version it knows. A deploy script can run the check before it restarts the server:
+Exit status: 0 when the server starts with the file, with every version you asked about; 1 when it stops; 2 when the file can't be read, isn't a config file (with `--get`, isn't CONFIG GET output) or no version matches. A version the checker doesn't know exactly, such as 7.2.4, is checked as the newest release of the same minor version it knows. A deploy script can run the check before it restarts the server:
 
 ```sh
 version=$(redis-server --version | grep -o 'v=[0-9.]*' | cut -c3-)
@@ -65,22 +77,25 @@ node config/cli.js /etc/redis/redis.conf --server "redis $version" || exit 1
 
 To get `CONFIG GET *` output: `redis-cli --raw CONFIG GET '*' > config.txt` (or `valkey-cli`). The numbered output without `--raw` works too.
 
+Bytes from a file that a terminal would act on, such as escape sequences, are printed as `\xHH`, and so are bytes that aren't UTF-8 and characters that don't show, such as a byte order mark.
+
 ## Use it in your own code
 
 ```js
 const C = require('./config/config.js');
-const r = C.check(fs.readFileSync('redis.conf'), 'valkey-9.1.2');
+const r = C.check('maxmemory 2gb\nmaxmemory-policy allkeys-lru\n', 'valkey-9.1.2');
 r.ok;                       // whether the server starts
 r.error;                    // { line, text, message, output }: where it stops and what it prints
 r.problems;                 // every line it would stop at, in order
 r.values.get('maxmemory');  // '2147483648', as CONFIG GET reports it (bytes, one character per byte)
 C.advise(r);                // [{ level, code, title, text }], worst first
-C.minimal(r);               // the lines that change something
+C.minimal(r);               // the short file's lines
+C.report(r);                // what the checker found, ready for JSON
 C.findVersion('redis 8');   // 'redis-8.10.2'
-C.compareConfigGet(C.parseConfigGet(text), 'redis-7.2.16');
+C.readConfigGet('maxmemory\n0\n', 'redis-7.2.16');  // CONFIG GET output against the defaults
 ```
 
-A file's bytes (a Buffer or Uint8Array) are read as they are; a string is read as UTF-8. Values come back as strings with one character per byte, the way the server stores them; `C.fromBinary(value)` turns one into text. In a page, load `servers.js` and then `config.js` with script tags and use `window.KVConfig`.
+A file's bytes (a Buffer or Uint8Array, such as `fs.readFileSync('redis.conf')` gives) are read as they are; a string is read as UTF-8. Values come back as strings with one character per byte, the way the server stores them. `C.fromBinary(value)` turns one into text, and `C.visible(value)` into text to show, with odd bytes as `\xHH`. In a page, load `servers.js` and then `config.js` with script tags and use `window.KVConfig`.
 
 ## How it was tested
 
@@ -91,6 +106,7 @@ The checker's answers come from the servers. `test/generate/extract.py` reads ea
 - **Every file reads the same.** For each one, the checker gives the server's answer: the same text, byte for byte, at the same line, or the same value for every setting. Over the 66,000 files that is about 2,500,000 values.
 - **Every problem in a file.** Most files hold one line for each of many settings. When the server stopped at a line, that line came out and the file ran again, until the server started. Reading the whole file at once, the checker lists the same lines in the same order, and ends with the same values.
 - **Stopping while starting.** Settings left for modules, users in the file together with an ACL file, a subcommand given to rename-command, and a bad value for Redis 8's built-in vector sets all stop the server after it has read the file. The checker gives the same log lines.
+- **The short file.** For each recorded file, the short file the checker writes from it reads back to the same value for every setting. It starts whenever the original's problems are lines it can leave out.
 
 The recorded files and answers are in `test/fixtures/`, and the tests replay them, so they run without any server:
 

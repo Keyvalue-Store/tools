@@ -123,6 +123,53 @@
     }
     return out;
   }
+  const hex2 = (c) => '\\x' + c.toString(16).padStart(2, '0');
+  // Characters that don't show: controls, format characters such as the
+  // byte order mark, spaces other than ' ', and the like.
+  const HIDDEN = /[\p{C}\p{Z}]/u;
+  // The character that the UTF-8 bytes at s[i] spell, and how many bytes
+  // they take; null for ASCII, for bytes that aren't valid UTF-8 and for a
+  // character that doesn't show.
+  function utf8At(s, i) {
+    const c = s.charCodeAt(i);
+    const n = c >= 0xc2 && c <= 0xdf ? 2 : c >= 0xe0 && c <= 0xef ? 3 : c >= 0xf0 && c <= 0xf4 ? 4 : 0;
+    if (!n || i + n > s.length) return null;
+    let cp = c & (n === 2 ? 0x1f : n === 3 ? 0x0f : 0x07);
+    for (let k = 1; k < n; k++) {
+      const d = s.charCodeAt(i + k);
+      if ((d & 0xc0) !== 0x80) return null;
+      cp = (cp << 6) | (d & 0x3f);
+    }
+    if ((n === 3 && cp < 0x800) || (n === 4 && (cp < 0x10000 || cp > 0x10ffff)) || (cp >= 0xd800 && cp <= 0xdfff)) return null;
+    const ch = String.fromCodePoint(cp);
+    return HIDDEN.test(ch) ? null : { ch: ch, n: n };
+  }
+  // Bytes as text to show a person: UTF-8, with control bytes, characters
+  // that don't show and bytes that aren't UTF-8 written as \xHH, so that a
+  // byte order mark or a terminal escape can be seen and does nothing.
+  // keep lists characters to leave alone, such as '\n' for several lines.
+  function visible(s, keep) {
+    if (s === null || s === undefined) return '';
+    s = String(s);
+    if (/^[\x20-\x7e]*$/.test(s)) return s;
+    let out = '';
+    for (let i = 0; i < s.length;) {
+      const c = s.charCodeAt(i);
+      if ((c >= 0x20 && c < 0x7f) || (keep && keep.includes(s[i]))) { out += s[i]; i++; continue; }
+      if (c > 0xff) {
+        // Already text rather than bytes.
+        const cp = s.codePointAt(i), ch = String.fromCodePoint(cp);
+        out += HIDDEN.test(ch) ? '\\u{' + cp.toString(16) + '}' : ch;
+        i += ch.length;
+        continue;
+      }
+      const u = utf8At(s, i);
+      if (u) { out += u.ch; i += u.n; continue; }
+      out += hex2(c);
+      i++;
+    }
+    return out;
+  }
 
   // ---- C, as the servers' code uses it ----
 
@@ -231,9 +278,10 @@
   // percentiles: a finite number, written in full, or null.
   function string2d(s, v) {
     if (!s.length || isspace(s[0])) return null;
-    const dec = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+    // Written so a long run of digits can't make them backtrack for long.
+    const dec = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/;
     const word = /^[+-]?(?:inf|infinity|nan)$/i;
-    const hex = /^[+-]?0[xX](?:[0-9a-fA-F]+\.?[0-9a-fA-F]*|\.[0-9a-fA-F]+)(?:[pP][+-]?\d+)?$/;
+    const hex = /^[+-]?0[xX](?:[0-9a-fA-F]+(?:\.[0-9a-fA-F]*)?|\.[0-9a-fA-F]+)(?:[pP][+-]?\d+)?$/;
     let x;
     // Redis's fast parsers fall back to strtod for anything they don't take
     // whole, hexadecimal included; Valkey's (ffc) has no fallback.
@@ -372,16 +420,25 @@
       out.push(cur);
     }
   }
-  // sdstrim with " \t\r\n".
-  const trim = (s) => s.replace(/^[ \t\r\n]+/, '').replace(/[ \t\r\n]+$/, '');
+  // sdstrim with " \t\r\n". A loop, since a regular expression takes time
+  // that grows with the square of a long run of spaces inside a line.
+  const trimmed = (c) => c === 32 || c === 9 || c === 13 || c === 10;
+  function trim(s) {
+    let a = 0, b = s.length;
+    while (a < b && trimmed(s.charCodeAt(a))) a++;
+    while (b > a && trimmed(s.charCodeAt(b - 1))) b--;
+    return a === 0 && b === s.length ? s : s.slice(a, b);
+  }
   // The servers read the file with fgets, up to a line break or 1024 bytes at
   // a time, and append each piece as a C string: a NUL byte drops the rest of
   // its piece, line break included.
   function readFile(s) {
     if (!s.includes('\0')) return s;
     let out = '';
+    // The next line break is looked up once, not once for every piece.
+    let nl = s.indexOf('\n');
     for (let p = 0; p < s.length;) {
-      const nl = s.indexOf('\n', p);
+      if (nl >= 0 && nl < p) nl = s.indexOf('\n', p);
       const end = Math.min(p + 1024, nl < 0 ? s.length : nl + 1);
       const piece = s.slice(p, end);
       const nul = piece.indexOf('\0');
@@ -758,7 +815,12 @@
           const whole = r.digits ? r.end === a[j].length : a[j] === '';
           if (!whole || ((j & 1) === 0 && r.value < 1n) || ((j & 1) === 1 && r.value < 0n)) return 'Invalid save parameters';
         }
-        if (!st.saveLoaded) { st.saveLoaded = true; val.v = []; }
+        // The first save line in the file replaces the defaults, and the next
+        // ones add to it. An include ends that: reading the other file sets the
+        // server's "reading the config file" flag back to 0 when it's done, so
+        // each save line after it starts the list again, as CONFIG SET does.
+        if (st.afterInclude) val.v = [];
+        else if (!st.saveLoaded) { st.saveLoaded = true; val.v = []; }
         for (let j = 0; j < a.length; j += 2) val.v.push([strtoll(a[j], 10).value, s32(strtoll(a[j + 1], 10).value)]);
         return null;
       }
@@ -907,11 +969,14 @@
 
   // ---- reading a file ----
 
-  // Copies a setting's value, and gives a function that puts it back.
   const clone = (x) => (Array.isArray(x) ? x.map(clone) : x && typeof x === 'object' ? Object.fromEntries(Object.entries(x).map(([k, y]) => [k, clone(y)])) : x);
+  // Keeps a setting's value, and gives a function that puts it back. The set
+  // functions change a value in place only once a line has passed every
+  // check, so keeping the value itself is enough; copying it made a file
+  // with thousands of save lines take minutes.
   function keep(st, name) {
     const entry = name ? st.vals.get(name) : null;
-    const value = entry ? clone(entry.v) : null;
+    const value = entry ? entry.v : null;
     const saveLoaded = st.saveLoaded;
     return () => { if (entry) entry.v = value; st.saveLoaded = saveLoaded; };
   }
@@ -937,6 +1002,7 @@
     st.unchecked = [];
     st.internal = new Map();
     st.saveLoaded = false;
+    st.afterInclude = false;
     st.renamed = new Map();
     const commands = new Set(v.commandSet);
     const tls = opt.tls !== false;
@@ -1014,6 +1080,8 @@
       if (a0 === 'include' && n === 2) {
         rec.kind = 'include'; rec.status = 'unchecked'; rec.message = 'The server reads this file here; it isn\'t checked.';
         st.unchecked.push({ line: linenum, message: 'include ' + argv[1] });
+        // From 7.0, save lines after an include each start the list again (see setConfigSaveOption).
+        if (!legacy) st.afterInclude = true;
         continue;
       }
       if (a0 === 'rename-command' && n === 3) {
@@ -1206,7 +1274,7 @@
     return {
       version: v.id, label: v.label, ok: !error, error: error || null,
       problems: problems, notes: st.notes.concat(finish), unchecked: st.unchecked, lines: lines, values: values, defaults: defaults,
-      setBy: setLines, renamed: st.renamed
+      setBy: setLines, renamed: st.renamed, options: { tls: tls, compression: !!opt.compression }
     };
   }
   // Each version's defaults as CONFIG GET reports them, worked out once.
@@ -1362,7 +1430,8 @@
   // name or value a line, where an empty line is an empty value; or the
   // numbered kind, 1) "name" 2) "value". Returns a Map.
   function parseConfigGet(text) {
-    const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+    // A byte order mark that an editor added isn't part of the first name.
+    const lines = String(text).replace(/^\ufeff/, '').replace(/\r\n?/g, '\n').split('\n');
     const numbered = lines.some((l) => /^\s*\d+\)\s/.test(l));
     const items = [];
     if (numbered) {
@@ -1377,8 +1446,10 @@
     } else {
       // The last line break ends the output rather than starting an empty value.
       if (lines.length && lines[lines.length - 1] === '') lines.pop();
-      while (lines.length && lines[0].trim() === '') lines.shift();
-      items.push(...lines);
+      let first = 0;
+      while (first < lines.length && lines[first].trim() === '') first++;
+      // A loop: spreading 150,000 lines into push() overflows the stack.
+      for (let i = first; i < lines.length; i++) items.push(lines[i]);
     }
     const out = new Map();
     for (let i = 0; i + 1 < items.length; i += 2) out.set(items[i], items[i + 1]);
@@ -1389,18 +1460,33 @@
     return r && r.length === 1 ? fromBinary(r[0]) : s.slice(1, -1);
   }
 
+  // The build CONFIG GET output came from. options.tls and
+  // options.compression as for check(); when one is left out, it comes from
+  // the names, since a build lists the settings it has: the TLS settings
+  // with TLS, and so on.
+  function buildOf(map, v, options) {
+    const opt = options || {};
+    const lists = (kind) => v.defs.some((c) => c.build === kind && (map.has(c.name) || (c.alias !== null && map.has(c.alias))));
+    const given = (x) => x !== undefined && x !== null;
+    return {
+      tls: given(opt.tls) ? opt.tls !== false : !v.defs.some((c) => c.build === 'tls') || lists('tls'),
+      compression: given(opt.compression) ? !!opt.compression : lists('compression')
+    };
+  }
   // Compares CONFIG GET output with a version's defaults. Each row: name,
   // value (null when the output doesn't have it), default, changed, and
-  // hidden for settings CONFIG GET * leaves out.
-  // options.tls and options.compression as for check().
+  // hidden for settings CONFIG GET * leaves out. Also: unknown, the names in
+  // the output that aren't settings of the version; known, how many names
+  // are; listed, how many settings CONFIG GET * lists; and the build
+  // compared with (tls, compression), from buildOf().
   function compareConfigGet(map, versionId, options) {
-    const opt = options || {};
     const v = getVersion(versionId);
+    const build = buildOf(map, v, options);
     const fresh = new State(v);
     const rows = [];
     const known = new Set();
     for (const c of v.defs) {
-      if ((c.build === 'tls' && opt.tls === false) || (c.build === 'compression' && !opt.compression)) continue;
+      if ((c.build === 'tls' && !build.tls) || (c.build === 'compression' && !build.compression)) continue;
       known.add(c.name);
       if (c.alias) known.add(c.alias);
       const dflt = c.name === 'dir' ? null : getValue(fresh, c);
@@ -1418,17 +1504,21 @@
       known.add(name);
       rows.push({ name: name, value: map.has(name) ? map.get(name) : null, default: dflt, hidden: false, changed: map.has(name) && map.get(name) !== dflt });
     }
-    const unknown = [...map.keys()].filter((k) => !known.has(k));
-    return { version: v.id, rows: rows, unknown: unknown };
+    const unknown = [];
+    for (const k of map.keys()) if (!known.has(k)) unknown.push(k);
+    return { version: v.id, rows: rows, unknown: unknown, known: map.size - unknown.length, listed: rows.filter((r) => !r.hidden).length,
+      tls: build.tls, compression: build.compression };
   }
-  // The version whose settings best match the names in CONFIG GET output.
-  function guessVersion(map) {
+  // The version whose settings best match the names in CONFIG GET * output.
+  function guessVersion(map, options) {
     let best = null, bestScore = -Infinity;
     for (const { id } of versions()) {
       const v = getVersion(id);
+      const build = buildOf(map, v, options);
       const names = new Set();
       for (const c of v.defs) {
         if (c.flags.includes('H')) continue;
+        if ((c.build === 'tls' && !build.tls) || (c.build === 'compression' && !build.compression)) continue;
         names.add(c.name);
         if (c.alias) names.add(c.alias);
       }
@@ -1440,6 +1530,79 @@
       if (score >= bestScore) { best = id; bestScore = score; }
     }
     return best;
+  }
+  // For a few settings, where the names can't tell the versions apart: the
+  // version that knows most of them, the newest Redis first.
+  function closestVersion(map, options) {
+    const all = versions();
+    const order = all.filter((x) => x.server === 'redis').reverse().concat(all.filter((x) => x.server !== 'redis').reverse());
+    let best = null, fewest = Infinity;
+    for (const { id } of order) {
+      const n = compareConfigGet(map, id, options).unknown.length;
+      if (n < fewest) { best = id; fewest = n; }
+    }
+    return best;
+  }
+  // Every name a config file can start a line with, in any version.
+  let allNames = null;
+  function configNames() {
+    if (allNames) return allNames;
+    allNames = new Set(['include', 'rename-command', 'user', 'loadmodule']);
+    for (const { id } of versions()) {
+      const v = getVersion(id);
+      for (const c of v.defs) { allNames.add(c.name); if (c.alias) allNames.add(c.alias); }
+      if (v.f.legacy) for (const name of Object.keys(v.legacy)) allNames.add(name);
+    }
+    return allNames;
+  }
+  // Whether text reads like a config file: most lines that aren't comments
+  // are a setting's name, then a value.
+  function looksLikeConfigFile(text) {
+    const names = configNames();
+    let lines = 0, settings = 0;
+    for (const raw of String(text).split('\n')) {
+      const l = raw.trim();
+      if (!l || l[0] === '#') continue;
+      lines++;
+      const m = /^([A-Za-z0-9._-]+)[ \t]+\S/.exec(l);
+      if (m && names.has(m[1].toLowerCase())) settings++;
+    }
+    return lines > 0 && settings * 2 >= lines;
+  }
+  // Reads CONFIG GET output and compares it with the defaults of a version:
+  // the one given, or the one whose names match best. What it returns has
+  // what compareConfigGet() gives, and:
+  //   kind     'full' for the output of CONFIG GET *; 'partial' for some
+  //            settings only, too few to tell the version or what's missing;
+  //            'other' when most names aren't settings; 'config-file' when
+  //            it reads like a config file; 'none' when nothing is in it
+  //   settings how many names the output has
+  //   guessed  whether the version was worked out from the names, and sure
+  //            whether there were enough of them to tell
+  //   changed  the rows that differ from the defaults
+  //   missing  for 'full', the settings the output leaves out
+  function readConfigGet(text, versionId, options) {
+    const map = parseConfigGet(text);
+    const out = { kind: 'none', settings: map.size, values: map, version: null, label: null, guessed: !versionId, sure: !!versionId,
+      rows: [], unknown: [], known: 0, listed: 0, changed: [], missing: [] };
+    if (!map.size) {
+      if (looksLikeConfigFile(text)) out.kind = 'config-file';
+      return out;
+    }
+    let id = versionId || guessVersion(map, options);
+    let cmp = compareConfigGet(map, id, options);
+    if (cmp.known === 0 || cmp.known * 2 < map.size) out.kind = looksLikeConfigFile(text) ? 'config-file' : 'other';
+    else if (cmp.known * 2 < cmp.listed) {
+      out.kind = 'partial';
+      if (!versionId) { id = closestVersion(map, options); cmp = compareConfigGet(map, id, options); }
+    } else {
+      out.kind = 'full';
+      out.sure = true;
+    }
+    Object.assign(out, cmp, { label: versions().find((x) => x.id === id).label });
+    out.changed = cmp.rows.filter((r) => r.changed);
+    out.missing = out.kind === 'full' ? cmp.rows.filter((r) => r.value === null && !r.hidden) : [];
+    return out;
   }
   // Values that depend on where and how the server runs, not on the file.
   const envDependent = (name) => ['dir', 'pidfile', 'port', 'unixsocket', 'logfile'].includes(name);
@@ -1495,36 +1658,205 @@
       if (l.kind === 'deprecated') add('info', 'deprecated', fromBinary(l.argv[0]) + ' does nothing', 'Line ' + l.line + ': ' + v.label + ' accepts this old setting and ignores it.', []);
     }
     for (const [name, list] of result.setBy) {
-      if (list.length > 1 && !['save', 'client-output-buffer-limit'].includes(name)) add('info', 'repeated', name + ' is set ' + list.length + ' times', 'Lines ' + list.join(', ') + '. The last one wins.', [name]);
+      if (list.length > 1 && !['save', 'client-output-buffer-limit'].includes(name)) {
+        const lines = list.length <= 8 ? list.join(', ') : list.slice(0, 5).join(', ') + ' and ' + (list.length - 6) + ' more, up to ' + list[list.length - 1];
+        add('info', 'repeated', name + ' is set ' + list.length + ' times', 'Lines ' + lines + '. The last one wins.', [name]);
+      }
     }
     const rank = { bad: 0, warn: 1, info: 2 };
     return out.map((f, i) => [f, i]).sort((a, b) => rank[a[0].level] - rank[b[0].level] || a[1] - b[1]).map((x) => x[0]);
   }
 
-  // The settings that differ from the defaults, as config file lines with
-  // their current names. A good starting point for a short config file.
+  // The short file: the lines of a checked file that change something, with
+  // current names, so the server ends up with the same settings. Returns
+  // text lines.
+  //   - A setting comes out once, with the value it ends with, where the
+  //     last line that set it was, so an include keeps its place before or
+  //     after it. Multi-word values come out as separate words, which every
+  //     version reads alike; Redis 6.2 gets a save line per pair and a
+  //     client-output-buffer-limit line per class.
+  //   - include, rename-command, user, loadmodule and dir lines, and module
+  //     settings, stay where they were.
+  //   - A line the server stops at stays as a comment, with the reason, and
+  //     so does a reason it stops after reading the file.
   function minimal(result) {
-    const out = [];
-    const first = (name) => (result.setBy.has(name) ? result.setBy.get(name)[0] : Infinity);
-    for (const [name, value] of [...result.values].sort((a, b) => first(a[0]) - first(b[0]))) {
-      if (envDependent(name) && !result.setBy.has(name)) continue;
-      if (value === result.defaults.get(name) && !(name === 'dir' && result.setBy.has('dir'))) continue;
-      if (!result.setBy.has(name) && !['databases', 'hz', 'io-threads'].includes(name)) continue;
-      out.push(name + ' ' + quote(fromBinary(value)));
+    const v = getVersion(result.version);
+    const entries = [];
+    const put = (at, lines) => entries.push({ at: at, n: entries.length, lines: lines });
+    const why = new Map();
+    for (const p of result.problems) {
+      if (p.line === null) {
+        // A list of thousands of module settings is cut short.
+        const reason = visible(p.short || p.message);
+        put(0, ['# ' + result.label + ' stops after reading the original file: ' + (reason.length > 300 ? reason.slice(0, 297) + '...' : reason)]);
+      } else if (!why.has(p.line)) why.set(p.line, p.message);
     }
-    for (const l of result.lines) if (['include', 'rename-command', 'user', 'loadmodule'].includes(l.kind) && l.status !== 'error') out.push(fromBinary(l.text));
+    const lastLine = new Map();
+    for (const l of result.lines) {
+      if (l.status === 'error') {
+        put(l.line, ['# Line ' + l.line + ' stops ' + result.label + ': ' + visible(l.message || why.get(l.line) || ''), '# ' + visible(l.text)]);
+        continue;
+      }
+      if (l.name) lastLine.set(l.name, l.line);
+      const kept = ['include', 'rename-command', 'user', 'loadmodule'].includes(l.kind) || (l.kind === 'module' && l.status === 'unchecked') ||
+        (l.kind === 'config' && l.name === 'dir');
+      if (kept) put(l.line, [lineOf(l.argv, v, false)]);
+    }
+    // Lines whose setting has no value to show (Redis 6.2's cluster-config-file).
+    for (const [name, list] of result.setBy) {
+      const at = list[list.length - 1];
+      if (name !== 'dir' && !result.values.has(name) && result.lines[at - 1].status !== 'error') put(at, [lineOf(result.lines[at - 1].argv, v, false)]);
+    }
+    for (const [name, value] of result.values) {
+      if (name === 'dir' || value === result.defaults.get(name)) continue;
+      if (envDependent(name) && !result.setBy.has(name)) continue;
+      const set = result.setBy.get(name);
+      const at = set ? set[set.length - 1] : lastLine.has(name) ? lastLine.get(name) : Infinity;
+      if (at !== Infinity && result.lines[at - 1].status === 'error') continue;
+      put(at, settingLines(v, name, value, result.defaults.get(name)));
+    }
+    entries.sort((a, b) => a.at - b.at || a.n - b.n);
+    const out = [];
+    for (const e of entries) for (const line of e.lines) out.push(line);
     return out;
   }
-  // An argument as a config file needs it written.
-  function quote(s) {
-    if (s === '') return '""';
-    if (!/[\s"'\\]/.test(s) && !/[^\x20-\x7e\u00a0-\uffff]/.test(s)) return s;
-    return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t') + '"';
+  // The lines that give a setting a value, as CONFIG GET reports it.
+  function settingLines(v, name, value, dflt) {
+    const c = v.byName.get(name);
+    const multi = !!(c && c.multi);
+    const word = name === 'slaveof' ? 'replicaof' : name;
+    const out = [];
+    const put = (args) => out.push(lineOf([word].concat(args), v, multi));
+    if (name === 'save') {
+      const w = value === '' ? [''] : value.split(' ');
+      // From 7.0 the count of changes is checked as a long, then kept in an
+      // int, so 2147483648 passes and shows as -2147483648, which wouldn't.
+      if (!v.f.legacy) for (let i = 1; i < w.length; i += 2) if (w[i][0] === '-') w[i] = u32(BigInt(w[i])).toString();
+      if (v.f.legacy && value !== '') for (let i = 0; i + 1 < w.length; i += 2) put([w[i], w[i + 1]]);
+      else put(w);
+    } else if (name === 'client-output-buffer-limit') {
+      // The classes that differ, a line each. Redis 6.2 reads a limit with a
+      // sign, so one of 2^63 or more goes back as the negative number it was.
+      const w = value.split(' '), d = (dflt || '').split(' ');
+      const limit = (x) => (v.f.legacy ? s64(BigInt(x)).toString() : x);
+      for (let i = 0; i + 3 < w.length; i += 4) {
+        if (w.slice(i, i + 4).join(' ') !== d.slice(i, i + 4).join(' ')) put([w[i], limit(w[i + 1]), limit(w[i + 2]), w[i + 3]]);
+      }
+    } else if (name === 'replicaof' || name === 'slaveof') {
+      const i = value.lastIndexOf(' ');
+      put(i < 0 ? [value] : [value.slice(0, i), value.slice(i + 1)]);
+    } else if (multi || (v.f.legacy && (name === 'bind' || name === 'oom-score-adj-values'))) put(value === '' ? [''] : value.split(' '));
+    else put([value]);
+    return out;
+  }
+  // A config file line with these arguments. From 7.0 a setting that takes
+  // several words splits a lone argument into words again; one that wouldn't
+  // come back the same is quoted twice.
+  function lineOf(args, v, multi) {
+    const parts = args.map((a) => quote(a));
+    if (multi && !v.f.legacy && args.length === 2 && args[1] !== '') {
+      const again = splitArgsFor(cstr(args[1]), v.f.splitArgs);
+      if (!again || again.length !== 1 || again[0] !== args[1]) parts[1] = quote(quote(args[1]));
+    }
+    return fromBinary(parts.join(' '));
+  }
+  // An argument as a config file line needs it, so that every version reads
+  // back the same bytes: as it is when it can be, or else in double quotes,
+  // with \" \\ \n \r \t, and \xHH for a byte that isn't printable or isn't
+  // part of a UTF-8 character that shows. Valkey 8.1 and later drop a raw
+  // 0xff byte, and \xff keeps it. Takes and gives bytes, one a character.
+  // always: in quotes even when it needn't be, for showing a value.
+  const ESCAPES = { '"': '\\"', '\\': '\\\\', '\n': '\\n', '\r': '\\r', '\t': '\\t' };
+  function quote(s, always) {
+    if (!always && s !== '' && s[0] !== '#' && plain(s)) return s;
+    let out = '"';
+    for (let i = 0; i < s.length;) {
+      const c = s.charCodeAt(i);
+      if (ESCAPES[s[i]]) { out += ESCAPES[s[i]]; i++; continue; }
+      if (c >= 0x20 && c < 0x7f) { out += s[i]; i++; continue; }
+      const u = utf8At(s, i);
+      if (u) { out += s.substr(i, u.n); i += u.n; continue; }
+      out += hex2(c);
+      i++;
+    }
+    return out + '"';
+  }
+  // Whether an argument reads back the same without quotes in every version:
+  // no space, quote or control byte, and only whole UTF-8 characters.
+  function plain(s) {
+    for (let i = 0; i < s.length;) {
+      const c = s.charCodeAt(i);
+      if (c > 0x20 && c < 0x7f && c !== 0x22 && c !== 0x27) { i++; continue; }
+      const u = c >= 0x80 ? utf8At(s, i) : null;
+      if (!u) return false;
+      i += u.n;
+    }
+    return true;
+  }
+
+  // ---- the report as data ----
+
+  // What the checker found about a file, ready for JSON: bytes become text
+  // (bytes that aren't UTF-8 become U+FFFD).
+  function report(r) {
+    const text = (s) => (s === null || s === undefined ? null : fromBinary(s));
+    const changed = [];
+    for (const [name, value] of r.values) if (r.setBy.has(name) || value !== r.defaults.get(name)) changed.push([name, value]);
+    const obj = (pairs) => {
+      const o = {};
+      for (const [k, x] of pairs) o[text(k)] = x;
+      return o;
+    };
+    return {
+      version: r.version, label: r.label, starts: r.ok, build: { tls: r.options.tls, compression: r.options.compression },
+      error: r.error ? { line: r.error.line, text: text(r.error.text), message: text(r.error.message), output: text(r.error.output), startup: !!r.error.startup } : null,
+      problems: r.problems.map((p) => ({ line: p.line, text: text(p.text), message: text(p.message), startup: !!p.startup })),
+      notes: r.notes.map((n) => ({ name: n.name || null, message: text(n.message) })),
+      unchecked: r.unchecked.map((u) => ({ line: u.line || null, name: u.name || null, message: text(u.message) })),
+      settings: obj(changed.map(([name, value]) => [name, { value: text(value), default: text(r.defaults.get(name)), lines: r.setBy.get(name) || [] }])),
+      values: obj([...r.values].map(([k, x]) => [k, text(x)])),
+      lines: r.lines.map((l) => ({ line: l.line, kind: l.kind, status: l.status, name: l.name, text: text(l.text), message: text(l.message) })),
+      findings: advise(r),
+      renamed: obj([...r.renamed].map(([k, x]) => [k, text(x)]))
+    };
+  }
+
+  // ---- files that aren't config files ----
+
+  // What a file looks like when it isn't text: a few words, such as 'a Redis
+  // or Valkey snapshot (an RDB file such as dump.rdb)'; null when it reads
+  // as text. Takes the file's bytes, or text.
+  function sniff(data) {
+    const b = typeof data === 'string' ? utf8.encode(data) : data instanceof ArrayBuffer ? new Uint8Array(data) : data;
+    const head = String.fromCharCode.apply(null, b.subarray(0, 32));
+    if (/^(REDIS\d{4}|VALKEY\d{3})/.test(head)) return 'a Redis or Valkey snapshot (an RDB file such as dump.rdb)';
+    if (/^\*\d+\r\n\$\d+\r\n/.test(head)) return 'an append-only file (AOF)';
+    if (/^(\xff\xfe|\xfe\xff)/.test(head)) return 'text in UTF-16, which Redis and Valkey can\'t read (save it as UTF-8)';
+    if (/^\x1f\x8b/.test(head)) return 'a gzip file';
+    if (/^PK\x03\x04/.test(head)) return 'a zip file';
+    if (/^\x7fELF/.test(head)) return 'a program (an ELF file)';
+    if (/^%PDF/.test(head)) return 'a PDF';
+    if (/^(\x89PNG|\xff\xd8\xff|GIF8)/.test(head)) return 'an image';
+    // Otherwise, in the first 64 KiB: more than 1% NUL bytes, or more than
+    // 10% bytes that aren't text.
+    const n = Math.min(b.length, 65536);
+    let nul = 0, odd = 0;
+    for (let i = 0; i < n; i++) {
+      const c = b[i];
+      if (c === 0) nul++;
+      else if (c < 9 || (c > 13 && c < 32) || c === 127) odd++;
+    }
+    const decoded = fromUtf8.decode(b.subarray(0, n));
+    let bad = 0;
+    for (let i = decoded.indexOf('\ufffd'); i >= 0; i = decoded.indexOf('\ufffd', i + 1)) bad++;
+    // A few odd bytes in a short file don't make it binary.
+    if ((nul >= 8 && nul * 100 > n) || (nul + odd + bad >= 8 && (nul + odd + bad) * 10 > n)) return 'a binary file';
+    return null;
   }
 
   return {
-    versions: versions, findVersion: findVersion, check: check, advise: advise, minimal: minimal, parseConfigGet: parseConfigGet,
-    compareConfigGet: compareConfigGet, guessVersion: guessVersion, splitArgs: splitArgs, toBinary: toBinary, fromBinary: fromBinary, printable: printable,
-    getVersion: getVersion, quote: quote
+    versions: versions, findVersion: findVersion, check: check, advise: advise, minimal: minimal, report: report, parseConfigGet: parseConfigGet,
+    compareConfigGet: compareConfigGet, guessVersion: guessVersion, readConfigGet: readConfigGet, splitArgs: splitArgs, toBinary: toBinary,
+    fromBinary: fromBinary, printable: printable, visible: visible, sniff: sniff, getVersion: getVersion, quote: quote
   };
 });
