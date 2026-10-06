@@ -947,6 +947,11 @@
     let fatal = null;
     const moduleQueue = new Map();
     const users = new Set();
+    // The user lines that pass, for startup; and what the ACL checks carry
+    // from one line to the next.
+    const userLines = [];
+    const aclState = {};
+    const pubsubDefault = () => (v.byName.has('acl-pubsub-default') ? getValue(st, v.byName.get('acl-pubsub-default')) : undefined);
     let replicaofLine = 0;
     const setLines = new Map();
 
@@ -977,6 +982,7 @@
       const argv = splitArgsFor(text, v.f.splitArgs);
       if (argv === null) { rec.kind = 'bad'; fail(rec, 'Unbalanced quotes in configuration line'); continue; }
       if (argv.length === 0) { rec.kind = 'blank'; continue; }
+      const word0 = argv[0];
       argv[0] = lower(argv[0]);
       rec.argv = argv;
       let c = v.byName.get(argv[0]);
@@ -1033,15 +1039,16 @@
         rec.kind = 'user';
         // 7.0 and later refuse a second user line for the same name.
         if (!legacy && users.has(argv[1])) {
-          fail(rec, 'Error in user declaration \'' + argv[1] + '\': Duplicate user found. A user can only be defined once in config files');
+          fail(rec, 'Error in user declaration \'' + cstr(argv[1]) + '\': Duplicate user found. A user can only be defined once in config files');
           continue;
         }
         const acl = aclLibrary();
         if (acl) {
-          const e = acl.checkUserLine(argv, v.id);
+          const e = acl.checkUserLine([word0].concat(argv.slice(1)), v.id, { pubsubDefault: pubsubDefault(), state: aclState });
           if (e) { fail(rec, e); continue; }
         } else { rec.status = 'unchecked'; rec.message = 'An ACL user. The ACL Builder checks its rules.'; }
         users.add(argv[1]);
+        userLines.push(argv);
         continue;
       }
       if (a0 === 'loadmodule' && n >= 2) {
@@ -1163,6 +1170,14 @@
       const stop = { line: null, text: null, message: v.f.aclConflict, startup: true, log: [v.f.aclConflict], short: 'users in the file and an aclfile' };
       if (!startup) startup = stop;
       problems.push(stop);
+    } else if (users.size && aclLibrary()) {
+      // Then it creates the users; a rule for a command no module added stops it.
+      const r = aclLibrary().startupUsers(userLines, v.id, { pubsubDefault: pubsubDefault() });
+      if (r.log) {
+        const stop = { line: null, text: null, message: r.message, startup: true, log: r.log, short: r.message };
+        if (!startup) startup = stop;
+        problems.push(stop);
+      }
     }
     // At startup the watchdog period becomes at least twice the timer period.
     if (v.f.watchdogClamp && st.vals.has('watchdog-period')) {
@@ -1246,9 +1261,17 @@
   }
 
   // The ACL Builder's library, when it's loaded, checks user lines.
+  // In Node it's ../acl/acl.js, when that's there.
+  let aclModule;
   function aclLibrary() {
     if (typeof globalThis !== 'undefined' && globalThis.KVAcl && globalThis.KVAcl.checkUserLine) return globalThis.KVAcl;
-    return null;
+    if (aclModule === undefined) {
+      aclModule = null;
+      if (typeof module === 'object' && typeof require === 'function') {
+        try { aclModule = require('../acl/acl.js'); } catch (e) { aclModule = null; }
+      }
+    }
+    return aclModule;
   }
 
   // Redis 6.2 reads these itself, outside its table.

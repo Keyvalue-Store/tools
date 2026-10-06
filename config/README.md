@@ -104,7 +104,7 @@ node --test config/test/config.test.js
 
 - **What isn't in the file.** An `include` line reads another file, which the checker doesn't see. A `loadmodule` line loads a module that may accept settings of its own, so with a module loaded the checker leaves those lines to it.
 - **The machine.** Some lines are checked against the machine as the server starts: `dir` must exist, `logfile` must open, the locale in `locale-collate` and the group in `unixsocketgroup` must exist, and TLS needs certificate files and a build with TLS. The checker lists these as not checked.
-- **ACL rules.** A `user` line stops the server if its rules are wrong. The checker catches a user declared twice; it checks the rules themselves when the ACL Builder's `acl.js` is loaded beside it, as it is on the web page.
+- **ACL rules.** A `user` line stops the server if its rules are wrong, either while it reads the file or while it starts. The checker checks them with the ACL Builder's `acl.js`, which it finds in `../acl/` from Node and which the web page loads; without it, it only catches a user declared twice.
 - **Startup failures that depend on more than the file**, such as a data file that can't be read or a port in use, are outside what a config check can know.
 - **Sentinel.** The checker reads server config files, not sentinel.conf.
 

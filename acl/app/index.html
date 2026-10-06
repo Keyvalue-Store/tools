@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src data: blob:; form-action 'none'; base-uri 'none'">
+<title>ACL Builder | KeyValueStore.com</title>
+<meta name="description" content="Read Redis and Valkey ACL rules the way the server applies them: the exact error, the line ACL LIST prints, what the user can do in plain words. Check commands as ACL DRYRUN does, and draft least-privilege users from MONITOR output. For 15 versions. Runs in your browser.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/acl/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Ccircle cx='12' cy='13' r='5' stroke='%2350C4CC' stroke-width='3' fill='none'/%3E%3Cpath d='M15.5 16.5L25 26M21 22l3-3' stroke='%23fff' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="../../common/embed.js"></script>
+<link rel="stylesheet" href="../../common/tool.css">
+<style>
+  #rules, #commands, #monitor { font-family: var(--mono); font-size: .88rem; line-height: 1.45; }
+  #rules { min-height: 130px; }
+  #commands { min-height: 130px; }
+  #monitor { min-height: 190px; white-space: pre; overflow-wrap: normal; overflow-x: auto; }
+  .over { border-color: var(--accent) !important; background: var(--accent-soft) !important; }
+  .printed { font-family: var(--mono); font-size: .86rem; white-space: pre-wrap; word-break: break-all; background: #1F2933; color: #F1F5F9; border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+  .rule { font-family: var(--mono); font-size: .86rem; white-space: nowrap; }
+  td.mono, .val { font-family: var(--mono); font-size: .84rem; word-break: break-all; }
+  td.cmd { word-break: normal; overflow-wrap: anywhere; min-width: 11em; }
+  .status { white-space: nowrap; font-size: .84rem; font-weight: 600; }
+  .status.ok { color: var(--good); }
+  .status.bad { color: var(--bad); }
+  .status.warn { color: var(--warn); }
+  tr.bad td { background: var(--bad-soft); }
+  .versions-table td.yes { color: var(--good); font-weight: 600; }
+  .versions-table td.no { color: var(--bad); }
+  .versions-table tr.on td { background: var(--accent-soft); }
+  .user-block { border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 16px 10px; margin: 14px 0; }
+  .user-block h3 { margin-top: 12px; }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 8px 0 4px; }
+  .facts dt { font-weight: 600; color: var(--ink); }
+  .facts dd { margin: 0; }
+  .cmdlist { columns: 14em; column-gap: 18px; font-family: var(--mono); font-size: .82rem; margin: 8px 0; padding: 0; list-style: none; }
+  .cmdlist li.danger { color: var(--bad); }
+  .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .linkish:hover { color: var(--accent-strong); }
+  .copy-row { display: flex; gap: 8px; align-items: flex-start; }
+  .copy-row .printed { flex: 1; margin: 6px 0; }
+  .copy-row .btn { margin-top: 6px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">ACL Builder</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/acl/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-rules">
+    <h2 id="h-rules">A user's rules</h2>
+    <p class="lede">Paste the rules of a user: the arguments of ACL SETUSER, a line of ACL LIST, the user lines of redis.conf or a whole ACL file. The builder applies them the way the server you pick does, and says what the user can do.</p>
+    <div class="row">
+      <div class="field">
+        <label for="version">Server</label>
+        <select id="version"></select>
+      </div>
+      <div class="field">
+        <label for="kind">Read the text as</label>
+        <select id="kind">
+          <option value="auto">Work it out</option>
+          <option value="setuser">ACL SETUSER arguments</option>
+          <option value="aclfile">An ACL file</option>
+          <option value="config">Config file lines</option>
+        </select>
+      </div>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="open-rules">Open a file</button>
+      <input type="file" id="file-rules" class="file-input" accept=".acl,.conf,.txt,text/plain">
+      <button type="button" class="btn" id="ex-app">An app</button>
+      <button type="button" class="btn" id="ex-file">An ACL file</button>
+      <button type="button" class="btn" id="ex-mistakes">Mistakes</button>
+    </div>
+    <div class="field">
+      <label for="rules" class="hint" id="rules-label">Nothing you paste leaves your browser.</label>
+      <textarea id="rules" spellcheck="false" autocomplete="off" placeholder="ACL SETUSER app on >s3cret ~app:* %R~cache:* &amp;events:* -@all +@read +set +del"></textarea>
+    </div>
+    <div id="rules-result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-check">
+    <h2 id="h-check">Can it run this?</h2>
+    <p class="lede">One command per line, as you'd type it in redis-cli or valkey-cli; MONITOR output works too. Each is checked against the user above the way ACL DRYRUN checks it, with the error the command itself would get.</p>
+    <div class="row">
+      <div class="field hidden" id="user-box">
+        <label for="user">User</label>
+        <select id="user"></select>
+      </div>
+      <div class="field hidden" id="db-box">
+        <label for="db">Database</label>
+        <input type="number" id="db" min="0" max="2147483647" value="0">
+      </div>
+    </div>
+    <div class="field">
+      <label for="commands" class="hint">GET app:42</label>
+      <textarea id="commands" spellcheck="false" autocomplete="off" placeholder="GET app:42&#10;SET cache:x 1&#10;KEYS *"></textarea>
+    </div>
+    <div id="check-result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-build">
+    <h2 id="h-build">Draft a user from what a client does</h2>
+    <p class="lede">Run <code>MONITOR</code> in redis-cli or valkey-cli while the app works, then paste what it printed. The builder drafts a user that may run exactly those commands on those keys and channels, and checks every line against it. MONITOR slows a busy server down, so keep it short.</p>
+    <div class="row">
+      <div class="field">
+        <label for="name">User name</label>
+        <input type="text" id="name" value="app" spellcheck="false" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="keys-mode">Key patterns</label>
+        <select id="keys-mode">
+          <option value="prefix">One per prefix, such as user:*</option>
+          <option value="exact">One per key</option>
+        </select>
+      </div>
+      <div class="field hidden" id="client-box">
+        <label for="client">Client</label>
+        <select id="client"></select>
+      </div>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="open-monitor">Open a file</button>
+      <input type="file" id="file-monitor" class="file-input" accept=".txt,.log,text/plain">
+      <button type="button" class="btn" id="ex-monitor">An example</button>
+    </div>
+    <div class="field">
+      <label for="monitor" class="hint">redis-cli MONITOR &gt; monitor.txt</label>
+      <textarea id="monitor" spellcheck="false" autocomplete="off" placeholder='1759734012.304117 [0 10.0.0.7:52310] "GET" "user:42:profile"'></textarea>
+    </div>
+    <div id="build-result" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser and sends nothing anywhere. The page's security policy stops it from fetching or loading anything from another site.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/acl">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../servers.js"></script>
+<script src="../acl.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

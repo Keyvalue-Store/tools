@@ -18,3 +18,9 @@ config/servers.js records facts about Redis and Valkey: each version's
 settings with their names, types, limits and defaults, and the messages the
 servers print. They were read from the servers' source code, Copyright
 Redis Ltd. and the Redis contributors, and Copyright the Valkey contributors.
+
+acl/servers.js records facts about Redis and Valkey: each version's commands
+with their arity, flags, key positions and ACL categories, and the messages
+the ACL code prints. They were read from the built servers and from their
+source code, Copyright Redis Ltd. and the Redis contributors, and Copyright
+the Valkey contributors. acl/acl.js follows how that code applies ACL rules.
