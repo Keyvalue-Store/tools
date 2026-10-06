@@ -111,6 +111,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); outline
 .btn.primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .file-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+/* The file input is invisible; its label shows where the keyboard focus is. */
+.btn:has(+ .file-input:focus-visible) { outline: 3px solid rgba(14, 124, 134, .45); outline-offset: 2px; }
 
 /* Results */
 .result { margin-top: 14px; }
@@ -127,7 +129,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); outline
 .verdict.info { background: var(--accent-soft); border-color: #B8DDE0; color: #0B4F55; }
 .verdict p { margin: 0; }
 
-.table-wrap { overflow-x: auto; margin: 10px 0; border: 1px solid var(--line); border-radius: 10px; }
+.table-wrap { position: relative; overflow-x: auto; margin: 10px 0; border: 1px solid var(--line); border-radius: 10px; }
 table { border-collapse: collapse; width: 100%; font-size: .92rem; }
 th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 th { background: var(--soft); color: var(--ink); font-weight: 600; white-space: nowrap; }
@@ -141,6 +143,7 @@ td.key { font-family: var(--mono); font-size: .88rem; word-break: break-all; }
   padding: 12px 14px; margin: 10px 0; white-space: pre-wrap; word-break: break-all;
   max-height: 460px; overflow: auto; color: var(--ink);
 }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
 .muted { color: var(--muted); }
 .small { font-size: .88rem; }
 .error { color: var(--bad); font-weight: 600; }
