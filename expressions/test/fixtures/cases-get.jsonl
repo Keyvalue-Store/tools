@@ -1,0 +1,600 @@
+{"request":{"ProjectionExpression":"name[2].k, n"},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"l= , zz"},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"l= ,\""}}
+{"request":{"ProjectionExpression":"a, #n0 n[2]"},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"n\", near: \"#n0 n[\""}}
+{"request":{"ProjectionExpression":"ns, tags"},"key":"i18","answer":{"ok":true,"result":{"ns":{"SS":["A","a b","b"]},"tags":{"M":{"a":{"S":"¿"}}}}}}
+{"request":{"ProjectionExpression":"","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"ss"},"key":"i17","answer":{"ok":true,"result":{"ss":{"SS":["abc"]}}}}
+{"request":{"ProjectionExpression":"a[0][5], #n0, #n1, #n2","ExpressionAttributeNames":{"#n0":"ns","#n1":"data","#n2":"ns"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [ns], path two: [data]"}}
+{"request":{"ProjectionExpression":"n, #n0[1].z, #n1.k.k, #n2","ExpressionAttributeNames":{"#n0":"title","#n1":"value","#n2":"count"}},"key":"i11","answer":{"ok":true,"result":{"n":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"#n0.x[0], data2[0].k, l, s","ExpressionAttributeNames":{"#n0":"data2","#unused4":"q"}},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [data2, x, [0]], path two: [data2, [0], k]"}}
+{"request":{"ProjectionExpression":"#n0.y.k, #n1, #n2[2] =[1]","ExpressionAttributeNames":{"#n0":"count","#n1":"count","#n2":"status"}},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"] =[\""}}
+{"request":{"ProjectionExpression":"s.z[0]"},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags, count"},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"#n0, #n1[2], a","ExpressionAttributeNames":{"#n0":"c","#n1":"data","#unused7":"q"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused7}"}}
+{"request":{"ProjectionExpression":"","ExpressionAttributeNames":{"#n0":"count","#unused5":"q"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"#n0, tags.k.y, data[5], title","ExpressionAttributeNames":{"#n0":"value"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"#n0, s, ns, n[2]","ExpressionAttributeNames":{"#n0":"price"}},"key":"i13","answer":{"ok":true,"result":{"ns":{"N":"990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},"price":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"#n0[2], bs, title","ExpressionAttributeNames":{"#n0":"a"}},"key":"i22","answer":{"ok":true,"result":{"bs":{"M":{}}}}}
+{"request":{"ProjectionExpression":"#n0[0][0], s","ExpressionAttributeNames":{"#n0":"zz"}},"key":"i4","answer":{"ok":true,"result":{"s":{"N":"3"}}}}
+{"request":{"ProjectionExpression":"pk.x, s"},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"#n0[1][0], ns[2][0], pk","ExpressionAttributeNames":{"#n0":"l"}},"key":"i20","answer":{"ok":true,"result":{"pk":{"S":"i20"}}}}
+{"request":{"ProjectionExpression":"a"},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i24","answer":{"ok":true,"result":{"pk":{"S":"i24"}}}}
+{"request":{"ProjectionExpression":"nm, tags"},"key":"i21","answer":{"ok":true,"result":{"nm":{"N":"990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},"tags":{"N":"-7"}}}}
+{"request":{"ProjectionExpression":"#n0.x.x, data2, ns, data2[1][5]","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [data2], path two: [data2, [1], [5]]"}}
+{"request":{"ProjectionExpression":"size, zz, n"},"key":"i1","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags, #n0[5]","ExpressionAttributeNames":{"#n0":"value"}},"key":"i23","answer":{"ok":true,"result":{"tags":{"L":[{"SS":["xxxxxxxxxxxxxxxxxxxx"]}]}}}}
+{"request":{"ProjectionExpression":"s"},"key":"i3","answer":{"ok":true,"result":{"s":{"S":"｡"}}}}
+{"request":{"ProjectionExpression":"price[5][5], #n0, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"a"}},"key":"i3","answer":{"ok":true,"result":{"a":{"N":"-7"}}}}
+{"request":{"ProjectionExpression":"price"},"key":"i14","answer":{"ok":true,"result":{"price":{"NS":["-1","10"]}}}}
+{"request":{"ProjectionExpression":"a, #n0, #n1[1].x","ExpressionAttributeNames":{"#n0":"n","#n1":"data"}},"key":"i20","answer":{"ok":true,"result":{"a":{"M":{"n":{"L":[{"BOOL":false}]},"k":{"NULL":true}}},"n":{"N":"1.5"}}}}
+{"request":{"ProjectionExpression":"count, tags, tags.z"},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"#n0, c, #n1","ExpressionAttributeNames":{"#n0":"title","#n1":"name"}},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, data2, tags, #n1","ExpressionAttributeNames":{"#n0":"data","#n1":"a"}},"key":"i21","answer":{"ok":true,"result":{"tags":{"N":"-7"}}}}
+{"request":{"ProjectionExpression":"#n0, ns","ExpressionAttributeNames":{"#n0":"count"}},"key":"i12","answer":{"ok":true,"result":{"ns":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"l, m[5]"},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"l.x, name","ExpressionAttributeNames":{"#unused7":"q"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"c, price.k, m, #n0","ExpressionAttributeNames":{"#n0":"l"}},"key":"i7","answer":{"ok":true,"result":{"l":{"L":[{"BS":["AQ==","YQ=="]},{"SS":["b"]},{"M":{"x":{"S":""}}}]},"m":{"M":{"x":{"BS":["AA==","AQ=="]},"y":{"M":{"z":{"SS":["10","A","b"]}}},"k":{"N":"3"}}},"c":{"S":"¿"}}}}
+{"request":{"ProjectionExpression":"price, title"},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0.k, n.y, #n1, ss","ExpressionAttributeNames":{"#n0":"zz","#n1":"data"}},"key":"i9","answer":{"ok":true,"result":{"ss":{"S":""}}}}
+{"request":{"ProjectionExpression":"nOR m, #n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"m\", near: \"nOR m,\""}}
+{"request":{"ProjectionExpression":"#n0, name, ss, pk.#n1[5]","ExpressionAttributeNames":{"#n0":"name","#n1":"x"}},"key":"i6","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"bs.k[1]"},"key":"i9","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"zz[0], zzBETWEEN , a.k"},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size, title"},"key":"i2","answer":{"ok":true,"result":{"title":{"SS":["ab","héllo"]}}}}
+{"request":{"ProjectionExpression":"#n0[5][5","ExpressionAttributeNames":{"#n0":"count"}},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \"5\""}}
+{"request":{"ProjectionExpression":"value"},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"n, #n0, n","ExpressionAttributeNames":{"#n0":"a"}},"key":"i6","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [n], path two: [n]"}}
+{"request":{"ProjectionExpression":"#n0, ns.x[5], size, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"data2","#unused5":"q"}},"key":"i1","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused5}"}}
+{"request":{"ProjectionExpression":"size, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i20","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n"},"key":"i24","answer":{"ok":true,"result":{"n":{"N":"-0.25"}}}}
+{"request":{"ProjectionExpression":"pk[0], value.#n0.x, data","ExpressionAttributeNames":{"#n0":"y"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"a, s.k.x, #n0[2][0], nm","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i11","answer":{"ok":true,"result":{"a":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"#n0.x, #n1","ExpressionAttributeNames":{"#n0":"data2","#n1":"zz"}},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"bs, #n0 k, data2","ExpressionAttributeNames":{"#n0":"status"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"k\", near: \"#n0 k,\""}}
+{"request":{"ProjectionExpression":"tags, zz[0]","ExpressionAttributeNames":{"#unused7":"q"}},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused7}"}}
+{"request":{"ProjectionExpression":"ns[1].#n0","ExpressionAttributeNames":{"#n0":"x"}},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"title"},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c, data2"},"key":"i10","answer":{"ok":true,"result":{"data2":{"BS":["AQID"]}}}}
+{"request":{"ProjectionExpression":"n.k.k, ns, #n0.#n1.z","ExpressionAttributeNames":{"#n0":"n","#n1":"y"}},"key":"i2","answer":{"ok":true,"result":{"ns":{"M":{"x":{"N":"42"},"y":{"NS":["1","10"]},"z":{"N":"10"}}}}}}
+{"request":{"ProjectionExpression":"mOR , #n0","ExpressionAttributeNames":{"#n0":"data2"}},"key":"i11","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"b, l, m, #n0","ExpressionAttributeNames":{"#n0":"value"}},"key":"i6","answer":{"ok":true,"result":{"l":{"L":[{"NS":["-1","3"]},{"NULL":true},{"M":{"x":{"N":"9.9E125"}}}]},"m":{"M":{"x":{"N":"1e3"},"y":{"M":{"z":{"N":"-7"}}},"k":{"N":"-7"}}},"b":{"M":{}}}}}
+{"request":{"ProjectionExpression":"ss, #n0.z, l","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"title, #n0, #n1.y.#n2, s","ExpressionAttributeNames":{"#n0":"price","#n1":"data","#n2":"x"}},"key":"i14","answer":{"ok":true,"result":{"price":{"NS":["-1","10"]},"s":{"SS":["Zed","z"]}}}}
+{"request":{"ProjectionExpression":"size.z[5], n"},"key":"i21","answer":{"ok":true,"result":{"n":{"S":"z"}}}}
+{"request":{"ProjectionExpression":""},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"bs.#n0.z, m","ExpressionAttributeNames":{"#n0":"y"}},"key":"i2","answer":{"ok":true,"result":{"m":{"M":{"x":{"S":"a b"},"y":{"M":{"z":{"M":{"z":{"BOOL":true},"k":{"B":"AQ=="},"inner_":{"S":"¿"}}}}},"k":{"BOOL":false}}}}}}
+{"request":{"ProjectionExpression":"s[0], #n0.z, data2","ExpressionAttributeNames":{"#n0":"count"}},"key":"i3","answer":{"ok":true,"result":{"data2":{"M":{"n":{"BOOL":true}}}}}}
+{"request":{"ProjectionExpression":"n.y, price, n"},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [n, y], path two: [n]"}}
+{"request":{"ProjectionExpression":"#n0[2], n, title","ExpressionAttributeNames":{"#n0":"name"}},"key":"i11","answer":{"ok":true,"result":{"title":{"L":[{"SS":["b"]},{"SS":["abc"]},{"S":"z"}]},"n":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"title"},"key":"i5","answer":{"ok":true,"result":{"title":{"SS":["a","é"]}}}}
+{"request":{"ProjectionExpression":"l, ss"},"key":"i24","answer":{"ok":true,"result":{"ss":{"NULL":true},"l":{"L":[{"B":"YWJj"},{"M":{}},{"M":{"x":{"S":"¿"}}}]}}}}
+{"request":{"ProjectionExpression":"#n0"},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #n0"}}
+{"request":{"ProjectionExpression":"#n0[2], #n1[2].y, zz","ExpressionAttributeNames":{"#n0":"data","#n1":"status"}},"key":"i7","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, ns, ss","ExpressionAttributeNames":{"#n0":"status"}},"key":"i12","answer":{"ok":true,"result":{"ss":{"M":{"z":{"L":[{"N":"0"}]},"k":{"B":"YQ=="}}},"ns":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"m"},"key":"i10","answer":{"ok":true,"result":{"m":{"M":{"x":{"SS":["A","b","z"]},"y":{"M":{"z":{"BOOL":true}}},"k":{"S":"b"}}}}}}
+{"request":{"ProjectionExpression":"ss"},"key":"i2","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"n"}},"key":"i20","answer":{"ok":true,"result":{"n":{"N":"1.5"}}}}
+{"request":{"ProjectionExpression":"n, data2.y, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i5","answer":{"ok":true,"result":{"n":{"N":"0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"}}}}
+{"request":{"ProjectionExpression":"pk, s[0] ss.y"},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"ss\", near: \"] ss.\""}}
+{"request":{"ProjectionExpression":"#n0, #n1.y, #n2, b","ExpressionAttributeNames":{"#n0":"a","#n1":"title","#n2":"status"}},"key":"i7","answer":{"ok":true,"result":{"a":{"SS":["a b","¿"]},"b":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"#n0[0], status, nm[2][2]","ExpressionAttributeNames":{"#n0":"s"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"zz, a, #n0","ExpressionAttributeNames":{"#n0":"value"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[2], #n1.#n2.z","ExpressionAttributeNames":{"#n0":"value","#n1":"value","#n2":"y"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [value, [2]], path two: [value, y, z]"}}
+{"request":{"ProjectionExpression":"#n0.z[1], #n1[5][2]","ExpressionAttributeNames":{"#n0":"name","#n1":"value"}},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n, title"},"key":"i5","answer":{"ok":true,"result":{"title":{"SS":["a","é"]},"n":{"N":"0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"}}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"c"}},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, ns","ExpressionAttributeNames":{"#n0":"count"}},"key":"i11","answer":{"ok":true,"result":{"ns":{"M":{"y":{"BS":["AQ==","AQID"]}}}}}}
+{"request":{"ProjectionExpression":"tags"},"key":"i12","answer":{"ok":true,"result":{"tags":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"pk.x[0], c, #n0, bs","ExpressionAttributeNames":{"#n0":"m"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"size"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags, :v0 #n0, l[2][2], #n1","ExpressionAttributeNames":{"#n0":"count","#n1":"data2"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \":v0\", near: \", :v0 #n0\""}}
+{"request":{"ProjectionExpression":"ns, #n0.k.y, ss[2], tags","ExpressionAttributeNames":{"#n0":"price"}},"key":"i14","answer":{"ok":true,"result":{"ns":{"SS":["z"]}}}}
+{"request":{"ProjectionExpression":"pk[1].z"},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"bs"},"key":"i5","answer":{"ok":true,"result":{"bs":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"#n0.k.z, a, tags","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"pk.y.x, m[0][2], status, #n0.k.x","ExpressionAttributeNames":{"#n0":"value"}},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"#n0.k, #n1, size.y[0","ExpressionAttributeNames":{"#n0":"name","#n1":"name"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \"0\""}}
+{"request":{"ProjectionExpression":"nm"},"key":"i14","answer":{"ok":true,"result":{"nm":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"ss"},"key":"i24","answer":{"ok":true,"result":{"ss":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"bs, #n0, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"b"}},"key":"i13","answer":{"ok":true,"result":{"b":{"M":{"x":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"#n01 tags","ExpressionAttributeNames":{"#n0":"zz"}},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"tags\", near: \"#n01 tags\""}}
+{"request":{"ProjectionExpression":"#n0 AND","ExpressionAttributeNames":{"#n0":"status"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"AND\", near: \"#n0 AND\""}}
+{"request":{"ProjectionExpression":"c, zz[2].z, title"},"key":"i9","answer":{"ok":true,"result":{"title":{"S":"10"}}}}
+{"request":{"ProjectionExpression":"zz.z, a, ss, #n0","ExpressionAttributeNames":{"#n0":"count"}},"key":"i1","answer":{"ok":true,"result":{"ss":{"L":[]},"a":{"N":"-7"}}}}
+{"request":{"ProjectionExpression":"#n0[2], m, value","ExpressionAttributeNames":{"#n0":"status"}},"key":"i6","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":",, size, tags"},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \",,\""}}
+{"request":{"ProjectionExpression":"#n0.#n1, title, title[5)) ], #n2","ExpressionAttributeNames":{"#n0":"name","#n1":"z","#n2":"m"}},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \"5))\""}}
+{"request":{"ProjectionExpression":"ns.x.(( k, c"},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \".((\""}}
+{"request":{"ProjectionExpression":"zz.x.k, #n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ss.#n0, #n1, l","ExpressionAttributeNames":{"#n0":"y","#n1":"nm"}},"key":"i24","answer":{"ok":true,"result":{"l":{"L":[{"B":"YWJj"},{"M":{}},{"M":{"x":{"S":"¿"}}}]},"nm":{"BS":["AQ=="]}}}}
+{"request":{"ProjectionExpression":"#n0, size, a, #n1","ExpressionAttributeNames":{"#n0":"s","#n1":"n"}},"key":"i16","answer":{"ok":true,"result":{"a":{"S":"xxxxxxxxxxxxxxxxxxxx"},"s":{"S":"A"}}}}
+{"request":{"ProjectionExpression":"#n0.z.z, #n1[1], #n2.z","ExpressionAttributeNames":{"#n0":"ss","#n1":"value","#n2":"a"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, n, ns, bs[0][0]","ExpressionAttributeNames":{"#n0":"data"}},"key":"i10","answer":{"ok":true,"result":{"ns":{"SS":["10","xxxxxxxxxxxxxxxxxxxx"]}}}}
+{"request":{"ProjectionExpression":"l, #n0, #n1, zz.  #n2[2]","ExpressionAttributeNames":{"#n0":"data2","#n1":"ns","#n2":"z"}},"key":"i21","answer":{"ok":true,"result":{"l":{"S":"abcdef"}}}}
+{"request":{"ProjectionExpression":""},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"c"},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0.k[5, size","ExpressionAttributeNames":{"#n0":"l"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \"5, size\""}}
+{"request":{"ProjectionExpression":"n[0].y, ns, nm, #n0","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [ns], path two: [ns]"}}
+{"request":{"ProjectionExpression":"c, zz, a"},"key":"i8","answer":{"ok":true,"result":{"a":{"S":"a b"}}}}
+{"request":{"ProjectionExpression":"pk, #n0, status","ExpressionAttributeNames":{"#n0":"name"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"n, #n0[2], s, l.k.#n1","ExpressionAttributeNames":{"#n0":"s","#n1":"y"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [s, [2]], path two: [l, k, y]"}}
+{"request":{"ProjectionExpression":"#n0[1].#n1, s, #n2.y","ExpressionAttributeNames":{"#n0":"value","#n1":"y","#n2":"c"}},"key":"i10","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ss[2][0]"},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"bs, nm"},"key":"i19","answer":{"ok":true,"result":{"nm":{"M":{"z":{"B":"AQ=="},"k":{"N":"99999999999999999999999999999999999999"}}}}}}
+{"request":{"ProjectionExpression":"title[0][5], pk, title[1]"},"key":"i0","answer":{"ok":true,"result":{"pk":{"S":"i0"}}}}
+{"request":{"ProjectionExpression":"#n0[0], , price","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \", , price\""}}
+{"request":{"ProjectionExpression":"bs.y, #n0, #n1.z, nm.y","ExpressionAttributeNames":{"#n0":"name","#n1":"c"}},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2, value.y[ [0], ss[1]"},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"[\", near: \"[ [0\""}}
+{"request":{"ProjectionExpression":"#n0, #n1, l[5].k","ExpressionAttributeNames":{"#n0":"n","#n1":"bs"}},"key":"i0","answer":{"ok":true,"result":{"bs":{"S":"｡"}}}}
+{"request":{"ProjectionExpression":"#n0, m[2], #n1, #n2","ExpressionAttributeNames":{"#n0":"size","#n1":"zz","#n2":"status"}},"key":"i7","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"price, ss"},"key":"i23","answer":{"ok":true,"result":{"ss":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"#n0.x, size.x[2], size[1][2]","ExpressionAttributeNames":{"#n0":"status"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [size, x, [2]], path two: [size, [1], [2]]"}}
+{"request":{"ProjectionExpression":"bs.z"},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"bs[1][0], title.y.z"},"key":"i13","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"l"},"key":"i19","answer":{"ok":true,"result":{"l":{"L":[{"NS":["0.5","1","3"]},{"M":{"k":{"S":"2"}}},{"M":{"x":{"S":""}}}]}}}}
+{"request":{"ProjectionExpression":"status.x, #n0.z","ExpressionAttributeNames":{"#n0":"b"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"#n0[0][0], price.z[2], s","ExpressionAttributeNames":{"#n0":"price"}},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [price, [0], [0]], path two: [price, z, [2]]"}}
+{"request":{"ProjectionExpression":"n, #n0, #n1, #n2","ExpressionAttributeNames":{"#n0":"zz","#n1":"s","#n2":"data"}},"key":"i21","answer":{"ok":true,"result":{"n":{"S":"z"}}}}
+{"request":{"ProjectionExpression":"#n0[1].y, #n1","ExpressionAttributeNames":{"#n0":"name","#n1":"status"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0.#n1.#n2, #n3, m, m.x[1]","ExpressionAttributeNames":{"#n0":"ss","#n1":"z","#n2":"y","#n3":"value"}},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [m], path two: [m, x, [1]]"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"nm"}},"key":"i17","answer":{"ok":true,"result":{"nm":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"#n0[2]","ExpressionAttributeNames":{"#n0":"name"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"a, #n0","ExpressionAttributeNames":{"#n0":"nm"}},"key":"i11","answer":{"ok":true,"result":{"a":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"nm, #n0[1].x, #n1, b","ExpressionAttributeNames":{"#n0":"status","#n1":"data"}},"key":"i16","answer":{"ok":true,"result":{"nm":{"S":"a b"}}}}
+{"request":{"ProjectionExpression":"n, ss[0], tags.y.x, #n0.z","ExpressionAttributeNames":{"#n0":"value"}},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size, n[5], #n0","ExpressionAttributeNames":{"#n0":"value"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"l, #n0, s.x, #n1[2][2]","ExpressionAttributeNames":{"#n0":"data2","#n1":"b"}},"key":"i15","answer":{"ok":true,"result":{"l":{"L":[{"M":{"x":{"L":[{"B":"AAE="}]}}},{"N":"42"},{"M":{"x":{"N":"10"}}}]},"data2":{"M":{"y":{"BOOL":false},"k":{"BOOL":true}}}}}}
+{"request":{"ProjectionExpression":"size[5].y"},"key":"i24","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, size.y, data2.z.#n1","ExpressionAttributeNames":{"#n0":"data","#n1":"x"}},"key":"i1","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags, ns"},"key":"i18","answer":{"ok":true,"result":{"ns":{"SS":["A","a b","b"]},"tags":{"M":{"a":{"S":"¿"}}}}}}
+{"request":{"ProjectionExpression":"size"},"key":"i3","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1, #n2= , #n3[1].z","ExpressionAttributeNames":{"#n0":"m","#n1":"data","#n2":"status","#n3":"data"}},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"#n2= ,\""}}
+{"request":{"ProjectionExpression":"data2:v0 .#n0, a, #n1","ExpressionAttributeNames":{"#n0":"z","#n1":"size"}},"key":"i1","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \":v0\", near: \"data2:v0 .\""}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"m"}},"key":"i24","answer":{"ok":true,"result":{"m":{"M":{"x":{"S":"b"},"y":{"M":{"z":{"B":"AAE="}}},"k":{"B":"YWJj"}}}}}}
+{"request":{"ProjectionExpression":"nm.k[0], n, count"},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"data.k[2], #n0[1], #n1.z, #n2","ExpressionAttributeNames":{"#n0":"ns","#n1":"a","#n2":"status"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"nm[1].y, status, size, tags BETWEEN"},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"BETWEEN\", near: \"tags BETWEEN\""}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"count"}},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[1], nm, value.k[0]","ExpressionAttributeNames":{"#n0":"size"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"ss, #n0","ExpressionAttributeNames":{"#n0":"n"}},"key":"i23","answer":{"ok":true,"result":{"ss":{"NULL":true},"n":{"N":"42"}}}}
+{"request":{"ProjectionExpression":"#n0.y[5], #n1[2].z","ExpressionAttributeNames":{"#n0":"c","#n1":"count"}},"key":"i24","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2, #n0 tags, n","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"tags\", near: \"#n0 tags,\""}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"status","#unused1":"q"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused1}"}}
+{"request":{"ProjectionExpression":"#n0.#n1, l","ExpressionAttributeNames":{"#n0":"data2","#n1":"x","#unused8":"q"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused8}"}}
+{"request":{"ProjectionExpression":"pk, #n0","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i21","answer":{"ok":true,"result":{"ss":{"L":[{"N":"-7"},{"S":"¿"}]},"pk":{"S":"i21"}}}}
+{"request":{"ProjectionExpression":"size, nm, #n0","ExpressionAttributeNames":{"#n0":"n","#unused0":"q"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused0}"}}
+{"request":{"ProjectionExpression":"name, #n0, #n1","ExpressionAttributeNames":{"#n0":"price","#n1":"count"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"zz.y.k, count, #n0","ExpressionAttributeNames":{"#n0":"l"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"#n0[2][1], #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"m"}},"key":"i6","answer":{"ok":true,"result":{"m":{"M":{"x":{"N":"1e3"},"y":{"M":{"z":{"N":"-7"}}},"k":{"N":"-7"}}}}}}
+{"request":{"ProjectionExpression":"price, title[1].k, #n0","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i20","answer":{"ok":true,"result":{"bs":{"N":"-0.25"},"price":{"M":{"y":{"SS":["10","abcdef","xxxxxxxxxxxxxxxxxxxx"]},"n":{"S":"😀"}}}}}}
+{"request":{"ProjectionExpression":"data.x, pk[1][1], pk.y.#n0, #n1","ExpressionAttributeNames":{"#n0":"x","#n1":"ns"}},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"size[1], #n0[2[1], size[2], pk","ExpressionAttributeNames":{"#n0":"nm"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"[\", near: \"2[1\""}}
+{"request":{"ProjectionExpression":"ss[2], #n0.z[1], price.#n1[2]","ExpressionAttributeNames":{"#n0":"pk","#n1":"x"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"n, #n0[0].k, pk, l[2].z","ExpressionAttributeNames":{"#n0":"count","#unused7":"q"}},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused7}"}}
+{"request":{"ProjectionExpression":"title, , size"},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \", , size\""}}
+{"request":{"ProjectionExpression":".y, #n0, pk, pk.y.z","ExpressionAttributeNames":{"#n0":"b"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \".\", near: \".y\""}}
+{"request":{"ProjectionExpression":"#n0, tags","ExpressionAttributeNames":{"#n0":"count"}},"key":"i20","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"zz, price, l.#n0","ExpressionAttributeNames":{"#n0":"y"}},"key":"i2","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"price.k, ss.#n0, s[2].z, price[1][2]","ExpressionAttributeNames":{"#n0":"x"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [price, k], path two: [price, [1], [2]]"}}
+{"request":{"ProjectionExpression":"title.x  , #n0, b, #n1.z","ExpressionAttributeNames":{"#n0":"tags","#n1":"status"}},"key":"i24","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ss"},"key":"i10","answer":{"ok":true,"result":{"ss":{"S":"a b"}}}}
+{"request":{"ProjectionExpression":"#n0, ns","ExpressionAttributeNames":{"#n0":"data"}},"key":"i3","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i9","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n"},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c, b.y"},"key":"i2","answer":{"ok":true,"result":{"c":{"N":"1.5"}}}}
+{"request":{"ProjectionExpression":"#n02].#n1","ExpressionAttributeNames":{"#n1":"y"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"]\", near: \"#n02].\""}}
+{"request":{"ProjectionExpression":"#n0, size[5].x, price[0].k, size[0]","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i1","answer":{"ok":true,"result":{"pk":{"S":"i1"}}}}
+{"request":{"ProjectionExpression":"#n0, ss, #n1.y, c","ExpressionAttributeNames":{"#n0":"ss","#n1":"l"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [ss], path two: [l, y]"}}
+{"request":{"ProjectionExpression":"n. IN#n0","ExpressionAttributeNames":{"#n0":"y"}},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"IN\", near: \". IN#n0\""}}
+{"request":{"ProjectionExpression":"title[2].","ExpressionAttributeNames":{"#n0":"z"}},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \".\""}}
+{"request":{"ProjectionExpression":"price"},"key":"i10","answer":{"ok":true,"result":{"price":{"S":"a"}}}}
+{"request":{"ProjectionExpression":"nm#n0.#n1","ExpressionAttributeNames":{"#n0":"z","#n1":"y"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"#n0\", near: \"nm#n0.\""}}
+{"request":{"ProjectionExpression":"size.x[1], #n0.y.k","ExpressionAttributeNames":{"#n0":"data2"}},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, nm[5], tags[2], tags.k","ExpressionAttributeNames":{"#n0":"data2"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [tags, [2]], path two: [tags, k]"}}
+{"request":{"ProjectionExpression":"c, ss, n[0].#n0","ExpressionAttributeNames":{"#n0":"z"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n"},"key":"i14","answer":{"ok":true,"result":{"n":{"NS":["1"]}}}}
+{"request":{"ProjectionExpression":"l, size"},"key":"i9","answer":{"ok":true,"result":{"l":{"L":[{"NS":["0.5","1"]}]}}}}
+{"request":{"ProjectionExpression":"bs, value"},"key":"i1","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"nm, #n0.x","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"#n0, #n1, c","ExpressionAttributeNames":{"#n0":"name","#n1":"data"}},"key":"i21","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"pk[1], data2, #n0, #n1","ExpressionAttributeNames":{"#n0":"l","#n1":"s"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"a, data2"},"key":"i4","answer":{"ok":true,"result":{"data2":{"BS":["AAE=","AQ=="]}}}}
+{"request":{"ProjectionExpression":"#n0, (( bs","ExpressionAttributeNames":{"#n0":"value"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \", ((\""}}
+{"request":{"ProjectionExpression":"s, tags.#n0, #n1","ExpressionAttributeNames":{"#n0":"y","#n1":"zz"}},"key":"i0","answer":{"ok":true,"result":{"s":{"S":"10"}}}}
+{"request":{"ProjectionExpression":"#n0, data2[1], a","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i12","answer":{"ok":true,"result":{"a":{"SS":["héllo"]},"tags":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"n[2]"},"key":"i11","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"bs, bs, n, s5]"},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"]\", near: \"s5]\""}}
+{"request":{"ProjectionExpression":"b, title, b, data"},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"ss, #n0.k","ExpressionAttributeNames":{"#n0":"data"}},"key":"i13","answer":{"ok":true,"result":{"ss":{"M":{}}}}}
+{"request":{"ProjectionExpression":"count[0].x, #n0","ExpressionAttributeNames":{"#n0":"count"}},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"data2- , c"},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"-\", near: \"data2- ,\""}}
+{"request":{"ProjectionExpression":"#n0.x, l, price","ExpressionAttributeNames":{"#n0":"b","#unused8":"q"}},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused8}"}}
+{"request":{"ProjectionExpression":"#n0[5], price","ExpressionAttributeNames":{"#n0":"status"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":") size, #n0.y, #n1","ExpressionAttributeNames":{"#n0":"tags","#n1":"value"}},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \") size\""}}
+{"request":{"ProjectionExpression":"#n0, data2[2], s.#n1[0], s.#n2.z","ExpressionAttributeNames":{"#n0":"status","#n1":"x","#n2":"y"}},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2, data2, ns"},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [data2], path two: [data2]"}}
+{"request":{"ProjectionExpression":"price, #n0.y, #n1.k","ExpressionAttributeNames":{"#n0":"status","#n1":"data"}},"key":"i14","answer":{"ok":true,"result":{"price":{"NS":["-1","10"]}}}}
+{"request":{"ProjectionExpression":"#n0, l, #n1.x, b[5].#n2","ExpressionAttributeNames":{"#n0":"price","#n1":"b","#n2":"z"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [b, x], path two: [b, [5], z]"}}
+{"request":{"ProjectionExpression":"#n0.z[1]","ExpressionAttributeNames":{"#n0":"a"}},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, m","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i2","answer":{"ok":true,"result":{"ns":{"M":{"x":{"N":"42"},"y":{"NS":["1","10"]},"z":{"N":"10"}}},"m":{"M":{"x":{"S":"a b"},"y":{"M":{"z":{"M":{"z":{"BOOL":true},"k":{"B":"AQ=="},"inner_":{"S":"¿"}}}}},"k":{"BOOL":false}}}}}}
+{"request":{"ProjectionExpression":"#n0, ns[0], #n1.y.#n2, #n3","ExpressionAttributeNames":{"#n0":"a","#n1":"status","#n2":"x","#n3":"name"}},"key":"i2","answer":{"ok":true,"result":{"a":{"M":{"inner_":{"N":"-1"}}}}}}
+{"request":{"ProjectionExpression":"count.x[2]"},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"ss, s, c"},"key":"i22","answer":{"ok":true,"result":{"ss":{"N":"0.001"},"c":{"S":"｡"}}}}
+{"request":{"ProjectionExpression":"#n0.x","ExpressionAttributeNames":{"#n0":"data"}},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ns, c[0], a, #n0.k","ExpressionAttributeNames":{"#n0":"status"}},"key":"i10","answer":{"ok":true,"result":{"a":{"NULL":true},"ns":{"SS":["10","xxxxxxxxxxxxxxxxxxxx"]}}}}
+{"request":{"ProjectionExpression":"nm, m, zz.#n0","ExpressionAttributeNames":{"#n0":"x"}},"key":"i9","answer":{"ok":true,"result":{"m":{"NULL":true},"nm":{"M":{"y":{"N":"1e3"}}}}}}
+{"request":{"ProjectionExpression":"#n0, price, m.k, #n1","ExpressionAttributeNames":{"#n0":"nm","#n1":"price"}},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [price], path two: [m, k]"}}
+{"request":{"ProjectionExpression":"m, #n0, tags","ExpressionAttributeNames":{"#n0":"value"}},"key":"i13","answer":{"ok":true,"result":{"m":{"M":{"x":{"NS":["2","10"]},"y":{"M":{"z":{"B":"YQ=="}}},"k":{"S":"abc"}}}}}}
+{"request":{"ProjectionExpression":"#n0[5], n.z, pk, a","ExpressionAttributeNames":{"#n0":"m","#unused7":"q"}},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused7}"}}
+{"request":{"ProjectionExpression":"ns[0], tags[1]"},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2, #n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c, ns, [5], name","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"[\", near: \", [5\""}}
+{"request":{"ProjectionExpression":"#n0[0], zz, #n1, m","ExpressionAttributeNames":{"#n0":"value","#n1":"price"}},"key":"i8","answer":{"ok":true,"result":{"m":{"NULL":true},"price":{"SS":["¿"]}}}}
+{"request":{"ProjectionExpression":"data2.x.x, zz"},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ns"},"key":"i18","answer":{"ok":true,"result":{"ns":{"SS":["A","a b","b"]}}}}
+{"request":{"ProjectionExpression":"data2, ns.x, #n0","ExpressionAttributeNames":{"#n0":"a"}},"key":"i3","answer":{"ok":true,"result":{"a":{"N":"-7"},"data2":{"M":{"n":{"BOOL":true}}}}}}
+{"request":{"ProjectionExpression":"price, l, m.x.z, data2"},"key":"i11","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1, #n2, #n3","ExpressionAttributeNames":{"#n0":"nm","#n1":"c","#n2":"title","#n3":"ss"}},"key":"i7","answer":{"ok":true,"result":{"ss":{"BS":["AAE="]},"c":{"S":"¿"}}}}
+{"request":{"ProjectionExpression":"zz"},"key":"i3","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size.z[0], price, #n0[1].y","ExpressionAttributeNames":{"#n0":"count"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0OR , #n1","ExpressionAttributeNames":{"#n0":"n","#n1":"data"}},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #n0OR"}}
+{"request":{"ProjectionExpression":"price[2]"},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"status"},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"pk"},"key":"i4","answer":{"ok":true,"result":{"pk":{"S":"i4"}}}}
+{"request":{"ProjectionExpression":"ns[1], #n0[2] ), nm[2][0]","ExpressionAttributeNames":{"#n0":"count"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \"] ),\""}}
+{"request":{"ProjectionExpression":"data2, a.y+ [0], tags, ns[1]"},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"+\", near: \"y+ [\""}}
+{"request":{"ProjectionExpression":"price[2][5], n"},"key":"i18","answer":{"ok":true,"result":{"n":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"price, #n0, value, #n1","ExpressionAttributeNames":{"#n0":"count","#n1":"size"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"title.#n0.x","ExpressionAttributeNames":{"#n0":"z"}},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"title"}},"key":"i20","answer":{"ok":true,"result":{"title":{"N":"990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"}}}}
+{"request":{"ProjectionExpression":"title.z[5]"},"key":"i14","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c, #n0, l[1], #n1","ExpressionAttributeNames":{"#n0":"m","#n1":"ns"}},"key":"i13","answer":{"ok":true,"result":{"c":{"M":{"n":{"L":[]},"inner_":{"NS":["0.5"]}}},"l":{"L":[{"N":"-7"}]},"ns":{"N":"990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"},"m":{"M":{"x":{"NS":["2","10"]},"y":{"M":{"z":{"B":"YQ=="}}},"k":{"S":"abc"}}}}}}
+{"request":{"ProjectionExpression":") #n0.x","ExpressionAttributeNames":{"#n0":"data2"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \") #n0\""}}
+{"request":{"ProjectionExpression":"#n0, #n1, #n2.y, #n3[0]","ExpressionAttributeNames":{"#n0":"data","#n1":"count","#n2":"m","#n3":"name"}},"key":"i19","answer":{"ok":true,"result":{"m":{"M":{"y":{"M":{"z":{"L":[{"S":"¿"}]}}}}}}}}
+{"request":{"ProjectionExpression":"tags[2][5], ns"},"key":"i19","answer":{"ok":true,"result":{"ns":{"N":"0.001"}}}}
+{"request":{"ProjectionExpression":"m, data2.k, m"},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [m], path two: [m]"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[2], m, #n1","ExpressionAttributeNames":{"#n0":"m","#n1":"size"}},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [m, [2]], path two: [m]"}}
+{"request":{"ProjectionExpression":"a, #n0, l, data2","ExpressionAttributeNames":{"#n0":"price"}},"key":"i21","answer":{"ok":true,"result":{"l":{"S":"abcdef"}}}}
+{"request":{"ProjectionExpression":"#n0, ","ExpressionAttributeNames":{"#n0":"ns","#n1":"value"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \", \""}}
+{"request":{"ProjectionExpression":"data2, zz[< 5]"},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<\", near: \"[< 5\""}}
+{"request":{"ProjectionExpression":"tags[2], zz, pk, #n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i9","answer":{"ok":true,"result":{"pk":{"S":"i9"}}}}
+{"request":{"ProjectionExpression":"ss, b.y[0], a.x[2], tags"},"key":"i15","answer":{"ok":true,"result":{"ss":{"SS":["A","abcdef"]}}}}
+{"request":{"ProjectionExpression":"#n0, #n1[1], name, size","ExpressionAttributeNames":{"#n0":"s","#n1":"name","#unused2":"q"}},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"zz.z, bs, #n0, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"value"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [value], path two: [value]"}}
+{"request":{"ProjectionExpression":"l, #n0, #n1[2], price","ExpressionAttributeNames":{"#n0":"status","#n1":"title"}},"key":"i8","answer":{"ok":true,"result":{"l":{"L":[{"NS":["2"]},{"SS":["a","héllo","｡"]},{"M":{"x":{"NULL":true}}}]},"price":{"SS":["¿"]}}}}
+{"request":{"ProjectionExpression":"n, nm, #n0","ExpressionAttributeNames":{"#n0":"m"}},"key":"i16","answer":{"ok":true,"result":{"m":{"B":"AQID"},"nm":{"S":"a b"}}}}
+{"request":{"ProjectionExpression":"bs, #n0, ss.z.y, #n1","ExpressionAttributeNames":{"#n0":"zz","#n1":"b"}},"key":"i11","answer":{"ok":true,"result":{"bs":{"M":{"n":{"L":[{"BOOL":true},{"M":{"a":{"N":"-7"},"inner_":{"B":"AA=="}}},{"N":"3.0"}]}}},"b":{"N":"3"}}}}
+{"request":{"ProjectionExpression":"#n0[5], data2","ExpressionAttributeNames":{"#n0":"l"}},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, nm, s[0]#n1","ExpressionAttributeNames":{"#n0":"status","#n1":"x"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"#n1\", near: \"]#n1\""}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"nm"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"b.x[5], #n0[5]","ExpressionAttributeNames":{"#n0":"data2"}},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n, #n0, tags[0][5], #n1","ExpressionAttributeNames":{"#n1":"nm"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #n0"}}
+{"request":{"ProjectionExpression":"s, data2"},"key":"i24","answer":{"ok":true,"result":{"s":{"S":"a"},"data2":{"S":"¿"}}}}
+{"request":{"ProjectionExpression":"bs[5][0], bs[0], #n0, #n1","ExpressionAttributeNames":{"#n0":"data","#n1":"status"}},"key":"i21","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags, ns[5].k"},"key":"i2","answer":{"ok":true,"result":{"tags":{"N":"1000"}}}}
+{"request":{"ProjectionExpression":"zz, zz, ss[2], nm"},"key":"i1","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [zz], path two: [ss, [2]]"}}
+{"request":{"ProjectionExpression":"nm, nm[5], "},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \", \""}}
+{"request":{"ProjectionExpression":"#n0.k[5], c.z, ns[2].k","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags, #n0, #n1, c.x.x","ExpressionAttributeNames":{"#n0":"data","#n1":"l"}},"key":"i4","answer":{"ok":true,"result":{"l":{"L":[{"L":[{"NS":["2","3"]}]},{"L":[]},{"M":{"x":{"S":"Zed"}}}]},"tags":{"L":[]}}}}
+{"request":{"ProjectionExpression":"ns[1], #n0.k","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size.k, #n0","ExpressionAttributeNames":{"#n0":"title"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, price.y, #n1, s","ExpressionAttributeNames":{"#n0":"name","#n1":"name"}},"key":"i4","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [name], path two: [price, y]"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"count"}},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1.#n2, #n3, data2.k","ExpressionAttributeNames":{"#n0":"status","#n1":"m","#n2":"x","#n3":"s"}},"key":"i10","answer":{"ok":true,"result":{"m":{"M":{"x":{"SS":["A","b","z"]}}}}}}
+{"request":{"ProjectionExpression":"tags, m, <, s"},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<\", near: \", <,\""}}
+{"request":{"ProjectionExpression":"#n0, #n1, m","ExpressionAttributeNames":{"#n0":"c","#n1":"count"}},"key":"i3","answer":{"ok":true,"result":{"m":{"N":"99999999999999999999999999999999999999"}}}}
+{"request":{"ProjectionExpression":"#n0, bs","ExpressionAttributeNames":{"#n0":"l"}},"key":"i11","answer":{"ok":true,"result":{"bs":{"M":{"n":{"L":[{"BOOL":true},{"M":{"a":{"N":"-7"},"inner_":{"B":"AA=="}}},{"N":"3.0"}]}}}}}}
+{"request":{"ProjectionExpression":"#n0[2].x, b.k[2], price","ExpressionAttributeNames":{"#n0":"value","#unused1":"q"}},"key":"i4","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused1}"}}
+{"request":{"ProjectionExpression":"#n0, #n1.#n2[5]","ExpressionAttributeNames":{"#n0":"value","#n1":"count","#n2":"x"}},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"m"},"key":"i15","answer":{"ok":true,"result":{"m":{"M":{"x":{"B":"/w=="},"y":{"M":{"z":{"NULL":true}}},"k":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"nm, ss, #n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i1","answer":{"ok":true,"result":{"ss":{"L":[]},"nm":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"size, #n0[5], a[0][1], m","ExpressionAttributeNames":{"#n0":"data"}},"key":"i7","answer":{"ok":true,"result":{"m":{"M":{"x":{"BS":["AA==","AQ=="]},"y":{"M":{"z":{"SS":["10","A","b"]}}},"k":{"N":"3"}}}}}}
+{"request":{"ProjectionExpression":"s, n"},"key":"i18","answer":{"ok":true,"result":{"n":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"a"}},"key":"i2","answer":{"ok":true,"result":{"a":{"M":{"inner_":{"N":"-1"}}}}}}
+{"request":{"ProjectionExpression":""},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"#n0, #n1[5].y","ExpressionAttributeNames":{"#n0":"zz","#n1":"count"}},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"= tags, tags, data2, s.x.y"},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"= tags\""}}
+{"request":{"ProjectionExpression":"count[0] status.#n0","ExpressionAttributeNames":{"#n0":"z"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"status\", near: \"] status.\""}}
+{"request":{"ProjectionExpression":"data2[2], ss.y.x"},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"nm, a, s, pk"},"key":"i24","answer":{"ok":true,"result":{"s":{"S":"a"},"pk":{"S":"i24"},"nm":{"BS":["AQ=="]}}}}
+{"request":{"ProjectionExpression":"nm[5].y, #n0[1][0]","ExpressionAttributeNames":{"#n0":"c"}},"key":"i10","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"title"}},"key":"i13","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size[2], zz, ss"},"key":"i15","answer":{"ok":true,"result":{"ss":{"SS":["A","abcdef"]}}}}
+{"request":{"ProjectionExpression":"#n0, #n1, tags","ExpressionAttributeNames":{"#n0":"data2","#n1":"data"}},"key":"i3","answer":{"ok":true,"result":{"data2":{"M":{"n":{"BOOL":true}}}}}}
+{"request":{"ProjectionExpression":"count1 , title"},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"s[2]"},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[2], nm[2], #n1.#n2.z","ExpressionAttributeNames":{"#n0":"count","#n1":"nm","#n2":"z"}},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [nm, [2]], path two: [nm, z, z]"}}
+{"request":{"ProjectionExpression":"size, pk, s, #n0","ExpressionAttributeNames":{"#n0":"price"}},"key":"i5","answer":{"ok":true,"result":{"price":{"M":{"x":{"NS":["0.5"]},"n":{"M":{"k":{"N":"0.001"}}}}},"s":{"N":"2"},"pk":{"S":"i5"}}}}
+{"request":{"ProjectionExpression":"tags.y.y"},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, count[0].k, b, tags.k[2]","ExpressionAttributeNames":{"#n0":"name"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"title[1]"},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"OR m.x[0]"},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"OR\", near: \"OR m\""}}
+{"request":{"ProjectionExpression":"s[2].y, #n0.z","ExpressionAttributeNames":{"#n0":"b"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"status[0], c[2]"},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"#n0, size.k, c","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i12","answer":{"ok":true,"result":{"bs":{"L":[{"L":[]},{"NS":["3","10"]}]},"c":{"B":"/w=="}}}}
+{"request":{"ProjectionExpression":"#n0[0], #n1, a","ExpressionAttributeNames":{"#n0":"bs","#n1":"count"}},"key":"i3","answer":{"ok":true,"result":{"a":{"N":"-7"}}}}
+{"request":{"ProjectionExpression":"#n0, #n1.#n2[1], #n3[2][1], pk[5].y","ExpressionAttributeNames":{"#n0":"name","#n1":"bs","#n2":"x","#n3":"pk"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"tags, pk, m[5][1]"},"key":"i9","answer":{"ok":true,"result":{"pk":{"S":"i9"},"tags":{"B":"AAE="}}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i19","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1, ns, tags[1]","ExpressionAttributeNames":{"#n0":"data","#n1":"name"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"[2], #n1","ExpressionAttributeNames":{"#n0":"pk","#n1":"status"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"[\", near: \"[2\""}}
+{"request":{"ProjectionExpression":"zz[2], #n0, #n1.z, zz","ExpressionAttributeNames":{"#n0":"pk","#n1":"data"}},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [zz, [2]], path two: [pk]"}}
+{"request":{"ProjectionExpression":", #n0.k","ExpressionAttributeNames":{"#n0":"c"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \", #n0\""}}
+{"request":{"ProjectionExpression":"size.y"},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"m, status.y.#n0, l"},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"s, n, #n0","ExpressionAttributeNames":{"#n0":"a"}},"key":"i0","answer":{"ok":true,"result":{"s":{"S":"10"}}}}
+{"request":{"ProjectionExpression":"nm"},"key":"i18","answer":{"ok":true,"result":{"nm":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"size, b, a, #n0","ExpressionAttributeNames":{"#n0":"value"}},"key":"i8","answer":{"ok":true,"result":{"a":{"S":"a b"}}}}
+{"request":{"ProjectionExpression":"#n0, b.#n1","ExpressionAttributeNames":{"#n0":"a","#n1":"x"}},"key":"i12","answer":{"ok":true,"result":{"a":{"SS":["héllo"]}}}}
+{"request":{"ProjectionExpression":"c[5], tags[5], #n0","ExpressionAttributeNames":{"#n0":"n"}},"key":"i23","answer":{"ok":true,"result":{"n":{"N":"42"}}}}
+{"request":{"ProjectionExpression":"bs, #n0, ns.x","ExpressionAttributeNames":{"#n0":"title","#unused2":"q"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused2}"}}
+{"request":{"ProjectionExpression":"nm[0].k, #n0","ExpressionAttributeNames":{"#n0":"data","#unused8":"q"}},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused8}"}}
+{"request":{"ProjectionExpression":"#n0, n, #n1","ExpressionAttributeNames":{"#n0":"pk","#n1":"a"}},"key":"i14","answer":{"ok":true,"result":{"a":{"BOOL":true},"n":{"NS":["1"]},"pk":{"S":"i14"}}}}
+{"request":{"ProjectionExpression":"price[1].y"},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ss[0][1]"},"key":"i19","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2.k, ss.x.z, bs, size"},"key":"i14","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"a.x[1], #n0.z, b","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i21","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"pk"},"key":"i16","answer":{"ok":true,"result":{"pk":{"S":"i16"}}}}
+{"request":{"ProjectionExpression":""},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"status.z.z, #n0[2][5], #n1.x, tags","ExpressionAttributeNames":{"#n0":"m","#n1":"count"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"#n0, ns, #n1","ExpressionAttributeNames":{"#n0":"count","#n1":"b"}},"key":"i5","answer":{"ok":true,"result":{"b":{"S":"héllo"}}}}
+{"request":{"ProjectionExpression":"#n0.k[2], tags, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"count"}},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"valuesize , name"},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"bs.k, #n0[2][1]","ExpressionAttributeNames":{"#n0":"data"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"l","#unused2":"q"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused2}"}}
+{"request":{"ProjectionExpression":"price[5].y"},"key":"i19","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"pk[2], #n0, #n1.z[2], #n2","ExpressionAttributeNames":{"#n0":"price","#n1":"m","#n2":"zz"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"data[1].x, ss.#n0, pk[5].z","ExpressionAttributeNames":{"#n0":"x"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"price, m, size.x, n.z"},"key":"i1","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"a, #n0","ExpressionAttributeNames":{"#n0":"m"}},"key":"i21","answer":{"ok":true,"result":{"m":{"M":{"x":{"M":{"k":{"B":"/w=="}}},"y":{"M":{"z":{"M":{"k":{"B":"YQ=="}}}}},"k":{"B":"YWJj"}}}}}}
+{"request":{"ProjectionExpression":"#n0, nm[2], a.y, #n1","ExpressionAttributeNames":{"#n0":"data2","#n1":"bs"}},"key":"i5","answer":{"ok":true,"result":{"bs":{"BOOL":true}}}}
+{"request":{"ProjectionExpression":"c, "},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \", \""}}
+{"request":{"ProjectionExpression":"s, tags"},"key":"i17","answer":{"ok":true,"result":{"s":{"S":"2"},"tags":{"BS":["/w=="]}}}}
+{"request":{"ProjectionExpression":"ss, #n0, s =","ExpressionAttributeNames":{"#n0":"b"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"s =\""}}
+{"request":{"ProjectionExpression":"#n0, c.x.#n1","ExpressionAttributeNames":{"#n0":"data","#n1":"x"}},"key":"i3","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"title, ss, nm.x"},"key":"i4","answer":{"ok":true,"result":{"title":{"B":"YWJj"}}}}
+{"request":{"ProjectionExpression":"title, #n0) .z[2], s, zz","ExpressionAttributeNames":{"#n0":"value"}},"key":"i6","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \"#n0) .\""}}
+{"request":{"ProjectionExpression":"ns.#n0.#n1","ExpressionAttributeNames":{"#n0":"x","#n1":"z"}},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ns, ! nm"},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"!\", near: \", ! nm\""}}
+{"request":{"ProjectionExpression":"c, #n0.y.x, l.#n1[5], #n2","ExpressionAttributeNames":{"#n0":"count","#n1":"x","#n2":"count"}},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [count, y, x], path two: [l, x, [5]]"}}
+{"request":{"ProjectionExpression":"#n0, title =[5].k, bs[2][2], #n1","ExpressionAttributeNames":{"#n0":"ns","#n1":"m"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"title =[\""}}
+{"request":{"ProjectionExpression":"#n0[0].z","ExpressionAttributeNames":{"#n0":"l"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ns.x[2], #n0.k","ExpressionAttributeNames":{"#n0":"zz"}},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ns, ss"},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"bs, #n0, #n1.y, #n2","ExpressionAttributeNames":{"#n0":"tags","#n1":"data","#n2":"name"}},"key":"i16","answer":{"ok":true,"result":{"bs":{"NS":["0.5"]}}}}
+{"request":{"ProjectionExpression":"count, l.k, #n0","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"bs.x[0], #n0, bs, #n1","ExpressionAttributeNames":{"#n0":"nm","#n1":"tags"}},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [bs, x, [0]], path two: [tags]"}}
+{"request":{"ProjectionExpression":"b, n.k[0], n"},"key":"i4","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [n, k, [0]], path two: [n]"}}
+{"request":{"ProjectionExpression":"bs, s[2]"},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1, status","ExpressionAttributeNames":{"#n0":"count","#n1":"name"}},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"#n0, s, n","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i23","answer":{"ok":true,"result":{"n":{"N":"42"}}}}
+{"request":{"ProjectionExpression":"s[5], #n0, #n1","ExpressionAttributeNames":{"#n0":"m","#n1":"a"}},"key":"i24","answer":{"ok":true,"result":{"m":{"M":{"x":{"S":"b"},"y":{"M":{"z":{"B":"AAE="}}},"k":{"B":"YWJj"}}}}}}
+{"request":{"ProjectionExpression":"#n0, zz, #n1[1][5]","ExpressionAttributeNames":{"#n0":"bs","#n1":"c","#unused2":"q"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused2}"}}
+{"request":{"ProjectionExpression":"a, #n0, l, #n1","ExpressionAttributeNames":{"#n0":"ss","#n1":"a"}},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [a], path two: [l]"}}
+{"request":{"ProjectionExpression":"c, #n0, #n1","ExpressionAttributeNames":{"#n0":"bs","#n1":"data"}},"key":"i12","answer":{"ok":true,"result":{"bs":{"L":[{"L":[]},{"NS":["3","10"]}]},"c":{"B":"/w=="}}}}
+{"request":{"ProjectionExpression":"a"},"key":"i3","answer":{"ok":true,"result":{"a":{"N":"-7"}}}}
+{"request":{"ProjectionExpression":"nm, n( .x, m, #n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i3","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \"n( .\""}}
+{"request":{"ProjectionExpression":"data2"},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"title"},"key":"i10","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size, #n0","ExpressionAttributeNames":{"#n0":"size"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [size], path two: [size]"}}
+{"request":{"ProjectionExpression":"#n0, #n1[5","ExpressionAttributeNames":{"#n0":"tags","#n1":"name"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \"5\""}}
+{"request":{"ProjectionExpression":"data2, #n0, data2.y","ExpressionAttributeNames":{"#n0":"count"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [data2], path two: [data2, y]"}}
+{"request":{"ProjectionExpression":"#n0.z[2], #n1, status","ExpressionAttributeNames":{"#n0":"zz","#n1":"m"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"#n0, #n1, m","ExpressionAttributeNames":{"#n0":"n","#n1":"pk"}},"key":"i8","answer":{"ok":true,"result":{"m":{"NULL":true},"n":{"N":"42"},"pk":{"S":"i8"}}}}
+{"request":{"ProjectionExpression":"#n0, a, value","ExpressionAttributeNames":{"#n0":"status"}},"key":"i1","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"s.#n0[2], #n1[5].x, AND #n2, ns","ExpressionAttributeNames":{"#n0":"y","#n1":"bs","#n2":"status"}},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"AND\", near: \", AND #n2\""}}
+{"request":{"ProjectionExpression":"tags, #n0.x, #n1.z.y","ExpressionAttributeNames":{"#n0":"ss","#n1":"nm"}},"key":"i14","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1] , #n2","ExpressionAttributeNames":{"#n0":"tags","#n1":"a","#n2":"value"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"]\", near: \"#n1] ,\""}}
+{"request":{"ProjectionExpression":"bs[1], #n0, tags","ExpressionAttributeNames":{"#n0":"status"}},"key":"i24","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, m, value","ExpressionAttributeNames":{"#n0":"title"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"data2[1].x","ExpressionAttributeNames":{"#unused7":"q"}},"key":"i4","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused7}"}}
+{"request":{"ProjectionExpression":"foo(a) nm, tags[2]"},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \"foo(a\""}}
+{"request":{"ProjectionExpression":"nm.x"},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"price.k, #n0, #n1.z[2]","ExpressionAttributeNames":{"#n0":"count","#n1":"data2"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"a[2], #n0.z, n","ExpressionAttributeNames":{"#n0":"data"}},"key":"i20","answer":{"ok":true,"result":{"n":{"N":"1.5"}}}}
+{"request":{"ProjectionExpression":"#n0[0][0]"},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #n0"}}
+{"request":{"ProjectionExpression":"ns[2][1], l[5].z, #n0, #n1","ExpressionAttributeNames":{"#n0":"data","#n1":"c"}},"key":"i17","answer":{"ok":true,"result":{"c":{"M":{"x":{"M":{}},"a":{"BOOL":false},"inner_":{"S":"a b"}}}}}}
+{"request":{"ProjectionExpression":"price, #n0, #n1[1][5]","ExpressionAttributeNames":{"#n0":"data2","#n1":"ns"}},"key":"i20","answer":{"ok":true,"result":{"price":{"M":{"y":{"SS":["10","abcdef","xxxxxxxxxxxxxxxxxxxx"]},"n":{"S":"😀"}}},"data2":{"N":"2"}}}}
+{"request":{"ProjectionExpression":"#n0, bs","ExpressionAttributeNames":{"#n0":"price"}},"key":"i11","answer":{"ok":true,"result":{"bs":{"M":{"n":{"L":[{"BOOL":true},{"M":{"a":{"N":"-7"},"inner_":{"B":"AA=="}}},{"N":"3.0"}]}}}}}}
+{"request":{"ProjectionExpression":"m, zz, title.#n0, status.k.IN #n1","ExpressionAttributeNames":{"#n0":"x","#n1":"y"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"IN\", near: \".IN #n1\""}}
+{"request":{"ProjectionExpression":"ss, n[2].z"},"key":"i6","answer":{"ok":true,"result":{"ss":{"M":{"a":{"N":"3"},"n":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"ns, ns, bs, #n0","ExpressionAttributeNames":{"#n0":"value"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [ns], path two: [ns]"}}
+{"request":{"ProjectionExpression":"bs.z.x, data2, #n0.#n1.z","ExpressionAttributeNames":{"#n0":"n","#n1":"z"}},"key":"i19","answer":{"ok":true,"result":{"data2":{"SS":["10","z","😀"]}}}}
+{"request":{"ProjectionExpression":"b, nm, #n0, bs[2][0]","ExpressionAttributeNames":{"#n0":"status"}},"key":"i13","answer":{"ok":true,"result":{"b":{"M":{"x":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"#n0.x[0], c, b, data[5]","ExpressionAttributeNames":{"#n0":"status"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"c","ExpressionAttributeNames":{"#unused0":"q"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused0}"}}
+{"request":{"ProjectionExpression":"size, s"},"key":"i5","answer":{"ok":true,"result":{"s":{"N":"2"}}}}
+{"request":{"ProjectionExpression":"priceSize(a) , zz, #n0[0]","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i5","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \"priceSize(a\""}}
+{"request":{"ProjectionExpression":"tags[1].kAND , n.y[1]"},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, data2, #n1.[2]","ExpressionAttributeNames":{"#n0":"ss","#n1":"value"}},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"[\", near: \".[2\""}}
+{"request":{"ProjectionExpression":"#n0, #n1, #n2.x[2], bs","ExpressionAttributeNames":{"#n0":"s","#n1":"name","#n2":"n"}},"key":"i17","answer":{"ok":true,"result":{"bs":{"L":[{"BOOL":true}]},"s":{"S":"2"}}}}
+{"request":{"ProjectionExpression":"AND #n0","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"AND\", near: \"AND #n0\""}}
+{"request":{"ProjectionExpression":"#n0, #n1, #n2.y.y","ExpressionAttributeNames":{"#n0":"price","#n1":"ss","#n2":"status"}},"key":"i16","answer":{"ok":true,"result":{"price":{"L":[{"M":{"inner_":{"S":"ab"}}},{"BS":["YQ=="]}]}}}}
+{"request":{"ProjectionExpression":"#n0, tags, bs, #n1[2]","ExpressionAttributeNames":{"#n0":"bs","#n1":"value"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [bs], path two: [tags]"}}
+{"request":{"ProjectionExpression":"#n0.k.y, ss","ExpressionAttributeNames":{"#n0":"value"}},"key":"i11","answer":{"ok":true,"result":{"ss":{"BS":["AA==","AQID"]}}}}
+{"request":{"ProjectionExpression":"#n0, count[5].y, name","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"#n0, data2","ExpressionAttributeNames":{"#n0":"b"}},"key":"i20","answer":{"ok":true,"result":{"b":{"N":"100"},"data2":{"N":"2"}}}}
+{"request":{"ProjectionExpression":"#n0[5], zz.x, nm[1][5]","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"title, #n0, bs[1][5]","ExpressionAttributeNames":{"#n0":"b"}},"key":"i22","answer":{"ok":true,"result":{"b":{"M":{}}}}}
+{"request":{"ProjectionExpression":"m, ss, #n0, n","ExpressionAttributeNames":{"#n0":"c"}},"key":"i19","answer":{"ok":true,"result":{"ss":{"N":"1000"},"m":{"M":{"x":{"M":{"n":{"NULL":true}}},"y":{"M":{"z":{"L":[{"S":"¿"}]}}},"k":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"ss, #n0, data.y","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"m, #n0.x, n[2], #n1","ExpressionAttributeNames":{"#n0":"tags","#n1":"b"}},"key":"i23","answer":{"ok":true,"result":{"b":{"N":"0.001"}}}}
+{"request":{"ProjectionExpression":"a, #n0","ExpressionAttributeNames":{"#n0":"m"}},"key":"i19","answer":{"ok":true,"result":{"a":{"M":{"inner_":{"BOOL":true}}},"m":{"M":{"x":{"M":{"n":{"NULL":true}}},"y":{"M":{"z":{"L":[{"S":"¿"}]}}},"k":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"data, size"},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"zz"},"key":"i20","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"bs"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"m, ns.k.k, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i1","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"pk[1], c) , size"},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \"c) ,\""}}
+{"request":{"ProjectionExpression":"price, ss, n, #n0[5]","ExpressionAttributeNames":{"#n0":"price"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [price], path two: [n]"}}
+{"request":{"ProjectionExpression":"c.y, a[5], title"},"key":"i14","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"title"}},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[5], l, s[1][5]","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i13","answer":{"ok":true,"result":{"l":{"L":[{"SS":["2","é"]},{"N":"-7"},{"M":{"x":{"S":"a b"}}}]}}}}
+{"request":{"ProjectionExpression":"pk, s, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i19","answer":{"ok":true,"result":{"pk":{"S":"i19"}}}}
+{"request":{"ProjectionExpression":"#n0 b, #n1","ExpressionAttributeNames":{"#n0":"price","#n1":"value"}},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"b\", near: \"#n0 b,\""}}
+{"request":{"ProjectionExpression":"title"},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1, data2","ExpressionAttributeNames":{"#n0":"status","#n1":"status"}},"key":"i6","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [status], path two: [data2]"}}
+{"request":{"ProjectionExpression":"ns, #n0.y","ExpressionAttributeNames":{"#n0":"value"}},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"price, size, ( bs","ExpressionAttributeNames":{"#unused4":"q"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \", ( bs\""}}
+{"request":{"ProjectionExpression":"price.x.OR, l"},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"OR\", near: \".OR,\""}}
+{"request":{"ProjectionExpression":"","ExpressionAttributeNames":{"#n0":"l"}},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"l"},"key":"i7","answer":{"ok":true,"result":{"l":{"L":[{"BS":["AQ==","YQ=="]},{"SS":["b"]},{"M":{"x":{"S":""}}}]}}}}
+{"request":{"ProjectionExpression":"bs, ns.. y, #n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \".\", near: \".. y\""}}
+{"request":{"ProjectionExpression":"#n0, #n1, ss, nm","ExpressionAttributeNames":{"#n0":"tags","#n1":"l"}},"key":"i5","answer":{"ok":true,"result":{"l":{"SS":["ab"]},"tags":{"S":"abc"}}}}
+{"request":{"ProjectionExpression":"data2, zz, #n0, bs","ExpressionAttributeNames":{"#n0":"name"}},"key":"i7","answer":{"ok":true,"result":{"data2":{"M":{"y":{"S":"😀"}}}}}}
+{"request":{"ProjectionExpression":"#n0[2].k, n.y[5]","ExpressionAttributeNames":{"#n0":"c"}},"key":"i10","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"! count"},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"!\", near: \"! count\""}}
+{"request":{"ProjectionExpression":"data2, #n0[0].k, #n1, m","ExpressionAttributeNames":{"#n0":"status","#n1":"name"}},"key":"i8","answer":{"ok":true,"result":{"m":{"NULL":true},"data2":{"B":"AQ=="}}}}
+{"request":{"ProjectionExpression":"#n0, c[1].k","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2.#n0","ExpressionAttributeNames":{"#n0":"y"}},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size, , data"},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \", , data\""}}
+{"request":{"ProjectionExpression":"l, #n0, #n1[2].k","ExpressionAttributeNames":{"#n0":"value","#n1":"data"}},"key":"i17","answer":{"ok":true,"result":{"l":{"L":[{"S":"z"},{"B":"/w=="},{"M":{"x":{"N":"99999999999999999999999999999999999999"}}}]}}}}
+{"request":{"ProjectionExpression":"b.z[2]"},"key":"i17","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"bs[0].x, data2x"},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"value"}},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"count"}},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"size, #n0, size","ExpressionAttributeNames":{"#n0":"l"}},"key":"i8","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [size], path two: [l]"}}
+{"request":{"ProjectionExpression":"n[2][0< ], c"},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<\", near: \"0< ]\""}}
+{"request":{"ProjectionExpression":"tags.z.z, data, n, #n0[2].#n1","ExpressionAttributeNames":{"#n0":"b","#n1":"x"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"size"},"key":"i18","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[2], name, #n1","ExpressionAttributeNames":{"#n1":"a"}},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i22","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"data2, #n0.k, b","ExpressionAttributeNames":{"#n0":"status"}},"key":"i14","answer":{"ok":true,"result":{"b":{"N":"42"}}}}
+{"request":{"ProjectionExpression":"zz[(( 0][1], #n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \"[((\""}}
+{"request":{"ProjectionExpression":"."},"key":"i4","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \".\", near: \".\""}}
+{"request":{"ProjectionExpression":"data2.k.#n0","ExpressionAttributeNames":{"#n0":"y"}},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"! #n0, nm, #n1, size","ExpressionAttributeNames":{"#n0":"count","#n1":"data"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"!\", near: \"! #n0\""}}
+{"request":{"ProjectionExpression":"#n0, bs, status nm","ExpressionAttributeNames":{"#n0":"value"}},"key":"i10","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"nm\", near: \"status nm\""}}
+{"request":{"ProjectionExpression":"#n0.y[0], #n1.x[0]","ExpressionAttributeNames":{"#n0":"a","#n1":"value"}},"key":"i9","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n, pk, pk"},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [pk], path two: [pk]"}}
+{"request":{"ProjectionExpression":"data2[1]"},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, pk, l","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i2","answer":{"ok":true,"result":{"pk":{"S":"i2"}}}}
+{"request":{"ProjectionExpression":") price"},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \") price\""}}
+{"request":{"ProjectionExpression":"l, size"},"key":"i4","answer":{"ok":true,"result":{"l":{"L":[{"L":[{"NS":["2","3"]}]},{"L":[]},{"M":{"x":{"S":"Zed"}}}]}}}}
+{"request":{"ProjectionExpression":"m"},"key":"i16","answer":{"ok":true,"result":{"m":{"B":"AQID"}}}}
+{"request":{"ProjectionExpression":"#n0,5][0], data2, #n1, #n2","ExpressionAttributeNames":{"#n0":"size","#n1":"count","#n2":"tags"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"5\", near: \",5]\""}}
+{"request":{"ProjectionExpression":"nm, #n0","ExpressionAttributeNames":{"#n0":"status"}},"key":"i24","answer":{"ok":true,"result":{"nm":{"BS":["AQ=="]}}}}
+{"request":{"ProjectionExpression":"data2"},"key":"i24","answer":{"ok":true,"result":{"data2":{"S":"¿"}}}}
+{"request":{"ProjectionExpression":"#n0[0].#n1, ss, size.y.k","ExpressionAttributeNames":{"#n0":"value","#n1":"x"}},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"n, price, #n0.z.k, #n1","ExpressionAttributeNames":{"#n0":"data2","#n1":"size"}},"key":"i4","answer":{"ok":true,"result":{"price":{"NULL":true},"n":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"price, l, price, zz"},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [price], path two: [l]"}}
+{"request":{"ProjectionExpression":"tags, nm.#n0[0]","ExpressionAttributeNames":{"#n0":"y"}},"key":"i6","answer":{"ok":true,"result":{"tags":{"SS":["A"]}}}}
+{"request":{"ProjectionExpression":"#n0[0].#n1, #n2, ss, #n3","ExpressionAttributeNames":{"#n0":"l","#n1":"z","#n2":"status","#n3":"b"}},"key":"i22","answer":{"ok":true,"result":{"ss":{"N":"0.001"},"b":{"M":{}}}}}
+{"request":{"ProjectionExpression":"#n0, tags, #n1","ExpressionAttributeNames":{"#n0":"count","#n1":"count"}},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [count], path two: [count]"}}
+{"request":{"ProjectionExpression":"#n0.z.x, #n1[0]","ExpressionAttributeNames":{"#n0":"size","#n1":"data"}},"key":"i23","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"name, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"#n0, #n1, c, #n2","ExpressionAttributeNames":{"#n0":"l","#n1":"n","#n2":"m"}},"key":"i15","answer":{"ok":true,"result":{"l":{"L":[{"M":{"x":{"L":[{"B":"AAE="}]}}},{"N":"42"},{"M":{"x":{"N":"10"}}}]},"m":{"M":{"x":{"B":"/w=="},"y":{"M":{"z":{"NULL":true}}},"k":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"a, pk, nm, c"},"key":"i11","answer":{"ok":true,"result":{"a":{"BOOL":false},"c":{"SS":["a"]},"pk":{"S":"i11"}}}}
+{"request":{"ProjectionExpression":"#n0, ns, data2","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [ns], path two: [data2]"}}
+{"request":{"ProjectionExpression":"NOT l"},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"NOT\", near: \"NOT l\""}}
+{"request":{"ProjectionExpression":"title, #n0, c[2][0], #n1","ExpressionAttributeNames":{"#n0":"n","#n1":"status"}},"key":"i8","answer":{"ok":true,"result":{"n":{"N":"42"}}}}
+{"request":{"ProjectionExpression":"zz[5].y"},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[0][1], bs","ExpressionAttributeNames":{"#n0":"name"}},"key":"i14","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":", price"},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \", price\""}}
+{"request":{"ProjectionExpression":"pk, zz, (( price, value"},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \", ((\""}}
+{"request":{"ProjectionExpression":"s, nm, title[1][0]"},"key":"i2","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"nm[0], tags, data2"},"key":"i13","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c"},"key":"i6","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"","ExpressionAttributeNames":{"#n0":"count"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"ns.z, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"nm, a"},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"tags.k"},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, name, n[5]","ExpressionAttributeNames":{"#n0":"data"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"ss, bs[0]"},"key":"i23","answer":{"ok":true,"result":{"ss":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"ns"}},"key":"i4","answer":{"ok":true,"result":{"ns":{"B":"AA=="}}}}
+{"request":{"ProjectionExpression":"count _[1][0], #n0[2], c","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"_\", near: \"count _[\""}}
+{"request":{"ProjectionExpression":"s, title, tags[5].y, #n0.y[1]","ExpressionAttributeNames":{"#n0":"b"}},"key":"i2","answer":{"ok":true,"result":{"title":{"SS":["ab","héllo"]}}}}
+{"request":{"ProjectionExpression":"data2, :v0 #n0","ExpressionAttributeNames":{"#n0":"tags"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \":v0\", near: \", :v0 #n0\""}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"data2"}},"key":"i10","answer":{"ok":true,"result":{"data2":{"BS":["AQID"]}}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"a"}},"key":"i4","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[0][2]","ExpressionAttributeNames":{"#n0":"a"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"n"}},"key":"i13","answer":{"ok":true,"result":{"n":{"SS":["A","ab","b"]}}}}
+{"request":{"ProjectionExpression":""},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"#n0, m, #n1, m[0].x","ExpressionAttributeNames":{"#n0":"l","#n1":"data"}},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [m], path two: [m, [0], x]"}}
+{"request":{"ProjectionExpression":"title[0], #n0.y[0], #n1, pk[5].z","ExpressionAttributeNames":{"#n0":"nm","#n1":"value"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"#n0, name[0].y","ExpressionAttributeNames":{"#n0":"value"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: name"}}
+{"request":{"ProjectionExpression":"price, count, title.z[5]"},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: count"}}
+{"request":{"ProjectionExpression":"tags, #n0","ExpressionAttributeNames":{"#n0":"b"}},"key":"i12","answer":{"ok":true,"result":{"b":{"N":"100"},"tags":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"l, title, s, ns"},"key":"i9","answer":{"ok":true,"result":{"l":{"L":[{"NS":["0.5","1"]}]},"title":{"S":"10"},"s":{"S":"2"}}}}
+{"request":{"ProjectionExpression":"#n0, #n1, data2.z.k","ExpressionAttributeNames":{"#n0":"m","#n1":"name"}},"key":"i2","answer":{"ok":true,"result":{"m":{"M":{"x":{"S":"a b"},"y":{"M":{"z":{"M":{"z":{"BOOL":true},"k":{"B":"AQ=="},"inner_":{"S":"¿"}}}}},"k":{"BOOL":false}}}}}}
+{"request":{"ProjectionExpression":"#n0, pk","ExpressionAttributeNames":{"#n0":"b"}},"key":"i18","answer":{"ok":true,"result":{"pk":{"S":"i18"}}}}
+{"request":{"ProjectionExpression":"zz[2].OR y"},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"OR\", near: \".OR y\""}}
+{"request":{"ProjectionExpression":"#n0, b, #n1, #n2.y.y","ExpressionAttributeNames":{"#n0":"name","#n1":"status","#n2":"zz"}},"key":"i3","answer":{"ok":true,"result":{"b":{"NS":["1","3"]}}}}
+{"request":{"ProjectionExpression":"a.#n0, title, ss, #n1","ExpressionAttributeNames":{"#n0":"x","#n1":"b"}},"key":"i21","answer":{"ok":true,"result":{"ss":{"L":[{"N":"-7"},{"S":"¿"}]},"title":{"S":""}}}}
+{"request":{"ProjectionExpression":"#n0.z","ExpressionAttributeNames":{"#n0":"name"}},"key":"i10","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[1], ss[1], ss.k.x","ExpressionAttributeNames":{"#n0":"title"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths conflict with each other; must remove or rewrite one of these paths; path one: [ss, [1]], path two: [ss, k, x]"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"size"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"price[0].z, ns"},"key":"i20","answer":{"ok":true,"result":{"ns":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"a.#n0.y, zz, zz, price.k","ExpressionAttributeNames":{"#n0":"x"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [zz], path two: [price, k]"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, #n1.z","ExpressionAttributeNames":{"#n0":"data","#n1":"ss"}},"key":"i19","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0.#n1, #n2, m[1].#n3","ExpressionAttributeNames":{"#n0":"count","#n1":"y","#n2":"pk","#n3":"z","#unused6":"q"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused6}"}}
+{"request":{"ProjectionExpression":"ns[5], price"},"key":"i3","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"title.z, n, #n0[5]","ExpressionAttributeNames":{"#n0":"count"}},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"nm, #n0[5].k, s, #n1[5]","ExpressionAttributeNames":{"#n0":"data","#n1":"ss"}},"key":"i4","answer":{"ok":true,"result":{"s":{"N":"3"}}}}
+{"request":{"ProjectionExpression":""},"key":"i17","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"price"},"key":"i9","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ss, title[2]"},"key":"i2","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"pk"},"key":"i16","answer":{"ok":true,"result":{"pk":{"S":"i16"}}}}
+{"request":{"ProjectionExpression":"#n0, #n1[1].k","ExpressionAttributeNames":{"#n1":"a"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #n0"}}
+{"request":{"ProjectionExpression":"#n0, m.#n1, #n2","ExpressionAttributeNames":{"#n0":"ns","#n1":"z","#n2":"zz"}},"key":"i1","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, c, l, #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"ss"}},"key":"i24","answer":{"ok":true,"result":{"ss":{"NULL":true},"l":{"L":[{"B":"YWJj"},{"M":{}},{"M":{"x":{"S":"¿"}}}]},"c":{"M":{}}}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"m"}},"key":"i20","answer":{"ok":true,"result":{"m":{"M":{"x":{"BOOL":true},"y":{"M":{"z":{"S":"A"}}},"k":{"BOOL":false}}}}}}
+{"request":{"ProjectionExpression":"tags","ExpressionAttributeNames":{"#unused0":"q"}},"key":"i6","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused0}"}}
+{"request":{"ProjectionExpression":"title.z, #n0, #n1, tags.y","ExpressionAttributeNames":{"#n0":"data2","#n1":"status"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"nm.y, l, #n0, n.k.k","ExpressionAttributeNames":{"#n0":"b"}},"key":"i13","answer":{"ok":true,"result":{"l":{"L":[{"SS":["2","é"]},{"N":"-7"},{"M":{"x":{"S":"a b"}}}]},"b":{"M":{"x":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"data2, tags.y, ss[2], s"},"key":"i14","answer":{"ok":true,"result":{"s":{"SS":["Zed","z"]}}}}
+{"request":{"ProjectionExpression":", s, zz"},"key":"i1","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \", s\""}}
+{"request":{"ProjectionExpression":"#n0, price[0].y, zz","ExpressionAttributeNames":{"#n0":"name"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[1], #n1[0], ns, #n2","ExpressionAttributeNames":{"#n0":"value","#n1":"size","#n2":"b"}},"key":"i22","answer":{"ok":true,"result":{"ns":{"BOOL":false},"b":{"M":{}}}}}
+{"request":{"ProjectionExpression":"value foo(a)"},"key":"i24","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"foo\", near: \"value foo(\""}}
+{"request":{"ProjectionExpression":"status"},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"ss"},"key":"i10","answer":{"ok":true,"result":{"ss":{"S":"a b"}}}}
+{"request":{"ProjectionExpression":"n, m"},"key":"i17","answer":{"ok":true,"result":{"m":{"L":[{"SS":["ab","abcdef","é"]},{"NS":["-1","1"]},{"BOOL":true}]}}}}
+{"request":{"ProjectionExpression":"ss.#n0, tags","ExpressionAttributeNames":{"#n0":"z"}},"key":"i9","answer":{"ok":true,"result":{"tags":{"B":"AAE="}}}}
+{"request":{"ProjectionExpression":"nm, price[0], #n0[2].z","ExpressionAttributeNames":{"#n0":"b"}},"key":"i19","answer":{"ok":true,"result":{"nm":{"M":{"z":{"B":"AQ=="},"k":{"N":"99999999999999999999999999999999999999"}}}}}}
+{"request":{"ProjectionExpression":"b, #n0, a[5][1], ss","ExpressionAttributeNames":{"#n0":"title","#unused2":"q"}},"key":"i7","answer":{"ok":false,"type":"ValidationException","message":"Value provided in ExpressionAttributeNames unused in expressions: keys: {#unused2}"}}
+{"request":{"ProjectionExpression":"bs, nm, #n0","ExpressionAttributeNames":{"#n0":"l"}},"key":"i18","answer":{"ok":true,"result":{"l":{"L":[{"N":"-0.25"},{"BS":["AAE=","AQ=="]},{"M":{"x":{"S":"A"}}}]},"bs":{"B":"YWJj"},"nm":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"pk.#n0","ExpressionAttributeNames":{"#n0":"y"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: pk"}}
+{"request":{"ProjectionExpression":"m, #n0.y.k, #n1[1]","ExpressionAttributeNames":{"#n0":"value","#n1":"status"}},"key":"i8","answer":{"ok":true,"result":{"m":{"NULL":true}}}}
+{"request":{"ProjectionExpression":"data2, ns.k"},"key":"i16","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c :v0"},"key":"i14","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \":v0\", near: \"c :v0\""}}
+{"request":{"ProjectionExpression":"#n0[1], #n1","ExpressionAttributeNames":{"#n0":"value","#n1":"n"}},"key":"i12","answer":{"ok":true,"result":{"n":{"N":"1.5"}}}}
+{"request":{"ProjectionExpression":"#n0[2][1]","ExpressionAttributeNames":{"#n0":"status"}},"key":"i15","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"b, #n0, b","ExpressionAttributeNames":{"#n0":"name"}},"key":"i19","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [b], path two: [b]"}}
+{"request":{"ProjectionExpression":"a, size.y[ , a, #n0","ExpressionAttributeNames":{"#n0":"pk"}},"key":"i15","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \",\", near: \"[ , a\""}}
+{"request":{"ProjectionExpression":"#n0.x, #n1, #n2","ExpressionAttributeNames":{"#n0":"name","#n1":"status","#n2":"status"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [status], path two: [status]"}}
+{"request":{"ProjectionExpression":"s, #n0[0], price, #n1.#n2","ExpressionAttributeNames":{"#n0":"tags","#n1":"count","#n2":"z"}},"key":"i10","answer":{"ok":true,"result":{"price":{"S":"a"}}}}
+{"request":{"ProjectionExpression":"l, b[2].y"},"key":"i3","answer":{"ok":true,"result":{"l":{"L":[{"NS":["0.5"]},{"BOOL":true},{"M":{"x":{"BOOL":false}}}]}}}}
+{"request":{"ProjectionExpression":"#n0, nm","ExpressionAttributeNames":{"#n0":"status"}},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0.k[1], #n1","ExpressionAttributeNames":{"#n0":"count","#n1":"ns"}},"key":"i22","answer":{"ok":true,"result":{"ns":{"BOOL":false}}}}
+{"request":{"ProjectionExpression":"#n0, pk, nm","ExpressionAttributeNames":{"#n0":"nm"}},"key":"i12","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [nm], path two: [pk]"}}
+{"request":{"ProjectionExpression":"#n0.#n1.k, ns, tags, #n2","ExpressionAttributeNames":{"#n0":"zz","#n1":"z","#n2":"data"}},"key":"i3","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"ns0][5]"},"key":"i21","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"]\", near: \"ns0][\""}}
+{"request":{"ProjectionExpression":"( zz"},"key":"i13","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \"( zz\""}}
+{"request":{"ProjectionExpression":"zz.#n0.z","ExpressionAttributeNames":{"#n0":"x"}},"key":"i0","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"c0].z"},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"]\", near: \"c0].\""}}
+{"request":{"ProjectionExpression":"#n0, m, zz[2][1], #n1","ExpressionAttributeNames":{"#n0":"name","#n1":"ns"}},"key":"i20","answer":{"ok":true,"result":{"ns":{"BOOL":false},"m":{"M":{"x":{"BOOL":true},"y":{"M":{"z":{"S":"A"}}},"k":{"BOOL":false}}}}}}
+{"request":{"ProjectionExpression":"c, pk, c ), m[0].z"},"key":"i18","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \")\", near: \"c ),\""}}
+{"request":{"ProjectionExpression":"#n0, size.#n1","ExpressionAttributeNames":{"#n1":"x","#unused3":"q"}},"key":"i22","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #n0"}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"m"}},"key":"i15","answer":{"ok":true,"result":{"m":{"M":{"x":{"B":"/w=="},"y":{"M":{"z":{"NULL":true}}},"k":{"NULL":true}}}}}}
+{"request":{"ProjectionExpression":"#n0[1][0], m, #n1.z","ExpressionAttributeNames":{"#n0":"pk","#n1":"m"}},"key":"i23","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Two document paths overlap with each other; must remove or rewrite one of these paths; path one: [m], path two: [m, z]"}}
+{"request":{"ProjectionExpression":"size.#n0[0], #n1, zz[2][2","ExpressionAttributeNames":{"#n0":"z","#n1":"name"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<EOF>\", near: \"2\""}}
+{"request":{"ProjectionExpression":"tags, bs"},"key":"i5","answer":{"ok":true,"result":{"bs":{"BOOL":true},"tags":{"S":"abc"}}}}
+{"request":{"ProjectionExpression":"#n0, priceANDy, data","ExpressionAttributeNames":{"#n0":"data"}},"key":"i0","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: data"}}
+{"request":{"ProjectionExpression":"n, nm.z, value, #n0","ExpressionAttributeNames":{"#n0":"data"}},"key":"i20","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: value"}}
+{"request":{"ProjectionExpression":"#n0, size, l.k.z","ExpressionAttributeNames":{"#n0":"b"}},"key":"i10","answer":{"ok":true,"result":{"b":{"N":"99999999999999999999999999999999999999"}}}}
+{"request":{"ProjectionExpression":"#n0, #n1[5], #n2.z[0], bs.x.#n3","ExpressionAttributeNames":{"#n0":"c","#n1":"value","#n2":"status","#n3":"y"}},"key":"i17","answer":{"ok":true,"result":{"c":{"M":{"x":{"M":{}},"a":{"BOOL":false},"inner_":{"S":"a b"}}}}}}
+{"request":{"ProjectionExpression":""},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: The expression can not be empty;"}}
+{"request":{"ProjectionExpression":"c[2] =, s"},"key":"i16","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"=\", near: \"] =,\""}}
+{"request":{"ProjectionExpression":"status[0][5], nm  , #n0","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i9","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: status"}}
+{"request":{"ProjectionExpression":"zz[0][5], l, n"},"key":"i14","answer":{"ok":true,"result":{"l":{"N":"1"},"n":{"NS":["1"]}}}}
+{"request":{"ProjectionExpression":"#n0, Size(a)[2]","ExpressionAttributeNames":{"#n0":"zz"}},"key":"i2","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"(\", near: \"Size(a\""}}
+{"request":{"ProjectionExpression":"b, #n0[2], #n1","ExpressionAttributeNames":{"#n0":"s","#n1":"count"}},"key":"i24","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0[0][5], size, #n1","ExpressionAttributeNames":{"#n0":"title","#n1":"count"}},"key":"i12","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"name"}},"key":"i5","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0","ExpressionAttributeNames":{"#n0":"zz"}},"key":"i2","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0.x, ss, #n1","ExpressionAttributeNames":{"#n0":"data2","#n1":"name"}},"key":"i8","answer":{"ok":true,"result":{}}}
+{"request":{"ProjectionExpression":"#n0, m<0]","ExpressionAttributeNames":{"#n0":"ss"}},"key":"i11","answer":{"ok":false,"type":"ValidationException","message":"Invalid ProjectionExpression: Syntax error; token: \"<\", near: \"m<0\""}}

@@ -1,0 +1,104 @@
+{
+  "reference": "DynamoDB Local 3.3.1 (2026-05-28)",
+  "when": "2026-10-06T04:56:04.021Z",
+  "scan": {
+    "requests": 1500,
+    "refusedByDynamoDB": 845,
+    "agree": 1500,
+    "differ": 0
+  },
+  "get": {
+    "requests": 600,
+    "refusedByDynamoDB": 237,
+    "agree": 600,
+    "differ": 0
+  },
+  "query": {
+    "requests": 1200,
+    "refusedByDynamoDB": 1048,
+    "agree": 1200,
+    "differ": 0
+  },
+  "update": {
+    "requests": 1500,
+    "refusedByDynamoDB": 1413,
+    "agree": 1472,
+    "differ": 28,
+    "runtimeOrderDiffers": 28,
+    "note": "Every difference is an update with two or more problems that only show while it runs (a missing attribute, a wrong type, a path that cannot be written); DynamoDB Local and the tester report a different one of them first.",
+    "examples": [
+      {
+        "UpdateExpression": "ADD #n1 :v0, #n2 :v1 REMOVE #n0.z",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      },
+      {
+        "UpdateExpression": "DELETE data2 :v0, ns[2] :v1",
+        "dynamodbLocal": "ValidationException: An operand in the update expression has an incorrect data type",
+        "tester": "ValidationException: The document path provided in the update expression is invalid for update"
+      },
+      {
+        "UpdateExpression": "ADD m :v0, n.z :v1",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      },
+      {
+        "UpdateExpression": "ADD #n0 :v0, bs :v1 DELETE #n1.x[2] :v2",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      },
+      {
+        "UpdateExpression": "REMOVE a, size[0].x ADD data2.z.z :v0, ns :v1 DELETE #n0 :v2, c :v3",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      },
+      {
+        "UpdateExpression": "SET #n0 = if_not_exists(#n1, :v0) - price, #n2 = if_not_exists(#n3, a.#n4[2])",
+        "dynamodbLocal": "ValidationException: The provided expression refers to an attribute that does not exist in the item",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      },
+      {
+        "UpdateExpression": "ADD title :v0, tags[2] :v1",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      },
+      {
+        "UpdateExpression": "DELETE m :v0 REMOVE #n0[2], data2 SET tags[5].x = ss, a[1] = s",
+        "dynamodbLocal": "ValidationException: An operand in the update expression has an incorrect data type",
+        "tester": "ValidationException: The document path provided in the update expression is invalid for update"
+      },
+      {
+        "UpdateExpression": "REMOVE #n0, price.k.x SET bs = b[1][0]",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: The provided expression refers to an attribute that does not exist in the item"
+      },
+      {
+        "UpdateExpression": "ADD #n2[5][0] :v0 REMOVE #n1 DELETE price :v1, #n3 :v2 SET tags[1].#n0 = size.y",
+        "dynamodbLocal": "ValidationException: The document path provided in the update expression is invalid for update",
+        "tester": "ValidationException: An operand in the update expression has an incorrect data type"
+      }
+    ]
+  },
+  "handWritten": {
+    "requests": 214,
+    "refusedByDynamoDB": 144
+  },
+  "reservedWords": {
+    "documentedByAWS": 573,
+    "refusedByDynamoDBLocal": 563,
+    "documentedButAccepted": [
+      "CONVERT",
+      "SIZE"
+    ],
+    "documentedButKeywords": [
+      "ADD",
+      "AND",
+      "BETWEEN",
+      "DELETE",
+      "IN",
+      "NOT",
+      "OR",
+      "SET"
+    ]
+  }
+}
