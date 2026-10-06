@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src data: blob:; form-action 'none'; base-uri 'none'">
+<title>Config Checker | KeyValueStore.com</title>
+<meta name="description" content="Check a redis.conf or valkey.conf the way the server reads it at startup: whether it starts, the exact error and line if not, every setting as CONFIG GET shows it, and what deserves a second look. For 15 Redis and Valkey versions. Runs in your browser.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/config/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M8 10h16M8 16h10M8 22h13' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M22 19.5l2 2 3.5-4' stroke='%23fff' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="../../common/embed.js"></script>
+<link rel="stylesheet" href="../../common/tool.css">
+<style>
+  #conf { min-height: 300px; font-family: var(--mono); font-size: .88rem; line-height: 1.45; white-space: pre; overflow-wrap: normal; overflow-x: auto; tab-size: 8; }
+  #conf.over { border-color: var(--accent); background: var(--accent-soft); }
+  #get-text { min-height: 120px; }
+  .printed { font-family: var(--mono); font-size: .86rem; white-space: pre-wrap; word-break: break-all; background: #1F2933; color: #F1F5F9; border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+  .lines-table td.num { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; width: 3.5em; }
+  .lines-table td.text { font-family: var(--mono); font-size: .84rem; word-break: break-all; }
+  .lines-table tr.error td { background: var(--bad-soft); }
+  .lines-table tr.unchecked td, .lines-table tr.ignored td { background: var(--warn-soft); }
+  .status { white-space: nowrap; font-size: .84rem; font-weight: 600; }
+  .status.ok { color: var(--good); }
+  .status.error { color: var(--bad); }
+  .status.ignored, .status.unchecked { color: #8A5A00; }
+  .versions-table td.starts { color: var(--good); font-weight: 600; }
+  .versions-table td.stops { color: var(--bad); }
+  .versions-table tr.on td { background: var(--accent-soft); }
+  .finding { margin: 8px 0; }
+  .finding .verdict { margin: 6px 0; }
+  .val { font-family: var(--mono); font-size: .84rem; word-break: break-all; }
+  .opts .check { font-size: .92rem; }
+  .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .linkish:hover { color: var(--accent-strong); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Config Checker</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/config/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-file">
+    <h2 id="h-file">The config file</h2>
+    <p class="lede">Paste a redis.conf or valkey.conf, or drop the file here. The checker reads it line by line the way the server you pick reads it at startup, and tells you whether that server would start.</p>
+
+    <div class="row">
+      <div class="field">
+        <label for="version">Server</label>
+        <select id="version"></select>
+      </div>
+      <div class="opts row">
+        <label class="check hidden" id="tls-box"><input type="checkbox" id="tls" checked> Built with TLS</label>
+        <label class="check hidden" id="compression-box"><input type="checkbox" id="compression"> Built with BUILD_COMPRESSION=yes</label>
+      </div>
+      <span class="spacer"></span>
+      <button type="button" class="btn" id="open">Open a file</button>
+      <input type="file" id="file" class="file-input" accept=".conf,.txt,text/plain">
+      <button type="button" class="btn" id="ex-typical">A typical file</button>
+      <button type="button" class="btn" id="ex-mistakes">Mistakes</button>
+      <button type="button" class="btn" id="ex-upgrade">An old file</button>
+    </div>
+    <div class="field">
+      <label for="conf" class="hint" id="conf-label">The file never leaves your browser.</label>
+      <textarea id="conf" spellcheck="false" autocomplete="off" placeholder="maxmemory 2gb&#10;maxmemory-policy allkeys-lru&#10;appendonly yes"></textarea>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-out">
+    <h2 id="h-out">What the server does</h2>
+    <div id="result" class="result" aria-live="polite"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-get">
+    <h2 id="h-get">A running server</h2>
+    <p class="lede">Paste the output of <code>CONFIG GET *</code> from redis-cli or valkey-cli to see which settings differ from the defaults of its version. Add <code>--raw</code> for the shortest output; the numbered kind works too.</p>
+    <div class="row">
+      <div class="field">
+        <label for="get-version">Version</label>
+        <select id="get-version"></select>
+      </div>
+      <span id="get-guess" class="hint" aria-live="polite"></span>
+    </div>
+    <div class="field">
+      <label for="get-text" class="hint">redis-cli --raw CONFIG GET '*' &gt; config.txt</label>
+      <textarea id="get-text" class="mono" spellcheck="false" placeholder="1) &quot;maxmemory&quot;&#10;2) &quot;2147483648&quot;&#10;..."></textarea>
+    </div>
+    <div id="get-result" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser and sends nothing anywhere. The page's security policy stops it from fetching or loading anything from another site.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/config">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../servers.js"></script>
+<script src="../config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

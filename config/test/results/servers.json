@@ -1,0 +1,161 @@
+{
+  "recorded": "Each server was started with every file; config.js read the same files.",
+  "versions": [
+    {
+      "version": "redis-6.2.24",
+      "files": 3468,
+      "lines": 176314,
+      "serverStopsAtALine": 2927,
+      "serverStopsWhileStarting": 9,
+      "serverStarts": 532,
+      "settingValuesCompared": 78204,
+      "differences": 0
+    },
+    {
+      "version": "redis-7.0.15",
+      "files": 4088,
+      "lines": 246565,
+      "serverStopsAtALine": 3452,
+      "serverStopsWhileStarting": 19,
+      "serverStarts": 617,
+      "settingValuesCompared": 107975,
+      "differences": 0
+    },
+    {
+      "version": "redis-7.2.16",
+      "files": 4024,
+      "lines": 239426,
+      "serverStopsAtALine": 3316,
+      "serverStopsWhileStarting": 28,
+      "serverStarts": 680,
+      "settingValuesCompared": 136680,
+      "differences": 0
+    },
+    {
+      "version": "redis-7.4.11",
+      "files": 4132,
+      "lines": 244020,
+      "serverStopsAtALine": 3394,
+      "serverStopsWhileStarting": 28,
+      "serverStarts": 710,
+      "settingValuesCompared": 147680,
+      "differences": 0
+    },
+    {
+      "version": "redis-8.0.6",
+      "files": 4289,
+      "lines": 249077,
+      "serverStopsAtALine": 3412,
+      "serverStopsWhileStarting": 63,
+      "serverStarts": 814,
+      "settingValuesCompared": 170940,
+      "differences": 0
+    },
+    {
+      "version": "redis-8.10.2",
+      "files": 5086,
+      "lines": 349153,
+      "serverStopsAtALine": 4127,
+      "serverStopsWhileStarting": 67,
+      "serverStarts": 892,
+      "settingValuesCompared": 213188,
+      "differences": 0
+    },
+    {
+      "version": "redis-8.2.10",
+      "files": 4408,
+      "lines": 262067,
+      "serverStopsAtALine": 3520,
+      "serverStopsWhileStarting": 69,
+      "serverStarts": 819,
+      "settingValuesCompared": 176085,
+      "differences": 0
+    },
+    {
+      "version": "redis-8.4.7",
+      "files": 4579,
+      "lines": 284173,
+      "serverStopsAtALine": 3667,
+      "serverStopsWhileStarting": 69,
+      "serverStarts": 843,
+      "settingValuesCompared": 186303,
+      "differences": 0
+    },
+    {
+      "version": "redis-8.6.7",
+      "files": 4665,
+      "lines": 297241,
+      "serverStopsAtALine": 3745,
+      "serverStopsWhileStarting": 69,
+      "serverStarts": 851,
+      "settingValuesCompared": 191475,
+      "differences": 0
+    },
+    {
+      "version": "redis-8.8.3",
+      "files": 4863,
+      "lines": 321515,
+      "serverStopsAtALine": 3935,
+      "serverStopsWhileStarting": 64,
+      "serverStarts": 864,
+      "settingValuesCompared": 198720,
+      "differences": 0
+    },
+    {
+      "version": "valkey-7.2.14",
+      "files": 4013,
+      "lines": 238375,
+      "serverStopsAtALine": 3301,
+      "serverStopsWhileStarting": 28,
+      "serverStarts": 684,
+      "settingValuesCompared": 137484,
+      "differences": 0
+    },
+    {
+      "version": "valkey-8.0.11",
+      "files": 4325,
+      "lines": 272406,
+      "serverStopsAtALine": 3557,
+      "serverStopsWhileStarting": 37,
+      "serverStarts": 731,
+      "settingValuesCompared": 161551,
+      "differences": 0
+    },
+    {
+      "version": "valkey-8.1.10",
+      "files": 4563,
+      "lines": 298610,
+      "serverStopsAtALine": 3758,
+      "serverStopsWhileStarting": 37,
+      "serverStarts": 768,
+      "settingValuesCompared": 180480,
+      "differences": 0
+    },
+    {
+      "version": "valkey-9.0.6",
+      "files": 4853,
+      "lines": 340873,
+      "serverStopsAtALine": 4012,
+      "serverStopsWhileStarting": 37,
+      "serverStarts": 804,
+      "settingValuesCompared": 197784,
+      "differences": 0
+    },
+    {
+      "version": "valkey-9.1.2",
+      "files": 4940,
+      "lines": 351540,
+      "serverStopsAtALine": 4090,
+      "serverStopsWhileStarting": 37,
+      "serverStarts": 813,
+      "settingValuesCompared": 203250,
+      "differences": 0
+    }
+  ],
+  "total": {
+    "files": 66296,
+    "lines": 4171355,
+    "settingValuesCompared": 2487799,
+    "differences": 0
+  }
+}

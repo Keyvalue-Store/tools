@@ -13,3 +13,8 @@ revisions/kubernetes.js lists the fields of Kubernetes' API types. It is made
 from the Kubernetes project's Go packages (k8s.io/api, k8s.io/apimachinery,
 k8s.io/apiextensions-apiserver and k8s.io/kube-aggregator), Copyright The
 Kubernetes Authors, licensed under the Apache License 2.0.
+
+config/servers.js records facts about Redis and Valkey: each version's
+settings with their names, types, limits and defaults, and the messages the
+servers print. They were read from the servers' source code, Copyright
+Redis Ltd. and the Redis contributors, and Copyright the Valkey contributors.
