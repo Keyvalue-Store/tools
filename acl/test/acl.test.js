@@ -240,3 +240,269 @@ test('the command line', () => {
   assert.equal(r.status, 2);
   fs.rmSync(dir, { recursive: true });
 });
+
+// ---- what the fixes after the first review cover ----
+
+// The command line, with files in a folder of their own.
+function cli() {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'kvacl-'));
+  const file = (name, content) => { const p = path.join(dir, name); fs.writeFileSync(p, content); return p; };
+  const run = (args, input) => spawnSync(process.execPath, [path.join(__dirname, '..', 'cli.js'), ...args], { encoding: 'utf8', input: input });
+  return { file: file, run: run, done: () => fs.rmSync(dir, { recursive: true }) };
+}
+
+test('check with several users: each is checked, or the one --user names', () => {
+  const c = cli();
+  const acl = c.file('users.acl', 'user default off\nuser alice on nopass ~app:* +@read\nuser bob on nopass ~* +@all\n');
+  let r = c.run(['check', '--file', acl, '--', 'FLUSHALL']);
+  assert.equal(r.status, 1, 'refused for some users');
+  assert.match(r.stdout, /^User default:\nDENIED {3}FLUSHALL/m);
+  assert.match(r.stdout, /^User alice:\nDENIED {3}FLUSHALL/m);
+  assert.match(r.stdout, /^User bob:\nallowed {2}FLUSHALL/m);
+  r = c.run(['check', '--file', acl, '--', 'GET', 'app:1']);
+  assert.equal(r.status, 1, 'default is off and may run nothing');
+  r = c.run(['check', '--file', acl, '--user', 'bob', '--', 'FLUSHALL']);
+  assert.equal(r.status, 0, r.stdout);
+  assert.equal(r.stdout.trim(), 'allowed  FLUSHALL');
+  r = c.run(['check', '--file', acl, '--user', 'carol', '--', 'FLUSHALL']);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /has no user carol\. Its users: default, alice, bob\./);
+  r = c.run(['check', '--file', acl, '--json', '--', 'GET', 'app:1']);
+  const j = JSON.parse(r.stdout);
+  assert.deepEqual(j.checks.map((x) => [x.user, x.allowed]), [['default', false], ['alice', true], ['bob', true]]);
+  // Config files too; the default user only when asked for.
+  const conf = c.file('redis.conf', 'port 6379\nuser alice on nopass ~app:* +@read\nuser bob on nopass ~* +@all\n');
+  r = c.run(['check', '--config', conf, '--', 'GET', 'app:1']);
+  assert.equal(r.status, 0, r.stdout);
+  assert.match(r.stdout, /User alice:\nallowed {2}GET app:1\n\nUser bob:\nallowed {2}GET app:1/);
+  r = c.run(['check', '--config', conf, '--user', 'default', '--', 'FLUSHALL']);
+  assert.equal(r.status, 0, r.stdout);
+  r = c.run(['check', '--config', c.file('empty.conf', 'port 6379\n'), '--', 'GET', 'k']);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /no user to check/);
+  r = c.run(['check', 'on', 'nopass', '--user', 'bob', '--', 'GET', 'k']);
+  assert.equal(r.status, 2);
+  c.done();
+});
+
+test('MONITOR lines from IPv6 clients, unix sockets and scripts', () => {
+  // As the servers print them (checked with Redis 8.10 and Valkey 9.1); IPv6
+  // peers are [address]:port in every version.
+  const e = A.parseMonitor([
+    '1791293386.428309 [0 [::1]:52310] "SET" "a:1" "x"',
+    '1791293386.431136 [2 unix:/run/redis/redis.sock] "EVAL" "redis.call(\'SET\',\'user:1\',\'x\')" "0"',
+    '1791293386.431195 [2 lua] "SET" "user:1" "x"',
+    '+1791293386.431203 [0 [fe80::1%eth0]:6000] "GET" "user:2"',
+    '1791293386.5 [0 /tmp/a] b.sock] "PING"'
+  ].join('\r\n'));
+  assert.deepEqual(e.map((x) => [x.client, x.db, x.argv[0]]), [['[::1]:52310', 0, 'SET'], ['unix:/run/redis/redis.sock', 2, 'EVAL'], ['lua', 2, 'SET'], ['[fe80::1%eth0]:6000', 0, 'GET'], ['/tmp/a] b.sock', 0, 'PING']]);
+  const r = A.build(e, 'redis-8.10.2');
+  assert.deepEqual(r.commands.map((c) => c.command), ['EVAL', 'GET', 'PING', 'SET']);
+  assert.ok(r.check.every((c) => c.allowed));
+});
+
+test('a client\'s draft takes the commands its scripts ran', () => {
+  // MONITOR prints EVAL and FCALL before the commands the script runs.
+  const e = A.parseMonitor([
+    '1.1 [0 10.0.0.7:1] "EVAL" "redis.call(\'SET\', KEYS[1], \'x\')" "1" "user:1"',
+    '1.2 [0 lua] "SET" "user:1" "x"',
+    '1.3 [0 10.0.0.9:2] "GET" "other:1"',
+    '1.4 [0 lua] "INCR" "user:count"',
+    '1.5 [0 10.0.0.9:2] "FCALL" "f" "1" "jobs:1"',
+    '1.6 [0 lua] "LPUSH" "jobs:1" "x"',
+    '1.7 [0 10.0.0.7:1] "GET" "user:2"'
+  ].join('\n'));
+  const mine = A.build(e, 'redis-8.10.2', { client: '10.0.0.7:1' });
+  assert.deepEqual(mine.commands.map((c) => c.command), ['EVAL', 'GET', 'INCR', 'SET']);
+  assert.ok(mine.check.every((c) => c.allowed), 'the script\'s SET is allowed');
+  const theirs = A.build(e, 'redis-8.10.2', { client: '10.0.0.9:2' });
+  assert.deepEqual(theirs.commands.map((c) => c.command), ['FCALL', 'GET', 'LPUSH']);
+});
+
+test('drafts from lines with too few arguments, and empty command lines', () => {
+  const r = A.build(A.parseMonitor('SELECT\nGET k\n'), 'redis-8.10.2');
+  assert.deepEqual(r.skipped.map((s) => s.reason), ['wrong number of arguments']);
+  assert.deepEqual(r.args.slice(-2), ['-@all', '+get']);
+  assert.equal(A.check(A.defaultUser('redis-8.10.2'), [], 'redis-8.10.2').allowed, false);
+  const c = cli();
+  const s = c.file('s.txt', 'SELECT\nGET k\n');
+  const out = c.run(['build', s]);
+  assert.equal(out.status, 0, out.stderr);
+  assert.match(out.stdout, /1 line skipped: line 1 \(wrong number of arguments\)/);
+  c.done();
+});
+
+test('the command line reads files, arguments and stdin as bytes', () => {
+  const c = cli();
+  const sha = (s) => require('crypto').createHash('sha256').update(s).digest('hex');
+  const line = 'user alice on >päss ~café:* +@all\n';
+  for (const opt of ['--config', '--file']) {
+    const r = c.run(['explain', opt, c.file('u' + opt.slice(2), line)]);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    assert.match(r.stdout, new RegExp('#' + sha('päss') + ' ~café:\\* '));
+  }
+  const cmds = c.file('f.txt', 'GET café:1\n');
+  let r = c.run(['check', 'on', 'nopass', '~café:*', '+@all', '--commands', cmds]);
+  assert.equal(r.status, 0, r.stdout);
+  r = c.run(['check', 'on', 'nopass', '~café:*', '+@all', '--commands', cmds, '--json']);
+  assert.deepEqual(JSON.parse(r.stdout).checks[0].command, ['GET', 'café:1']);
+  const mon = c.file('m.txt', '1.1 [0 10.0.0.7:1] "GET" "user:42"\n');
+  r = c.run(['build', mon, '--password', 'pässwörd', '--name', 'jörg', '--json']);
+  const j = JSON.parse(r.stdout);
+  assert.equal(j.args[2], '>pässwörd');
+  assert.equal(j.name, 'jörg');
+  assert.equal(j.aclfile, 'user jörg on #' + sha('pässwörd') + ' %R~user:42 resetchannels -@all +get');
+  r = c.run(['build', mon, '--password', 'a€b']);
+  assert.match(r.stdout, /">a\\xe2\\x82\\xacb"/);
+  r = c.run(['explain', 'on', 'bögus', '--json']);
+  assert.equal(JSON.parse(r.stdout).error, 'Error in ACL SETUSER modifier \'bögus\': Syntax error');
+  // stdin once: a declared default user is there.
+  r = c.run(['explain', '--file', '-'], 'user default on nopass ~* +@all\nuser app on nopass ~app:* +get\n');
+  assert.match(r.stdout, /^user default on nopass/m);
+  assert.match(r.stdout, /^user app on nopass/m);
+  // A file can't send escape sequences to the terminal.
+  r = c.run(['explain', '--file', c.file('esc.acl', 'user \x1b[31mbob on nopass\n')]);
+  assert.ok(!r.stdout.includes('\x1b'));
+  assert.match(r.stdout, /user \\x1b\[31mbob on nopass/);
+  c.done();
+});
+
+test('config lines: acl-pubsub-default, aclfile and lines the server can\'t read', () => {
+  // The messages as Redis 6.2, 7.0, 7.2 and 8.10 and Valkey 8.0 and 9.1 print them.
+  const fatal = (text, id) => { const r = A.loadConfig(text, id); return r.fatal && [r.fatal.line, r.fatal.message]; };
+  const pattern = 'Adding a pattern after the * pattern (or the \'allchannels\' flag) is not valid and does not have any effect. Try \'resetchannels\' to start with an empty list of channels';
+  assert.deepEqual(fatal('acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n', 'redis-7.2.16'), [2, 'Error in user declaration \'on\': ' + pattern]);
+  assert.deepEqual(fatal('acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n', 'redis-6.2.24'), [2, 'Error in user declaration \'&chat\': ' + pattern]);
+  // Set after the user line: the line passes, and the server stops at startup.
+  const late = A.loadConfig('user alice on nopass &chat +@all ~*\nacl-pubsub-default allchannels\n', 'valkey-9.1.2');
+  assert.equal(late.fatal, null);
+  assert.deepEqual(late.startup.log, ['Error loading ACL rule \'&chat\' for the user named \'alice\': ' + pattern, 'Critical error while loading ACLs. Exiting.']);
+  assert.deepEqual(fatal('user alice on ">pw ~* +@all\n', 'redis-8.10.2'), [1, 'Unbalanced quotes in configuration line']);
+  assert.deepEqual(fatal('port 6379\nrequirepass "x\n', 'redis-8.10.2'), [2, 'Unbalanced quotes in configuration line']);
+  assert.deepEqual(fatal('user alice on\nuser alice off\n', 'redis-7.0.15'), [2, 'Error in user declaration \'alice\': Duplicate user found. A user can only be defined once in config files']);
+  assert.equal(fatal('user alice on\nuser alice off\n', 'redis-6.2.24'), null);
+  assert.deepEqual(fatal('acl-pubsub-default foo\n', 'redis-6.2.24'), [1, 'argument must be one of the following: allchannels, resetchannels']);
+  assert.deepEqual(fatal('acl-pubsub-default foo\n', 'valkey-8.0.11'), [1, 'argument(s) must be one of the following: allchannels, resetchannels']);
+  assert.deepEqual(fatal('acl-pubsub-default allchannels resetchannels\n', 'redis-7.2.16'), [1, 'wrong number of arguments']);
+  assert.deepEqual(fatal('user\n', 'redis-8.10.2'), [1, 'Bad directive or wrong number of arguments']);
+  assert.deepEqual(fatal('\xef\xbb\xbfuser alice on\n', 'redis-8.10.2'), [1, 'Bad directive or wrong number of arguments']);
+  const both = (id) => A.loadConfig('user alice on nopass ~* +@all\naclfile /etc/users.acl\n', id).startup.message;
+  assert.match(both('redis-8.10.2'), /^Configuring Redis with users defined in redis\.conf and at the same setting an ACL file path is invalid\./);
+  assert.match(both('valkey-7.2.14'), /^Configuring Redis with users defined in redis\.conf/);
+  assert.match(both('valkey-9.1.2'), /^Configuring Valkey with users defined in valkey\.conf .* directly in your valkey\.conf, but not both\.$/);
+  assert.equal(A.loadConfig('user alice on\naclfile ""\n', 'redis-8.10.2').startup, null);
+  const ok = A.loadConfig('acl-pubsub-default allchannels\nuser a on nopass ~* +@all\nuser b off\n', 'redis-8.10.2');
+  assert.deepEqual(ok.users.map((u) => u.name), ['a', 'b']);
+  assert.equal(ok.users[0].selectors[0].allchannels, true);
+  // The command line and the kind readRules works out.
+  assert.equal(A.readRules('acl-pubsub-default allchannels\nuser alice on &chat\n', 'redis-8.10.2').kind, 'config');
+  const c = cli();
+  let r = c.run(['explain', '--config', c.file('p.conf', 'acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n'), '--server', '7.2']);
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /p\.conf:2: Redis 7\.2\.16 stops reading the file:\n {2}>>> 'user alice on nopass &chat \+@all ~\*'\n {2}Error in user declaration 'on'/);
+  r = c.run(['explain', '--config', c.file('q.conf', 'user alice on ">pw ~* +@all\n')]);
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /Unbalanced quotes in configuration line/);
+  c.done();
+});
+
+test('a byte order mark stays, and shows', () => {
+  const file = new Uint8Array(Buffer.from('\ufeffuser default off\nuser alice on nopass ~* +@all\n'));
+  const read = A.readRules(file, 'redis-8.10.2');
+  assert.equal(read.kind, 'aclfile');
+  const r = A.loadFile(read.text, 'redis-8.10.2');
+  assert.equal(r.ok, false);
+  assert.match(r.error, /^users\.acl:1 should start with user keyword followed by the username\./);
+  assert.deepEqual(r.where, [{ line: 1, text: '\xef\xbb\xbfuser default off' }]);
+  assert.equal(A.readable(r.where[0].text), '\\xef\\xbb\\xbfuser default off');
+  // What readable() keeps and what it escapes.
+  assert.equal(A.readable(b('café ☕ 日本')), 'café ☕ 日本');
+  assert.equal(A.readable('a\x1b[0m\x00\x7f'), 'a\\x1b[0m\\x00\\x7f');
+  assert.equal(A.readable('caf\xe9 \xc3'), 'caf\\xe9 \\xc3');
+  assert.equal(A.readable(b('a\u202eb\u00adc')), 'a\\xe2\\x80\\xaeb\\xc2\\xadc');
+  assert.equal(A.readable('\xed\xa0\x80'), '\\xed\\xa0\\x80');
+  const c = cli();
+  const out = c.run(['explain', '--file', c.file('bom.acl', Buffer.from(file))]);
+  assert.equal(out.status, 1);
+  assert.match(out.stdout, /Line 1: \\xef\\xbb\\xbfuser default off/);
+  c.done();
+});
+
+test('large inputs: deep patterns, many keys, long lines', () => {
+  // Redis 7.0 follows a * pattern as deep as it goes (it matched 50,000
+  // levels and crashed at about 87,000); the others stop at 1000 levels.
+  const deep = (n, id) => {
+    const u = A.setUser(null, 'u', ['on', 'nopass', '~' + '*a'.repeat(n), '+get'], id).user;
+    return A.check(u, ['GET', 'a'.repeat(n)], id);
+  };
+  assert.equal(deep(20000, 'redis-7.0.15').allowed, true);
+  assert.equal(deep(20000, 'redis-7.2.16').allowed, false);
+  const crash = deep(90000, 'redis-7.0.15');
+  assert.equal(crash.reason, 'crash');
+  assert.match(crash.crash, /stack overflow/);
+  assert.equal(A.globMatch('*a'.repeat(20000), 'a'.repeat(20000) + 'b', false), false);
+  // Patterns without wildcards are found by name; one pattern still has to
+  // carry both permissions a command needs.
+  const split = A.setUser(null, 'u', ['on', 'nopass', '%R~a', '%W~\\a', '+@all'], 'redis-8.10.2').user;
+  assert.equal(A.check(split, ['GET', 'a'], 'redis-8.10.2').allowed, true);
+  assert.equal(A.check(split, ['SET', 'a', '1'], 'redis-8.10.2').allowed, true);
+  assert.equal(A.check(split, ['GETSET', 'a', '1'], 'redis-8.10.2').allowed, false);
+  // 30,000 keys with no separator: quick, and a note that it's a long list.
+  const lines = [];
+  for (let i = 0; i < 30000; i++) lines.push(['GET', 'key' + i]);
+  const t = Date.now();
+  const r = A.build(lines, 'redis-8.10.2', { keys: 'exact' });
+  assert.ok(Date.now() - t < 20000, 'took ' + (Date.now() - t) + ' ms');
+  assert.equal(r.keys.length, 30000);
+  assert.equal(r.manyPatterns, 30000);
+  assert.ok(r.check.every((c) => c.allowed));
+  // A long file of NULs with no newline: each piece of it is dropped.
+  const t2 = Date.now();
+  assert.equal(A.loadFile('user a on' + '\0'.repeat(20000000), 'redis-8.10.2').ok, true);
+  assert.ok(Date.now() - t2 < 3000, 'took ' + (Date.now() - t2) + ' ms');
+});
+
+test('the ACL file line of a draft with no password', () => {
+  const r = A.build([['GET', 'k']], 'redis-8.10.2');
+  assert.equal(r.placeholder, true);
+  assert.equal(r.aclfile, 'user app on #<sha256-of-your-password> %R~k resetchannels -@all +get');
+  // ACL LOAD refuses it (Redis 6.2 and 7.2 and Valkey 9.1 do the same).
+  for (const id of ['redis-6.2.24', 'redis-8.10.2', 'valkey-9.1.2']) {
+    assert.match(A.loadFile(r.aclfile + '\n', id).error, /users\.acl:1: The password hash must be exactly 64 characters and contain only lowercase hexadecimal characters/, id);
+  }
+  const p = A.build([['GET', 'k']], 'redis-8.10.2', { password: 's3cret' });
+  assert.equal(p.placeholder, false);
+  assert.equal(p.aclfile, 'user app on #' + A.sha256hex('s3cret') + ' %R~k resetchannels -@all +get');
+});
+
+test('rules as people write them: a password hash on its own line', () => {
+  const hash = A.sha256hex('password');
+  const r = A.readRules('ACL SETUSER app on\n# a comment\n#' + hash + '\n~app:* +get', 'redis-8.10.2');
+  assert.deepEqual(r.users[0], { name: 'app', args: ['on', '#' + hash, '~app:*', '+get'], line: 1 });
+});
+
+test('the command line refuses what it can\'t read', () => {
+  const c = cli();
+  const two = (args, re) => { const r = c.run(args); assert.equal(r.status, 2, args.join(' ') + ': ' + r.stdout + r.stderr); if (re) assert.match(r.stderr, re); };
+  two(['explain', 'on', '--nmae', 'x'], /Unknown option --nmae/);
+  two(['keys'], /Give a command/);
+  two(['check', 'on', 'nopass', '+@all', '--'], /Give a command after --/);
+  two(['check', 'on', 'nopass', '+@all'], /Give a command after --/);
+  two(['check', 'on', '--db', 'abc', '--', 'GET', 'k'], /--db takes a database number/);
+  two(['explain', 'on', '--pubsub-default', 'nope'], /--pubsub-default takes allchannels or resetchannels/);
+  two(['explain', 'on', '--file', 'x.acl']);
+  two(['build'], /Give a file of MONITOR output/);
+  const mon = c.file('m.txt', '1.1 [0 10.0.0.7:1] "GET" "k"\n');
+  two(['build', mon, '--client', '10.0.0.8:1'], /No line comes from 10\.0\.0\.8:1\. The clients: 10\.0\.0\.7:1\./);
+  two(['build', mon, '--client', 'lua'], /lua isn't a client/);
+  two(['explain', '--file', c.file('nosuch.dir', '') + '/x']);
+  // An argument the server takes as one rule stays one: a password with a space.
+  let r = c.run(['explain', '>pass word']);
+  assert.equal(r.status, 0, r.stdout);
+  assert.match(r.stdout, new RegExp('#' + A.sha256hex('pass word') + ' '));
+  r = c.run(['explain', 'on nopass ~app:* +@read']);
+  assert.match(r.stdout, /^user user on nopass sanitize-payload ~app:\* resetchannels -@all \+@read$/m);
+  r = c.run(['explain', 'ACL SETUSER web on nopass', '--name', 'api']);
+  assert.match(r.stdout, /^user api on nopass/m);
+  c.done();
+});

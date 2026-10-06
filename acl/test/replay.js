@@ -133,28 +133,12 @@ function exitOf(text) {
 }
 
 function replayConfig(vid, cases, out) {
-  const K = require('../../config/config.js');
   for (const c of cases) {
     const where = 'config ' + JSON.stringify(c.config);
-    const lines = c.config.split('\n').slice(0, -1);
-    // The user lines, split the way the config loader splits them.
-    let fatal = null;
-    const users = [];
-    const seen = new Set();
-    let aclfile = false, pubsub = null;
-    const state = {};
-    lines.forEach((text, i) => {
-      if (fatal) return;
-      const argv = A.splitArgs(text, A.getVersion(vid).f.split);
-      if (argv[0] === 'aclfile') aclfile = true;
-      if (argv[0] === 'acl-pubsub-default') pubsub = argv[1];
-      if (argv[0] !== 'user') return;
-      if (!/^redis-6\./.test(vid) && seen.has(argv[1])) { fatal = { line: i + 1, message: 'Error in user declaration \'' + A._internal.cstr(argv[1]) + '\': Duplicate user found. A user can only be defined once in config files' }; return; }
-      const e = A.checkUserLine(argv, vid, { pubsubDefault: pubsub, state: state });
-      if (e) { fatal = { line: i + 1, message: e }; return; }
-      seen.add(argv[1]);
-      users.push(argv);
-    });
+    // The file read the way the server reads it: user lines, acl-pubsub-default
+    // and aclfile in their order, then the users at startup.
+    const r = A.loadConfig(c.config, vid);
+    const fatal = r.fatal ? { line: r.fatal.line, message: r.fatal.message } : null;
     if (c.exit !== undefined) {
       const want = exitOf(c.exit);
       if (want.fatal) {
@@ -163,20 +147,17 @@ function replayConfig(vid, cases, out) {
         continue;
       }
       if (fatal) { out.push(where + ': server stops at startup ' + JSON.stringify(want.log) + '; acl.js says ' + JSON.stringify(fatal)); continue; }
-      if (aclfile) continue;
-      const r = A.startupUsers(users, vid, { pubsubDefault: pubsub });
-      const mine = r.log || [];
+      const mine = r.startup ? r.startup.log : [];
       if (JSON.stringify(mine) !== JSON.stringify(want.log)) out.push(where + ':\n  server:  ' + JSON.stringify(want.log) + '\n  acl.js:  ' + JSON.stringify(mine));
       continue;
     }
     if (fatal) { out.push(where + ': server starts; acl.js says ' + JSON.stringify(fatal)); continue; }
-    const r = A.startupUsers(users, vid, { pubsubDefault: pubsub });
-    if (r.log) { out.push(where + ': server starts; acl.js says it stops with ' + JSON.stringify(r.log)); continue; }
+    if (r.startup) { out.push(where + ': server starts; acl.js says it stops with ' + JSON.stringify(r.startup.log)); continue; }
     if (c.crash) {
-      if (!listAll(r.users, vid).some((l) => l && l.crash)) out.push(where + ': server crashed listing users: ' + c.crash + '; acl.js lists them');
+      if (!listAll(r.all, vid).some((l) => l && l.crash)) out.push(where + ': server crashed listing users: ' + c.crash + '; acl.js lists them');
       continue;
     }
-    const mine = listAll(r.users, vid).map((l) => canonical(l, vid));
+    const mine = listAll(r.all, vid).map((l) => canonical(l, vid));
     const theirs = (Array.isArray(c.list) ? c.list : []).map((l) => canonical(l, vid));
     if (JSON.stringify(mine) !== JSON.stringify(theirs)) out.push(where + ':\n  server:  ' + JSON.stringify(theirs) + '\n  acl.js:  ' + JSON.stringify(mine));
   }

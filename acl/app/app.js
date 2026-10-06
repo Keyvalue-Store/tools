@@ -29,7 +29,7 @@
     info: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="currentColor" opacity=".15"/><path d="M10 9v5M10 6v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
   };
   function verdict(kind, title, body) {
-    const box = el('div', { class: 'verdict ' + kind, role: kind === 'bad' ? 'alert' : 'status' });
+    const box = el('div', { class: 'verdict ' + kind });
     box.innerHTML = ICONS[kind];
     const p = el('div');
     p.append(el('p', null, [el('strong', { text: title })]));
@@ -37,11 +37,12 @@
     box.append(p);
     return box;
   }
+  // headers: text, or { sr: text } for a column with no visible heading.
   function table(headers, rows, cls) {
     const wrap = el('div', { class: 'table-wrap' });
     const t = el('table', { class: cls || '' });
     const tr = el('tr');
-    for (const h of headers) tr.append(el('th', { scope: 'col', text: h }));
+    for (const h of headers) tr.append(typeof h === 'string' ? el('th', { scope: 'col', text: h }) : el('th', { scope: 'col' }, [el('span', { class: 'sr-only', text: h.sr })]));
     t.append(el('thead', null, [tr]));
     const body = el('tbody');
     for (const r of rows) {
@@ -55,14 +56,20 @@
   }
   const td = (cls, content) => ({ td: el('td', { class: cls }, [content]) });
   function debounce(fn, ms) { let t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
-  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
-  const show = (s) => (s === null || s === undefined ? '' : A.fromBinary(s));
+  const plural = (n, one, many) => n.toLocaleString('en') + ' ' + (n === 1 ? one : many);
+  // Bytes as text to read: what would hide on a screen (control
+  // characters, a byte order mark) shows as \xHH.
+  const show = (s) => (s === null || s === undefined ? '' : A.readable(s));
   const cmdline = (argv) => argv.map((a) => show(A.quote(a))).join(' ');
-  // A block of text with a button that copies it.
-  function copyBlock(text) {
+  // Tables list at most this many rows.
+  const ROWS = 500;
+  // A block of text (bytes) with a button that copies it. label: the
+  // button's name for screen readers, such as "Copy the ACL SETUSER command".
+  function copyBlock(bytes, label) {
+    const text = A.fromBinary(bytes);
     const row = el('div', { class: 'copy-row' });
-    const pre = el('pre', { class: 'printed', text: text });
-    const b = el('button', { type: 'button', class: 'btn', text: 'Copy' });
+    const pre = el('pre', { class: 'printed', text: show(bytes) });
+    const b = el('button', { type: 'button', class: 'btn', text: 'Copy', 'aria-label': label });
     b.addEventListener('click', () => {
       const done = () => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, () => select(pre));
@@ -77,6 +84,31 @@
     const s = window.getSelection();
     s.removeAllRanges();
     s.addRange(r);
+  }
+
+  // ---- what screen readers hear ----
+  // Each section's result in a few words. The status line says the ones
+  // that changed, so typing that changes nothing doesn't repeat them.
+  const said = { rules: '', check: '', build: '' };
+  const pending = new Map();
+  let quiet = true, announceTimer = null;
+  function announce(part, text) {
+    if (said[part] === text) return;
+    said[part] = text;
+    if (quiet || !text) return;
+    pending.set(part, text);
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(() => { $('announce').textContent = [...pending.values()].join(' '); pending.clear(); }, 150);
+  }
+
+  // ---- the boxes' text ----
+  // A file opened into a box keeps its bytes, and the builder reads those
+  // while the box still holds the file's text: a text box can't keep every
+  // byte (one that isn't UTF-8 shows as a replacement character).
+  const opened = {};
+  function source(id) {
+    const o = opened[id];
+    return o && o.text === $(id).value ? o.bytes : $(id).value;
   }
 
   // ---- the version list ----
@@ -104,23 +136,14 @@
     if (read.kind === 'aclfile') {
       const r = A.loadFile(read.text, id, { filename: 'users.acl' });
       if (r.crash) return { kind: read.kind, users: [], crash: 'ACL LOAD crashes the server: ' + r.crash + '.' };
-      if (!r.ok) return { kind: read.kind, users: [], error: 'ERR ' + r.error, label: 'ACL LOAD' };
-      const named = new Set(read.users.map((u) => u.name));
-      return { kind: read.kind, users: [...r.users.values()].filter((u) => named.has(u.name)) };
+      if (!r.ok) return { kind: read.kind, users: [], error: 'ERR ' + r.error, label: 'ACL LOAD', lines: r.where };
+      return { kind: read.kind, users: r.declared.map((n) => r.users.get(n)) };
     }
-    // Config lines: checked as the server reads the file, then created at startup.
-    const state = {};
-    const lines = [];
-    for (const u of read.users) {
-      if (!u.name) continue;
-      const argv = [A.toBinary('user'), u.name].concat(u.args);
-      const e = A.checkUserLine(argv, id, { state: state });
-      if (e) return { kind: read.kind, users: [], error: e, label: 'Line ' + u.line + ' of the config file', fatal: true };
-      lines.push(argv);
-    }
-    const r = A.startupUsers(lines, id);
-    if (r.log) return { kind: read.kind, users: [], error: r.log.join('\n'), label: 'Startup', fatal: true };
-    return { kind: read.kind, users: lines.map((argv) => r.users.get(argv[1])) };
+    // Config lines, read the way the server reads its config file.
+    const r = A.loadConfig(read.text, id);
+    if (r.fatal) return { kind: read.kind, users: [], error: r.fatal.message, label: 'Line ' + r.fatal.line + ' of the config file', quote: r.fatal.text, fatal: true };
+    if (r.startup) return { kind: read.kind, users: [], error: r.startup.log.join('\n'), label: 'Startup', fatal: true };
+    return { kind: read.kind, users: r.users, none: !r.users.length };
   }
 
   function renderUser(u, id, out) {
@@ -129,7 +152,7 @@
     block.append(el('h3', { text: 'User ' + show(u.name) }));
     if (e.line) {
       block.append(el('p', { class: 'small muted', text: 'ACL LIST prints:' }));
-      block.append(copyBlock(show(e.line)));
+      block.append(copyBlock(e.line, 'Copy the ACL LIST line of user ' + show(u.name)));
     }
     const facts = el('dl', { class: 'facts' });
     facts.append(el('dt', { text: 'Login' }), el('dd', { text: e.login.text }));
@@ -137,7 +160,7 @@
     block.append(facts);
     e.selectors.forEach((s, i) => {
       if (e.selectors.length > 1) block.append(el('h3', { text: i === 0 ? 'Rules outside parentheses' : 'Selector ' + i + ': a second set of rules; a command may run if any set allows it' }));
-      block.append(table(['Rule', 'What it does'], s.rules.map((r) => [td('rule', show(r.rule)), r.text])));
+      block.append(table(['Rule', 'What it does'], s.rules.map((r) => [td('rule', show(r.rule)), show(r.text)])));
       const f = el('dl', { class: 'facts' });
       f.append(el('dt', { text: 'Commands' }), el('dd', null, [commandList(s)]));
       f.append(el('dt', { text: 'Keys' }), el('dd', { text: s.keysText || s.keys.map((k) => show(k.text)).join(' ') }));
@@ -154,7 +177,7 @@
   function commandList(s) {
     const c = s.commands;
     const wrap = el('div');
-    wrap.append(el('span', { text: c.text + (c.dangerous.length ? ' ' + plural(c.dangerous.length, 'of them is', 'of them are') + ' in @dangerous.' : '') + ' ' }));
+    wrap.append(el('span', { text: show(c.text) + (c.dangerous.length ? ' ' + plural(c.dangerous.length, 'of them is', 'of them are') + ' in @dangerous.' : '') + ' ' }));
     if (c.allowed && c.allowed < c.total) {
       const d = el('details');
       d.append(el('summary', { text: 'Which' }));
@@ -171,33 +194,58 @@
     const out = $('rules-result');
     out.textContent = '';
     const text = $('rules').value;
+    const src = source('rules');
     const id = select$.value;
     $('db-box').classList.toggle('hidden', !A.getVersion(id).f.dbPerms);
     users = [];
     if (!text.trim()) {
       out.append(verdict('info', 'Paste a user\'s rules above', 'Or try an example.'));
+      announce('rules', '');
       fillUsers();
       runCheck();
       return;
     }
     let r;
-    try { r = apply(text, id, $('kind').value); } catch (err) {
+    try { r = apply(src, id, $('kind').value); } catch (err) {
       out.append(verdict('warn', 'The builder couldn\'t read this', err.message));
+      announce('rules', 'The builder couldn\'t read the rules.');
+      fillUsers();
+      runCheck();
       return;
     }
-    if (r.crash) out.append(verdict('bad', label(id) + ' crashes', r.crash));
-    else if (r.error) {
+    let summary;
+    if (r.crash) {
+      out.append(verdict('bad', label(id) + ' crashes', r.crash));
+      summary = label(id) + ' crashes.';
+    } else if (r.error) {
       out.append(verdict('bad', label(id) + (r.fatal ? ' stops' : ' refuses the rules'), r.label ? r.label + ' gets:' : null));
-      out.append(el('pre', { class: 'printed', text: (r.fatal ? '' : '(error) ') + show(r.error) }));
+      // As the server prints it, with the line it was reading.
+      const printed = (r.quote != null ? '>>> \'' + show(r.quote) + '\'\n' : '') + (r.fatal ? '' : '(error) ') + r.error.split('\n').map(show).join('\n');
+      out.append(el('pre', { class: 'printed', text: printed }));
+      if (r.lines && r.lines.length) {
+        out.append(el('p', { class: 'small muted', text: r.lines.length === 1 ? 'The line it names, as the server reads it:' : 'The lines it names, as the server reads them:' }));
+        out.append(el('pre', { class: 'printed', text: r.lines.slice(0, 20).map((w) => w.line + ': ' + show(w.text)).join('\n') + (r.lines.length > 20 ? '\n...' : '') }));
+      }
+      summary = label(id) + (r.fatal ? ' stops.' : ' refuses the rules.');
+    } else if (r.none) {
+      out.append(verdict('info', 'No user lines', 'A config file declares a user with a line such as: user app on >s3cret ~app:* +@read'));
+      summary = 'No user lines.';
     } else {
       const what = r.kind === 'aclfile' ? 'ACL LOAD reads the file' : r.kind === 'config' ? 'The server starts with these user lines' : 'ACL SETUSER accepts the rules';
       out.append(verdict('ok', label(id) + ': ' + what, r.users.length > 1 ? plural(r.users.length, 'user', 'users') + '.' : null));
       for (const u of r.users) renderUser(u, id, out);
       users = r.users;
+      summary = label(id) + ': ' + what + '.';
     }
-    renderVersions(text, id, out);
+    renderVersions(src, id, out);
+    announce('rules', summary);
     fillUsers();
     runCheck();
+  }
+  // Everything that depends on the version.
+  function runAll() {
+    runRules();
+    runBuild();
   }
 
   function renderVersions(text, current, out) {
@@ -210,17 +258,17 @@
       try { r = apply(text, v.id, $('kind').value); } catch (e) { r = { error: e.message }; }
       let what;
       if (r.crash) what = td('no', 'crashes: ' + r.crash);
-      else if (r.error) what = td('no', show(r.error).split('\n')[0]);
+      else if (r.error) what = td('no', show(r.error.split('\n')[0]));
       else {
         const lines = listed(r, v.id);
         const crash = lines.find((l) => l.crash);
         const same = v.id !== current && lines.map((l) => l.line).join('\n') === here;
         what = crash ? td('no', 'accepts the rules; ACL LIST then crashes the server')
           : same ? td('yes', 'the same as ' + label(current))
-          : td('yes', lines.length === 1 ? show(lines[0].line) : 'accepts them');
+          : td('yes', lines.length === 1 ? show(lines[0].line) : r.none ? 'no user lines' : 'accepts them');
       }
       const pick = el('button', { type: 'button', class: 'linkish', text: v.label });
-      pick.addEventListener('click', () => { select$.value = v.id; runRules(); $('h-rules').scrollIntoView({ behavior: 'smooth' }); });
+      pick.addEventListener('click', () => { select$.value = v.id; runAll(); $('h-rules').scrollIntoView({ behavior: 'smooth' }); });
       return { cls: v.id === current ? 'on' : '', cells: [pick, what] };
     });
     out.append(table(['Version', 'What it does'], rows, 'versions-table'));
@@ -234,14 +282,15 @@
     sel.textContent = '';
     users.forEach((u, i) => sel.append(el('option', { value: String(i), text: show(u.name) })));
     // The same users keep the one picked; otherwise the first that isn't default.
-    const first = Math.max(0, users.findIndex((u) => show(u.name) !== 'default'));
+    const first = Math.max(0, users.findIndex((u) => u.name !== 'default'));
     sel.value = names === shownNames && keep ? keep : String(first);
     shownNames = names;
     $('user-box').classList.toggle('hidden', users.length < 2);
   }
 
   // ---- checking commands ----
-  function reasonText(r) {
+  function reasonText(r, id) {
+    if (r.reason === 'crash') return 'Checking it crashes ' + label(id) + ': ' + r.crash + '.';
     if (r.allowed) return r.selectors.length > 1 ? (r.selector > 0 ? 'Selector ' + r.selector + ' allows it.' : 'The rules outside parentheses allow it.') : 'Allowed.';
     if (r.reason === 'command') return 'The user may not run ' + r.command.replace('|', ' ').toUpperCase() + '.';
     if (r.reason === 'key') {
@@ -256,75 +305,143 @@
   function runCheck() {
     const out = $('check-result');
     out.textContent = '';
+    try { checkInto(out); } catch (err) {
+      out.textContent = '';
+      out.append(verdict('warn', 'The builder couldn\'t check these', err.message));
+      announce('check', 'The builder couldn\'t check the commands.');
+    }
+  }
+  function checkInto(out) {
     const text = $('commands').value;
-    if (!text.trim()) return;
+    if (!text.trim()) { announce('check', ''); return; }
     const u = users[Number($('user').value) || 0];
-    if (!u) { out.append(verdict('info', 'No user to check against', 'The rules above have to work first.')); return; }
+    if (!u) {
+      out.append(verdict('info', 'No user to check against', 'The rules above have to work first.'));
+      announce('check', 'No user to check the commands against.');
+      return;
+    }
     const id = select$.value;
-    const entries = A.parseMonitor(text);
+    const entries = A.parseMonitor(source('commands'));
+    if (!entries.length) {
+      out.append(verdict('info', 'No commands found', 'One command per line.'));
+      announce('check', 'No commands found.');
+      return;
+    }
     const db = Number($('db').value) || 0;
-    let denied = 0;
-    const rows = entries.map((e) => {
-      const r = A.check(u, e.argv, id, { db: e.db != null ? e.db : db });
-      const bad = !r.allowed || !!r.reply;
-      if (!r.allowed) denied++;
-      const status = r.command === null ? td('status warn', 'unknown') : r.allowed ? (r.reply ? td('status warn', 'allowed') : td('status ok', 'allowed')) : td('status bad', 'denied');
-      const dry = r.dryrun ? (r.dryrun.error ? '(error) ERR ' + show(r.dryrun.error) : show(r.dryrun.reply)) : '(6.2 has no ACL DRYRUN)';
-      const reply = r.reply ? '(error) ' + show(r.reply.error) : 'runs';
-      return { cls: bad && !r.allowed ? 'bad' : '', cells: [td('mono cmd', cmdline(e.argv)), status, r.command === null || (!r.allowed && !r.reason) ? '' : reasonText(r), td('mono', dry), td('mono', reply)] };
-    });
-    if (!entries.length) { out.append(verdict('info', 'No commands found', 'One command per line.')); return; }
-    out.append(verdict(denied ? 'bad' : 'ok', denied ? plural(denied, 'command is', 'commands are') + ' refused' : (entries.length === 1 ? 'The user may run it' : 'The user may run all ' + entries.length),
-      'User ' + show(u.name) + ' on ' + label(id) + '.'));
-    out.append(table(['Command', '', 'Why', 'ACL DRYRUN replies', 'The command gets'], rows));
+    const results = entries.map((e) => ({ e: e, r: A.check(u, e.argv, id, { db: e.db != null ? e.db : db }) }));
+    const denied = results.filter((x) => !x.r.allowed).length;
+    const title = denied ? plural(denied, 'command is', 'commands are') + ' refused' : (entries.length === 1 ? 'The user may run it' : 'The user may run all ' + entries.length.toLocaleString('en'));
+    out.append(verdict(denied ? 'bad' : 'ok', title, 'User ' + show(u.name) + ' on ' + label(id) + '.'));
+    announce('check', title + '.');
+    // Too many lines to list: only those refused or with an error.
+    const problem = (x) => !x.r.allowed || !!x.r.reply;
+    const many = results.length > ROWS;
+    const shown = many ? results.filter(problem) : results;
+    const row = (x) => {
+      const r = x.r;
+      const status = r.reason === 'crash' ? td('status bad', 'crashes') : r.command === null ? td('status warn', 'unknown')
+        : r.allowed ? (r.reply ? td('status warn', 'allowed') : td('status ok', 'allowed')) : td('status bad', 'denied');
+      const dry = r.dryrun ? (r.dryrun.crash ? 'crashes the server' : r.dryrun.error ? '(error) ERR ' + show(r.dryrun.error) : show(r.dryrun.reply)) : '(6.2 has no ACL DRYRUN)';
+      const reply = r.reply ? (r.reply.crash ? 'crashes the server' : '(error) ' + show(r.reply.error)) : 'runs';
+      const cells = [td('mono cmd', cmdline(x.e.argv)), status, r.command === null || (!r.allowed && !r.reason) ? '' : reasonText(r, id), td('mono', dry), td('mono', reply)];
+      return { cls: problem(x) && !r.allowed ? 'bad' : '', cells: many ? [td('num', String(x.e.line))].concat(cells) : cells };
+    };
+    const headers = ['Command', { sr: 'Verdict' }, 'Why', 'ACL DRYRUN replies', 'The command gets'];
+    if (shown.length) out.append(table(many ? ['Line'].concat(headers) : headers, shown.slice(0, ROWS).map(row)));
+    if (many) {
+      const n = shown.length.toLocaleString('en');
+      out.append(el('p', { class: 'small muted', text: plural(results.length, 'line', 'lines') + ' are too many to list. ' +
+        (shown.length > ROWS ? 'The table lists the first ' + ROWS + ' of the ' + n + ' that are refused or get an error.'
+          : shown.length > 1 ? 'The table lists the ' + n + ' that are refused or get an error.'
+          : shown.length ? 'The table lists the one that is refused or gets an error.' : 'None of them is refused or gets an error.') }));
+    }
   }
 
   // ---- drafting a user ----
+  // A pattern that ends in a * that isn't escaped covers more names.
+  const endsInStar = (p) => /(^|[^\\])(\\\\)*\*$/.test(p);
+  let shownClients = [];
   function runBuild() {
     const out = $('build-result');
     out.textContent = '';
+    try { buildInto(out); } catch (err) {
+      out.textContent = '';
+      out.append(verdict('warn', 'The builder couldn\'t draft a user from this', err.message));
+      announce('build', 'The builder couldn\'t draft a user.');
+    }
+  }
+  function buildInto(out) {
     const text = $('monitor').value;
-    if (!text.trim()) return;
-    const id = select$.value;
-    const entries = A.parseMonitor(text);
-    const clients = [...new Set(entries.map((e) => e.client).filter(Boolean))];
     const sel = $('client');
-    const keep = sel.value;
+    if (!text.trim()) {
+      shownClients = [];
+      sel.textContent = '';
+      $('client-box').classList.add('hidden');
+      announce('build', '');
+      return;
+    }
+    const id = select$.value;
+    const entries = A.parseMonitor(source('monitor'));
+    // lua isn't a client: those are the commands of a script, and they go
+    // with the client that ran it.
+    const clients = [...new Set(entries.map((e) => e.client).filter((c) => c && c !== 'lua'))];
+    const keep = sel.value === '' ? null : shownClients[Number(sel.value)];
     sel.textContent = '';
     sel.append(el('option', { value: '', text: 'All of them (' + clients.length + ')' }));
-    for (const c of clients) sel.append(el('option', { value: c, text: c }));
-    if (clients.includes(keep)) sel.value = keep;
+    clients.forEach((c, i) => sel.append(el('option', { value: String(i), text: show(c) })));
+    const at = keep == null ? -1 : clients.indexOf(keep);
+    sel.value = at < 0 ? '' : String(at);
+    shownClients = clients;
     $('client-box').classList.toggle('hidden', clients.length < 2);
-    if (!entries.length) { out.append(verdict('info', 'No commands found', 'Paste what MONITOR printed, or commands one per line.')); return; }
+    if (!entries.length) {
+      out.append(verdict('info', 'No commands found', 'Paste what MONITOR printed, or commands one per line.'));
+      announce('build', 'No commands found.');
+      return;
+    }
     const name = A.toBinary($('name').value.trim() || 'app');
-    const b = A.build(entries, id, { name: name, keys: $('keys-mode').value, client: sel.value || null });
-    if (b.error) { out.append(verdict('bad', 'The draft doesn\'t work on ' + label(id), show(b.error))); return; }
+    const exact = $('keys-mode').value === 'exact';
+    const b = A.build(entries, id, { name: name, keys: exact ? 'exact' : 'prefix', client: at < 0 ? null : clients[at] });
+    if (b.error) {
+      out.append(verdict('bad', 'The draft doesn\'t work on ' + label(id), show(b.error)));
+      announce('build', 'The draft doesn\'t work on ' + label(id) + '.');
+      return;
+    }
     const denied = b.check.filter((c) => !c.allowed);
+    const wider = b.keys.concat(b.channels).some(endsInStar);
     out.append(verdict(denied.length ? 'warn' : 'ok', 'A user for ' + label(id),
-      (denied.length ? plural(denied.length, 'line is', 'lines are') + ' still refused.' : 'Every line it read is allowed with these rules, and nothing else.') + ' ' +
+      (denied.length ? plural(denied.length, 'line is', 'lines are') + ' still refused.' : 'Every line it read is allowed with these rules.' + (wider ? ' Patterns that end in * also cover other keys or channels that start the same way.' : '')) + ' ' +
       plural(b.commands.length, 'command', 'commands') + ', ' + plural(b.keys.length, 'key pattern', 'key patterns') + ', ' + plural(b.channels.length, 'channel pattern', 'channel patterns') + '.'));
+    announce('build', 'A user for ' + label(id) + ': ' + (denied.length ? plural(denied.length, 'line is', 'lines are') + ' still refused.' : 'every line it read is allowed.'));
     out.append(el('p', { class: 'small muted', text: 'Run this, after you put a long random password in place of CHANGE-ME (ACL GENPASS makes one):' }));
-    out.append(copyBlock(show(b.setuser)));
-    out.append(el('p', { class: 'small muted', text: 'Or put this line in the ACL file. It holds the password\'s SHA-256, so make it from your own password: run the ACL SETUSER above, then copy the line ACL LIST prints.' }));
-    out.append(copyBlock(show(b.aclfile)));
+    out.append(copyBlock(b.setuser, 'Copy the ACL SETUSER command'));
+    out.append(el('p', { class: 'small muted', text: 'Or put this line in the ACL file. First put the SHA-256 of your password in place of <sha256-of-your-password>: ACL LOAD refuses the line until you do. Or run the ACL SETUSER above and copy the line ACL LIST prints, which has the hash in it.' }));
+    out.append(copyBlock(b.aclfile, 'Copy the ACL file line'));
     const actions = el('div', { class: 'row' });
     const explain = el('button', { type: 'button', class: 'btn', text: 'Explain this user above' });
     explain.addEventListener('click', () => {
-      $('rules').value = show(b.setuser);
+      $('rules').value = A.fromBinary(b.setuser);
       $('kind').value = 'auto';
       runRules();
       $('h-rules').scrollIntoView({ behavior: 'smooth' });
     });
     actions.append(explain);
     out.append(actions);
+    if (b.manyPatterns) {
+      out.append(verdict('warn', 'A long list of patterns', 'The draft has ' + b.manyPatterns.toLocaleString('en') + ' key and channel patterns. The server tries them one by one for each key or channel a command names, so a list this long slows every command down. ' +
+        (exact ? 'One pattern per prefix keeps the list short.' : 'Keys with no separator such as : get a pattern each.')));
+    }
     out.append(el('h3', { text: 'What the client did' }));
-    out.append(table(['Command', 'Times'], b.commands.map((c) => [td('mono', c.command), td('num', String(c.count))])));
+    out.append(table(['Command', 'Times'], b.commands.map((c) => [td('mono', c.command), td('num', c.count.toLocaleString('en'))])));
     if (b.approximate) out.append(verdict('info', 'Some names have spaces', 'ACL patterns can\'t hold spaces, so ? stands in for each one. The pattern also matches the same name with another character there.'));
-    if (denied.length) out.append(table(['Line', 'Still refused', 'Why'], denied.map((c) => [td('num', String(c.line || '')), td('mono', cmdline(c.argv)), c.reason])));
+    if (denied.length) {
+      out.append(table(['Line', 'Still refused', 'Why'], denied.slice(0, ROWS).map((c) => [td('num', String(c.line || '')), td('mono', cmdline(c.argv)), c.reason])));
+      if (denied.length > ROWS) out.append(el('p', { class: 'small muted', text: 'The table lists the first ' + ROWS + ' of ' + plural(denied.length, 'line', 'lines') + '.' }));
+    }
     if (b.skipped.length) {
       const d = el('details');
       d.append(el('summary', { text: plural(b.skipped.length, 'line', 'lines') + ' left out' }));
-      d.append(table(['Line', 'Text', 'Why'], b.skipped.map((s) => [td('num', String(s.line || '')), td('mono', cmdline(s.argv)), s.reason])));
+      d.append(table(['Line', 'Text', 'Why'], b.skipped.slice(0, ROWS).map((s) => [td('num', String(s.line || '')), td('mono', cmdline(s.argv)), s.reason])));
+      if (b.skipped.length > ROWS) d.append(el('p', { class: 'small muted', text: 'The table lists the first ' + ROWS + '.' }));
       out.append(d);
     }
   }
@@ -350,6 +467,7 @@
       '1759734012.309322 [0 10.0.0.7:52310] "PUBLISH" "events:login" "42"',
       '1759734012.401220 [0 10.0.0.9:41002] "LPUSH" "jobs:email" "{\\"to\\":42}"',
       '1759734012.512881 [0 10.0.0.9:41002] "BRPOP" "jobs:email" "jobs:sms" "5"',
+      '1759734012.600110 [0 10.0.0.7:52310] "EVALSHA" "8f3a2c6e4b1d0a9f7e5c3b1a2d4f6e8c0b9a7d5e" "1" "user:42:last_seen" "1759734012"',
       '1759734012.600114 [0 lua] "SET" "user:42:last_seen" "1759734012"'
     ]
   };
@@ -366,32 +484,76 @@
   $('ex-monitor').addEventListener('click', () => example('monitor'));
 
   // ---- files ----
-  function openInto(input, f, then) {
+  const LIMIT = 32 * 1024 * 1024;
+  const BOXES = {
+    rules: { run: () => runRules(), result: 'rules-result', part: 'rules' },
+    commands: { run: () => runCheck(), result: 'check-result', part: 'check' },
+    monitor: { run: () => runBuild(), result: 'build-result', part: 'build' }
+  };
+  // Reads a file into a box, as bytes: a byte order mark stays.
+  function openInto(id, f) {
     if (!f) return;
-    if (f.size > 32 * 1024 * 1024) return;
-    f.text().then((t) => { input.value = t; then(); });
-  }
-  function dropTarget(area, then) {
-    area.addEventListener('dragover', (e) => { e.preventDefault(); area.classList.add('over'); });
-    area.addEventListener('dragleave', () => area.classList.remove('over'));
-    area.addEventListener('drop', (e) => {
-      e.preventDefault();
-      area.classList.remove('over');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) openInto(area, e.dataTransfer.files[0], then);
-    });
+    const box = BOXES[id];
+    const problem = (kind, title, text) => {
+      const out = $(box.result);
+      out.textContent = '';
+      out.append(verdict(kind, title, text));
+      announce(box.part, title + '.');
+    };
+    if (f.size > LIMIT) {
+      problem('warn', 'That file is too big', 'It is ' + Math.round(f.size / 1048576).toLocaleString('en') + ' MiB. The page opens files up to 32 MiB; the command line reads bigger ones.');
+      return;
+    }
+    f.arrayBuffer().then((buf) => {
+      const bytes = new Uint8Array(buf);
+      $(id).value = new TextDecoder('utf-8', { ignoreBOM: true }).decode(bytes);
+      opened[id] = { text: $(id).value, bytes: bytes };
+      box.run();
+    }, (err) => problem('bad', 'The browser could not read this file', err && err.message ? err.message : String(err)));
   }
   $('open-rules').addEventListener('click', () => $('file-rules').click());
-  $('file-rules').addEventListener('change', () => openInto($('rules'), $('file-rules').files[0], runRules));
+  $('file-rules').addEventListener('change', (e) => { openInto('rules', e.target.files[0]); e.target.value = ''; });
   $('open-monitor').addEventListener('click', () => $('file-monitor').click());
-  $('file-monitor').addEventListener('change', () => openInto($('monitor'), $('file-monitor').files[0], runBuild));
-  dropTarget($('rules'), runRules);
-  dropTarget($('monitor'), runBuild);
+  $('file-monitor').addEventListener('change', (e) => { openInto('monitor', e.target.files[0]); e.target.value = ''; });
+
+  // A file dropped anywhere on the page goes into the box under it, or the
+  // box of the section it's in, or the rules box. Dragged text is left to
+  // the browser.
+  const carriesFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  function boxFor(target) {
+    const node = target && target.nodeType === 1 ? target : target && target.parentElement;
+    const area = node && node.closest('textarea');
+    if (area && BOXES[area.id]) return area.id;
+    const section = node && node.closest('section');
+    if (section) for (const id of Object.keys(BOXES)) if (section.contains($(id))) return id;
+    return 'rules';
+  }
+  let over = null;
+  function highlight(id) {
+    if (over === id) return;
+    if (over) $(over).classList.remove('over');
+    over = id;
+    if (id) $(id).classList.add('over');
+  }
+  window.addEventListener('dragover', (e) => {
+    if (!carriesFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    highlight(boxFor(e.target));
+  });
+  window.addEventListener('dragleave', (e) => { if (!e.relatedTarget) highlight(null); });
+  window.addEventListener('drop', (e) => {
+    if (!carriesFiles(e)) return;
+    e.preventDefault();
+    highlight(null);
+    openInto(boxFor(e.target), e.dataTransfer.files[0]);
+  });
 
   $('rules').addEventListener('input', debounce(runRules, 250));
   $('commands').addEventListener('input', debounce(runCheck, 250));
   $('monitor').addEventListener('input', debounce(runBuild, 300));
   for (const id of ['name', 'keys-mode', 'client']) $(id).addEventListener(id === 'name' ? 'input' : 'change', debounce(runBuild, 200));
-  select$.addEventListener('change', () => { runRules(); runBuild(); });
+  select$.addEventListener('change', runAll);
   $('kind').addEventListener('change', runRules);
   $('user').addEventListener('change', runCheck);
   $('db').addEventListener('input', debounce(runCheck, 200));
@@ -399,4 +561,5 @@
   $('commands').value = 'GET app:42\nSET app:42 hello\nGET config:theme\nSET config:theme dark\nKEYS *\nPUBLISH events:signup 42\nFLUSHALL';
   example('app');
   example('monitor');
+  quiet = false;
 })();

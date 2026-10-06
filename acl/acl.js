@@ -366,72 +366,113 @@
   // ---- glob patterns, as stringmatchlen() matches them ----
 
   // Keys and channels against ACL patterns: case-sensitive, byte by byte.
-  // Redis 7.0 has no limit on how deep * recursion goes; the others give up
-  // (no match) past 1000 levels.
+  // The servers call stringmatchlen_impl() again for what follows each *.
+  // This takes the same steps with a stack of its own, so a deep pattern
+  // can't overflow JavaScript's. The servers give up (no match) past 1000
+  // levels, except Redis 7.0: it has no limit, and past about 87,000
+  // levels (with the usual 8 MB stack) it runs out of stack and crashes,
+  // which throws a Crash here.
+  const CRASH_DEPTH = 87000;
   function globMatch(pattern, string, nesting) {
-    const st = { skip: false };
-    return matchImpl(pattern, 0, pattern.length, string, 0, string.length, st, 0, nesting);
-  }
-  function matchImpl(p, pi, plen, s, si, slen, st, depth, limit) {
-    if (limit && depth > 1000) return false;
-    const at = (i) => (i < p.length ? p[i] : '\0');
-    while (plen && slen) {
-      const c = at(pi);
-      if (c === '*') {
-        while (plen && at(pi + 1) === '*') { pi++; plen--; }
-        if (plen === 1) return true;
-        while (slen) {
-          if (matchImpl(p, pi + 1, plen - 1, s, si, slen, st, depth + 1, limit)) return true;
-          if (st.skip) return false;
-          si++; slen--;
+    const p = pattern, s = string, n = p.length;
+    const at = (i) => (i < n ? p[i] : '\0');
+    let skip = false, result = false;
+    // For each * that is trying the rest of the pattern: where it is, where
+    // the string is, and how deep.
+    const stack = [];
+    let pi = 0, plen = n, si = 0, slen = s.length, depth = 0;
+    next: for (;;) {
+      // One call: it ends with a result, or starts the next call at a *.
+      call: {
+        if (nesting ? depth > 1000 : depth > CRASH_DEPTH) {
+          if (!nesting) throw new Crash('a stack overflow while it matches a key or channel against a pattern with more than ' + CRASH_DEPTH + ' levels of *');
+          result = false;
+          break call;
         }
-        st.skip = true;
-        return false;
-      } else if (c === '?') {
-        si++; slen--;
-      } else if (c === '[') {
-        pi++; plen--;
-        const not = at(pi) === '^';
-        if (not) { pi++; plen--; }
-        let match = false;
-        for (;;) {
-          if (at(pi) === '\\' && plen >= 2) {
+        while (plen && slen) {
+          const c = at(pi);
+          if (c === '*') {
+            while (plen && at(pi + 1) === '*') { pi++; plen--; }
+            if (plen === 1) { result = true; break call; }
+            stack.push(pi, plen, si, slen, depth);
+            pi++; plen--; depth++;
+            continue next;
+          } else if (c === '?') {
+            si++; slen--;
+          } else if (c === '[') {
             pi++; plen--;
-            if (at(pi) === s[si]) match = true;
-          } else if (at(pi) === ']') {
-            break;
-          } else if (plen === 0) {
-            pi--; plen++;
-            break;
-          } else if (plen >= 3 && at(pi + 1) === '-') {
-            let start = signedChar(at(pi)), end = signedChar(at(pi + 2));
-            const ch = signedChar(s[si]);
-            if (start > end) { const t = start; start = end; end = t; }
-            pi += 2; plen -= 2;
-            if (ch >= start && ch <= end) match = true;
-          } else if (at(pi) === s[si]) {
-            match = true;
+            const not = at(pi) === '^';
+            if (not) { pi++; plen--; }
+            let match = false;
+            for (;;) {
+              if (at(pi) === '\\' && plen >= 2) {
+                pi++; plen--;
+                if (at(pi) === s[si]) match = true;
+              } else if (at(pi) === ']') {
+                break;
+              } else if (plen === 0) {
+                pi--; plen++;
+                break;
+              } else if (plen >= 3 && at(pi + 1) === '-') {
+                let start = signedChar(at(pi)), end = signedChar(at(pi + 2));
+                const ch = signedChar(s[si]);
+                if (start > end) { const t = start; start = end; end = t; }
+                pi += 2; plen -= 2;
+                if (ch >= start && ch <= end) match = true;
+              } else if (at(pi) === s[si]) {
+                match = true;
+              }
+              pi++; plen--;
+            }
+            if (not) match = !match;
+            if (!match) { result = false; break call; }
+            si++; slen--;
+          } else {
+            if (c === '\\' && plen >= 2) { pi++; plen--; }
+            if (at(pi) !== s[si]) { result = false; break call; }
+            si++; slen--;
           }
           pi++; plen--;
+          if (slen === 0) {
+            while (at(pi) === '*') { pi++; plen--; }
+            break;
+          }
         }
-        if (not) match = !match;
-        if (!match) return false;
-        si++; slen--;
-      } else {
-        if (c === '\\' && plen >= 2) { pi++; plen--; }
-        if (at(pi) !== s[si]) return false;
-        si++; slen--;
+        result = plen === 0 && slen === 0;
       }
-      pi++; plen--;
-      if (slen === 0) {
-        while (at(pi) === '*') { pi++; plen--; }
-        break;
+      // Back at the * that started the call: a match ends it; otherwise it
+      // tries one byte further on, until the string runs out or an earlier
+      // try showed that no later one can match.
+      while (stack.length) {
+        const top = stack.length - 5;
+        if (result || skip) { stack.length = top; continue; }
+        stack[top + 2]++;
+        stack[top + 3]--;
+        if (stack[top + 3]) {
+          pi = stack[top] + 1; plen = stack[top + 1] - 1; si = stack[top + 2]; slen = stack[top + 3]; depth = stack[top + 4] + 1;
+          continue next;
+        }
+        skip = true;
+        stack.length = top;
       }
+      return result;
     }
-    return plen === 0 && slen === 0;
   }
   // A pattern that matches this exact string and nothing else.
   const globEscape = (s) => s.replace(/[*?[\]\\]/g, (c) => '\\' + c);
+  // The one string a pattern matches when it has no wildcard (*, ? or [;
+  // a backslash only makes the byte after it plain), or null.
+  function literalOf(p) {
+    if (!/[*?[\\]/.test(p)) return p;
+    let out = '';
+    for (let i = 0; i < p.length; i++) {
+      const c = p[i];
+      if (c === '*' || c === '?' || c === '[') return null;
+      if (c === '\\' && i + 1 < p.length) i++;
+      out += p[i];
+    }
+    return out;
+  }
 
   // ---- users ----
   // A user is flags, password hashes and a list of selectors; the first,
@@ -443,6 +484,37 @@
   // in Valkey 9.1, the databases.
 
   const R_PERM = 1, W_PERM = 2;
+
+  // Indexes of a selector's key patterns and channels, so that adding one
+  // or checking a name doesn't read the whole list each time. Patterns
+  // with no wildcard are found by the one name each matches; the others
+  // stay in their order, with their place in the list. An index belongs to
+  // one list: a list that's replaced or copied gets a new one.
+  const INDEXES = new WeakMap();
+  function patternIndex(list) {
+    let ix = INDEXES.get(list);
+    if (!ix || ix.n !== list.length) {
+      ix = { n: 0, byPattern: new Map(), exact: new Map(), globs: [] };
+      INDEXES.set(list, ix);
+      for (const e of list) indexPattern(ix, e);
+    }
+    return ix;
+  }
+  // e: { p, f } for a key pattern, or a channel pattern's text.
+  function indexPattern(ix, e) {
+    const at = ix.n++;
+    const p = typeof e === 'string' ? e : e.p;
+    if (!ix.byPattern.has(p)) ix.byPattern.set(p, e);
+    const lit = literalOf(p);
+    if (lit === null) ix.globs.push({ e: e, p: p, at: at });
+    else if (ix.exact.has(lit)) ix.exact.get(lit).push({ e: e, at: at });
+    else ix.exact.set(lit, [{ e: e, at: at }]);
+  }
+  function addPattern(list, e) {
+    const ix = patternIndex(list);
+    list.push(e);
+    indexPattern(ix, e);
+  }
 
   // Everything about one check: the version and the server settings ACL
   // depends on (acl-pubsub-default and databases).
@@ -627,15 +699,15 @@
       if (oplen === Infinity) return 'EINVAL';
       const pat = op.slice(offset, oplen);
       if (hasSpaces(pat)) return 'EINVAL';
-      const have = s.patterns.find((x) => x.p === pat);
-      if (have) have.f |= flags; else s.patterns.push({ p: pat, f: flags });
+      const have = patternIndex(s.patterns).byPattern.get(pat);
+      if (have) have.f |= flags; else addPattern(s.patterns, { p: pat, f: flags });
       s.allkeys = false;
     } else if (c0 === '&') {
       if (s.allchannels) return 'EISDIR';
       if (oplen === Infinity) return 'EINVAL';
       const pat = op.slice(1, oplen);
       if (hasSpaces(pat)) return 'EINVAL';
-      if (!s.channels.includes(pat)) s.channels.push(pat);
+      if (!patternIndex(s.channels).byPattern.has(pat)) addPattern(s.channels, pat);
       s.allchannels = false;
     } else if (c0 === '+' && c1 !== '@') {
       const name = cs.slice(1);
@@ -697,13 +769,13 @@
       if (s.allkeys) return 'EEXIST';
       const pat = op.slice(1, oplen);
       if (hasSpaces(pat)) return 'EINVAL';
-      if (!s.patterns.some((x) => x.p === pat)) s.patterns.push({ p: pat, f: R_PERM | W_PERM });
+      if (!patternIndex(s.patterns).byPattern.has(pat)) addPattern(s.patterns, { p: pat, f: R_PERM | W_PERM });
       s.allkeys = false;
     } else if (c0 === '&') {
       if (s.allchannels) return 'EISDIR';
       const pat = op.slice(1, oplen);
       if (hasSpaces(pat)) return 'EINVAL';
-      if (!s.channels.includes(pat)) s.channels.push(pat);
+      if (!patternIndex(s.channels).byPattern.has(pat)) addPattern(s.channels, pat);
       s.allchannels = false;
     } else if (c0 === '+' && c1 !== '@') {
       const name = cs.slice(1);
@@ -1020,14 +1092,17 @@
     return { users: users };
   }
 
-  // fgets() 1024 bytes at a time, each piece appended as a C string: a NUL
-  // byte drops the rest of its piece.
-  function readFile(s) {
+  // A file as the server reads it: fgets() a piece at a time (up to a line,
+  // and at most 1023 bytes for an ACL file, 1024 for a config file), each
+  // piece appended as a C string, so a NUL byte drops the rest of its piece.
+  function readFile(s, size) {
     if (!s.includes('\0')) return s;
     let out = '';
+    // The next newline at or after p; s.length when there's none.
+    let nl = -1;
     for (let p = 0; p < s.length;) {
-      const nl = s.indexOf('\n', p);
-      const end = Math.min(p + 1023, nl < 0 ? s.length : nl + 1);
+      if (nl < p) { nl = s.indexOf('\n', p); if (nl < 0) nl = s.length; }
+      const end = Math.min(p + size, nl < s.length ? nl + 1 : s.length);
       const piece = s.slice(p, end);
       const nul = piece.indexOf('\0');
       out += nul < 0 ? piece : piece.slice(0, nul);
@@ -1036,18 +1111,23 @@
     return out;
   }
 
-  // ACL LOAD: an ACL file, all of it or nothing. Returns { ok: true, users
-  // } (a Map by name, the default user included) or { ok: false, error }
-  // with the error ACL LOAD replies, or { crash } where the server crashes.
-  // opts.filename is the aclfile setting as the server has it.
+  // ACL LOAD: an ACL file, all of it or nothing. text: the file's bytes, or
+  // a binary string. Returns { ok: true, users, declared } (a Map by name,
+  // the default user included, and the names the file's lines declare, in
+  // their order), or { ok: false, error, where } with the error
+  // ACL LOAD replies and the lines it names ([{ line, text }]), or { crash }
+  // where the server crashes. opts.filename is the aclfile setting as the
+  // server has it.
   function loadFile(text, versionId, opts) {
     const ctx = context(versionId, opts);
     const v = ctx.v, f = ctx.f;
     const fname = cstr((opts && opts.filename) || 'users.acl');
-    const acls = readFile(typeof text === 'string' ? text : toBinary(text));
+    const acls = readFile(typeof text === 'string' ? text : toBinary(text), 1023);
     const lines = acls === '' ? [] : acls.split('\n');
     const users = new Map();
     let errors = '';
+    const where = [], declared = [], declaring = new Set();
+    const named = (linenum, line) => { if (!where.length || where[where.length - 1].line !== linenum) where.push({ line: linenum, text: line }); };
     if (f.fam === 6) {
       users.set('default', defaultUser(v.id, opts));
       const fake = createUser(ctx, '__fakeuser:0__');
@@ -1056,15 +1136,16 @@
         if (line === '') return;
         const argv = line.split(' ');
         const linenum = i + 1;
-        if (argv[0] !== 'user' || argv.length < 2) { errors += fname + ':' + linenum + ' should start with user keyword followed by the username. '; return; }
-        if (hasSpaces(argv[1])) { errors += '\'' + fname + ':' + linenum + ': username \'' + cstr(argv[1]) + '\' contains invalid characters. '; return; }
+        if (argv[0] !== 'user' || argv.length < 2) { errors += fname + ':' + linenum + ' should start with user keyword followed by the username. '; named(linenum, line); return; }
+        if (hasSpaces(argv[1])) { errors += '\'' + fname + ':' + linenum + ': username \'' + cstr(argv[1]) + '\' contains invalid characters. '; named(linenum, line); return; }
         setUserOp(ctx, fake, 'reset', -1);
         const rules = argv.slice(2).map((a) => trimSet(a, '\t\r\n'));
         for (const r of rules) {
           const e = setUserOp(ctx, fake, r, r.length);
-          if (e) errors += fname + ':' + linenum + ': ' + errorText(v, e) + '. ';
+          if (e) { errors += fname + ':' + linenum + ': ' + errorText(v, e) + '. '; named(linenum, line); }
         }
         if (errors !== '') return;
+        if (!declaring.has(argv[1])) { declaring.add(argv[1]); declared.push(argv[1]); }
         let u = users.get(argv[1]);
         if (u) setUserOp(ctx, u, 'reset', -1);
         else { u = createUser(ctx, argv[1]); users.set(argv[1], u); }
@@ -1076,14 +1157,16 @@
         if (line === '' || (f.aclFileComments && line[0] === '#')) continue;
         const argv = line.split(' ');
         const linenum = i + 1;
-        if (argv[0] !== 'user' || argv.length < 2) { errors += fname + ':' + linenum + ' should start with user keyword followed by the username. '; continue; }
-        if (hasSpaces(argv[1])) { errors += '\'' + fname + ':' + linenum + ': username \'' + cstr(argv[1]) + '\' contains invalid characters. '; continue; }
-        if (users.has(argv[1])) { errors += 'WARNING: Duplicate user \'' + cstr(argv[1]) + '\' found on line ' + linenum + '. '; continue; }
+        if (argv[0] !== 'user' || argv.length < 2) { errors += fname + ':' + linenum + ' should start with user keyword followed by the username. '; named(linenum, line); continue; }
+        if (hasSpaces(argv[1])) { errors += '\'' + fname + ':' + linenum + ': username \'' + cstr(argv[1]) + '\' contains invalid characters. '; named(linenum, line); continue; }
+        if (users.has(argv[1])) { errors += 'WARNING: Duplicate user \'' + cstr(argv[1]) + '\' found on line ' + linenum + '. '; named(linenum, line); continue; }
         const u = createUser(ctx, argv[1]);
         users.set(argv[1], u);
+        declared.push(argv[1]);
         const m = mergeSelectors(f, argv.slice(2));
         if (!m.args) {
           errors += fname + ':' + linenum + ': Unmatched parenthesis in selector definition.';
+          named(linenum, line);
           // The rules before the "(" were counted but the list is gone.
           if (m.count) return { crash: 'unmatched parenthesis after other rules (a NULL pointer)' };
           continue;
@@ -1093,14 +1176,78 @@
           r = trimSet(r, '\t\r\n');
           const e = setUserOp(ctx, u, r, r.length);
           if (!e) continue;
-          if (e === 'ENOENT') errors += fname + ':' + linenum + ': Error in applying operation \'' + cstr(r) + '\': ' + errorText(v, e) + '. ';
-          else if (!syntax) { errors += fname + ':' + linenum + ': ' + errorText(v, e) + '. '; syntax = true; }
+          if (e === 'ENOENT') { errors += fname + ':' + linenum + ': Error in applying operation \'' + cstr(r) + '\': ' + errorText(v, e) + '. '; named(linenum, line); }
+          else if (!syntax) { errors += fname + ':' + linenum + ': ' + errorText(v, e) + '. '; syntax = true; named(linenum, line); }
         }
       }
       if (errors === '' && !users.has('default')) users.set('default', defaultUser(v.id, opts));
     }
-    if (errors !== '') return { ok: false, error: errors + 'WARNING: ACL errors detected, no change to the previously active ACL rules was performed' };
-    return { ok: true, users: users };
+    if (errors !== '') return { ok: false, error: errors + 'WARNING: ACL errors detected, no change to the previously active ACL rules was performed', where: where };
+    return { ok: true, users: users, declared: declared };
+  }
+
+  // The ACL part of a config file, read the way the server reads the file:
+  // line by line, user lines checked as it reads them, acl-pubsub-default
+  // counting from the line that sets it, aclfile noted, then the users
+  // created when it starts. A line the server can't split (unbalanced
+  // quotes) stops it wherever it is; other settings aren't checked here
+  // (the Config Checker does that). text: the file's bytes, or a binary
+  // string. opts: pubsubDefault (before the file sets it), databases.
+  // Returns {
+  //   users: one per user the lines declare, in their order,
+  //   all: every user once it has started (a Map by name, default included),
+  //   lines: the user lines [{ line, argv }], pubsubDefault, aclfile,
+  //   fatal: { line, text, message }: where the server stops reading the file,
+  //   startup: { log, message }: what it logs when it stops while starting
+  // } with fatal and startup null when it starts.
+  function loadConfig(text, versionId, opts) {
+    opts = opts || {};
+    const v = getVersion(versionId), f = v.f;
+    const conf = readFile(typeof text === 'string' ? text : toBinary(text), 1024);
+    let pubsub = opts.pubsubDefault || v.pubsubDefault, aclfile = null;
+    const lines = [], seen = new Set(), state = {};
+    const result = (more) => Object.assign({ users: [], all: null, lines: lines, pubsubDefault: pubsub, aclfile: aclfile, fatal: null, startup: null }, more);
+    const raw = conf.split('\n');
+    for (let i = 0; i < raw.length; i++) {
+      const line = trimSet(raw[i], ' \t\r\n');
+      if (line === '' || line[0] === '#') continue;
+      const stop = (message) => result({ fatal: { line: i + 1, text: line, message: message } });
+      const argv = splitArgs(line, f.split);
+      if (argv === null) return stop('Unbalanced quotes in configuration line');
+      if (!argv.length) continue;
+      const name = lower(argv[0]);
+      if (name === 'acl-pubsub-default') {
+        if (argv.length !== 2) return stop('wrong number of arguments');
+        const val = ['allchannels', 'resetchannels'].find((x) => eqi(argv[1], x));
+        if (!val) return stop((f.fam === 6 ? 'argument must' : 'argument(s) must') + ' be one of the following: allchannels, resetchannels');
+        pubsub = val;
+      } else if (name === 'aclfile') {
+        if (argv.length !== 2) return stop('wrong number of arguments');
+        aclfile = argv[1];
+      } else if (cstr(name) === 'user') {
+        if (argv.length < 2) return stop('Bad directive or wrong number of arguments');
+        // 7.0 and later take one line per user.
+        if (f.fam !== 6 && seen.has(argv[1])) return stop('Error in user declaration \'' + cstr(argv[1]) + '\': ' + errorText(v, 'EALREADY'));
+        const e = checkUserLine(argv, v.id, Object.assign({}, opts, { pubsubDefault: pubsub, state: state }));
+        if (e) return stop(e);
+        seen.add(argv[1]);
+        lines.push({ line: i + 1, argv: argv });
+      } else if ((name === '' || /[^\x21-\x7e]/.test(name)) && (f.fam === 6 || !name.includes('.'))) {
+        // No setting has a name like this one, such as a byte order mark
+        // in front of "user".
+        return stop('Bad directive or wrong number of arguments');
+      }
+    }
+    if (lines.length && aclfile !== null && cstr(aclfile) !== '') {
+      const [title, file] = v.server === 'valkey' && v.num[0] >= 8 ? ['Valkey', 'valkey.conf'] : ['Redis', 'redis.conf'];
+      const message = 'Configuring ' + title + ' with users defined in ' + file + ' and at the same setting an ACL file path is invalid. This setup is very likely to lead to configuration errors and security holes, please define either an ACL file or declare users directly in your ' + file + ', but not both.';
+      return result({ startup: { log: [message], message: message } });
+    }
+    const r = startupUsers(lines.map((l) => l.argv), v.id, Object.assign({}, opts, { pubsubDefault: pubsub }));
+    if (r.log) return result({ startup: { log: r.log, message: r.message } });
+    const users = [], names = new Set();
+    for (const l of lines) if (!names.has(l.argv[1])) { names.add(l.argv[1]); users.push(r.users.get(l.argv[1])); }
+    return result({ users: users, all: r.users });
   }
 
 
@@ -1358,20 +1505,34 @@
 
   // ---- the permission check ----
 
+  // The server tries the patterns in order and stops at the first match.
+  // Here a pattern with no wildcard is found by name; the patterns with
+  // wildcards before it in the list are still tried first, as the server
+  // would (with Redis 7.0 one of them can crash it).
   function keyAllowed(ctx, s, key, flags) {
     if (s.allkeys) return true;
     const need = ctx.f.fam === 6 ? 0 : aclKeyFlags(flags);
-    for (const p of s.patterns) {
-      if ((p.f & need) !== need) continue;
-      if (globMatch(p.p, key, ctx.f.nesting)) return true;
+    const ix = patternIndex(s.patterns);
+    let first = Infinity;
+    for (const x of ix.exact.get(key) || []) if ((x.e.f & need) === need) { first = x.at; break; }
+    for (const g of ix.globs) {
+      if (g.at > first) break;
+      if ((g.e.f & need) !== need) continue;
+      if (globMatch(g.p, key, ctx.f.nesting)) return true;
     }
-    return false;
+    return first !== Infinity;
   }
   function channelAllowed(ctx, s, channel, pattern) {
-    for (const p of s.channels) {
-      if (pattern ? p === (ctx.f.fam === 6 ? channel : cstr(channel)) : globMatch(p, channel, ctx.f.nesting)) return true;
+    const ix = patternIndex(s.channels);
+    // PSUBSCRIBE: the pattern itself has to be in the list.
+    if (pattern) return ix.byPattern.has(ctx.f.fam === 6 ? channel : cstr(channel));
+    const same = ix.exact.get(channel);
+    const first = same ? same[0].at : Infinity;
+    for (const g of ix.globs) {
+      if (g.at > first) break;
+      if (globMatch(g.p, channel, ctx.f.nesting)) return true;
     }
-    return false;
+    return first !== Infinity;
   }
   function dbAllowed(ctx, s, db) {
     if (s.alldbs) return true;
@@ -1522,15 +1683,18 @@
   //   channels [{ index, channel, pattern }], selector (the one that allows it),
   //   dryrun: what ACL DRYRUN replies: { reply } or { error } (7.0 and later),
   //   reply: what the command itself gets before it runs: { error } or null,
-  //   selectors: each selector's answer
+  //   selectors: each selector's answer,
+  //   crash: when checking the command crashes the server (reason 'crash',
+  //     and dryrun and reply are { crash })
   // }
   function check(user, argv, versionId, opts) {
     opts = opts || {};
     const ctx = context(versionId, opts);
     const v = ctx.v;
     const db = opts.db || 0;
-    const cmd = lookupCommand(v, argv);
+    const cmd = argv.length ? lookupCommand(v, argv) : null;
     const out = { allowed: false, reason: null, index: null, command: cmd ? cmd.fullname : null, keys: [], channels: [], selector: null, dryrun: null, reply: null, selectors: [] };
+    if (!argv.length) return out;
     // ACL DRYRUN
     if (ctx.f.fam !== 6) {
       if (!cmd) out.dryrun = { error: oneLine('Command \'' + cstr(argv[0]) + '\' not found') };
@@ -1538,7 +1702,17 @@
     }
     const pre = preCheck(ctx, argv, cmd, opts);
     if (!cmd || !arityOk(cmd, argv.length)) { out.reply = { error: pre }; return out; }
-    const r = userCheck(ctx, user, cmd, argv, db);
+    let r;
+    try {
+      r = userCheck(ctx, user, cmd, argv, db);
+    } catch (e) {
+      if (!(e instanceof Crash)) throw e;
+      out.reason = 'crash';
+      out.crash = e.crash;
+      out.dryrun = ctx.f.fam === 6 ? null : { crash: e.crash };
+      out.reply = { crash: e.crash };
+      return out;
+    }
     out.selectors = r.selectors;
     if (hasKeys(ctx, cmd)) {
       const keys = r.keys || keysOf(ctx, cmd, argv);
@@ -1580,22 +1754,34 @@
 
   // Rules as text: one or more "user name rules..." lines (an ACL file or
   // config lines), or the arguments of ACL SETUSER, with or without "ACL
-  // SETUSER name" in front. Returns { kind, users: [{ name, args, line }],
-  // error }. kind: 'aclfile' (split at spaces, as ACL LOAD does), 'config'
-  // (split with quotes, as redis.conf is) or 'setuser' (as redis-cli
-  // splits a command line).
+  // SETUSER name" in front. text: a string of text, or bytes. Returns {
+  // kind, users: [{ name, args, line }], error, text }. kind: 'aclfile'
+  // (split at spaces, as ACL LOAD does), 'config' (split with quotes, as
+  // redis.conf is) or 'setuser' (as redis-cli splits a command line). text,
+  // for an ACL file or config lines: the file to give loadFile() or
+  // loadConfig(), as a binary string.
   function readRules(text, versionId, kind) {
     const v = getVersion(versionId);
-    const bin = typeof text === 'string' ? toBinary(text) : text;
+    const bin = toBinary(text);
     // ACL LIST as redis-cli prints it: 1) "user app on ...".
+    let unwrapped = false;
     const lines = bin.split('\n').map((l) => {
       l = trimSet(l, ' \t\r\n');
       const m = /^\d+\)\s+(".*")$/.exec(l);
-      if (m) { const q = splitArgs(m[1], 'classic'); if (q && q.length === 1) return q[0]; }
+      if (m) { const q = splitArgs(m[1], 'classic'); if (q && q.length === 1) { unwrapped = true; return q[0]; } }
       return l;
     });
-    const meaningful = lines.filter((l) => l !== '' && l[0] !== '#');
-    if (!kind) kind = meaningful.length && meaningful.every((l) => /^user\s/i.test(l)) ? (meaningful.some((l) => /["']/.test(l)) ? 'config' : 'aclfile') : 'setuser';
+    // # starts a comment, except in a password hash (#<64 hex digits>), a rule.
+    const comment = (l) => l[0] === '#' && !/^#[0-9a-fA-F]{64}(\s|$)/.test(l);
+    const meaningful = lines.filter((l) => l !== '' && !comment(l));
+    if (!kind) {
+      // A byte order mark in front doesn't change what the text is meant to be.
+      const bare = (l) => (l.startsWith('\xef\xbb\xbf') ? l.slice(3) : l);
+      const userLine = (l) => /^user\s/i.test(bare(l));
+      const setting = (l) => /^(acl-pubsub-default|aclfile)(\s|$)/i.test(bare(l));
+      if (meaningful.some(userLine) && meaningful.every((l) => userLine(l) || setting(l))) kind = meaningful.some((l) => setting(l) || /["']/.test(l)) ? 'config' : 'aclfile';
+      else kind = 'setuser';
+    }
     const users = [];
     if (kind === 'setuser') {
       const argv = splitArgs(meaningful.join(' '), 'classic');
@@ -1610,11 +1796,12 @@
     lines.forEach((l, i) => {
       if (l === '' || l[0] === '#') return;
       const argv = kind === 'aclfile' ? l.split(' ') : splitArgs(l, v.f.split);
-      if (!argv || argv.length < 2 || !eqi(argv[0], 'user')) { users.push({ name: null, args: [], line: i + 1, error: 'Not a user line' }); return; }
+      if (!argv) { users.push({ name: null, args: [], line: i + 1, error: 'Unbalanced quotes' }); return; }
+      if (argv.length < 2 || !eqi(argv[0], 'user')) { users.push({ name: null, args: [], line: i + 1, error: 'Not a user line' }); return; }
       users.push({ name: argv[1], args: argv.slice(2), line: i + 1 });
     });
-    // The text as an ACL file, for loadFile().
-    return { kind: kind, users: users, error: null, text: lines.join('\n') + '\n' };
+    // The file as it was, unless lines of ACL LIST had to be unwrapped.
+    return { kind: kind, users: users, error: null, text: unwrapped ? lines.join('\n') + '\n' : bin };
   }
 
   // ---- in plain words ----
@@ -1757,25 +1944,31 @@
   // ---- drafting users from what clients did ----
 
   // Reads MONITOR output: '1700000000.123456 [0 127.0.0.1:52000] "SET" "k" "v"'.
-  // Plain command lines ("SET k v") work too. Returns [{ argv, db, client, line }].
+  // The client is an address (IPv6 ones in brackets: [::1]:52000),
+  // unix:<socket path>, or lua for the commands a script ran. Plain command
+  // lines ("SET k v") work too. text: a string of text, or bytes. Returns
+  // [{ argv, db, client, line }].
   function parseMonitor(text) {
     const out = [];
-    const lines = (typeof text === 'string' ? text : fromBinary(text)).split(/\r?\n/);
+    const lines = toBinary(text).split('\n');
     lines.forEach((raw, i) => {
-      const line = raw.trim();
-      if (!line || line === 'OK' || /^\+?OK$/.test(line)) return;
-      const m = /^(\d+(?:\.\d+)?) \[(\d+) ([^\]]*)\] (.*)$/.exec(line);
+      const line = trimSet(raw, ' \t\r\n\v\f');
+      if (!line || /^\+?OK$/.test(line)) return;
+      const m = /^\+?(\d+(?:\.\d+)?) \[(\d+) /.exec(line);
       if (m) {
-        const argv = parseQuoted(m[4]);
-        if (argv && argv.length) out.push({ argv: argv, db: Number(m[2]), client: m[3], line: i + 1 });
-        return;
+        // The client ends at the first '] "' after which the arguments read.
+        for (let k = line.indexOf('] "', m[0].length); k >= 0; k = line.indexOf('] "', k + 1)) {
+          const argv = parseQuoted(line.slice(k + 2));
+          if (argv && argv.length) { out.push({ argv: argv, db: Number(m[2]), client: line.slice(m[0].length, k), line: i + 1 }); return; }
+        }
       }
-      const argv = splitArgs(toBinary(line), 'classic');
+      const argv = splitArgs(line, 'classic');
       if (argv && argv.length) out.push({ argv: argv, db: null, client: null, line: i + 1 });
     });
     return out;
   }
-  // MONITOR's quoting (sdscatrepr): "..." with \" \\ \n \r \t \a \b \xHH.
+  // MONITOR's quoting (sdscatrepr): "..." with \" \\ \n \r \t \a \b \xHH,
+  // read from a binary string.
   function parseQuoted(s) {
     const out = [];
     let i = 0;
@@ -1796,8 +1989,7 @@
           i += 2;
           continue;
         }
-        // MONITOR escapes bytes over 0x7f; anything else is taken as UTF-8 text.
-        cur += c.charCodeAt(0) > 0x7f ? toBinary(c) : c;
+        cur += c;
         i++;
       }
       out.push(cur);
@@ -1833,19 +2025,43 @@
     return [...groups.values()];
   }
 
+  // The commands that run a script, which MONITOR shows right before the
+  // commands the script runs (client lua).
+  const SCRIPT_CALLS = new Set(['eval', 'evalsha', 'eval_ro', 'evalsha_ro', 'fcall', 'fcall_ro']);
+  // The placeholder in the ACL file line for a password the draft doesn't
+  // know: ACL LOAD refuses it.
+  const HASH_PLACEHOLDER = '#<sha256-of-your-password>';
+  // Past this many key and channel patterns the draft says it's too many:
+  // the server tries them one by one for each name a command uses.
+  const MANY_PATTERNS = 1000;
+
   // Drafts the least a client needs: the commands it ran, read or write
   // patterns for the keys it touched, the channels it used and (Valkey
   // 9.1) the databases. entries: parseMonitor() output, or a list of argv.
   // opts: name, password (else a placeholder), keys: 'prefix' (default) or
-  // 'exact', client (only entries from this client address).
-  // Returns { name, args (ACL SETUSER arguments), setuser (the command),
-  // aclfile (the ACL file line), commands [{ command, count }], skipped
-  // [{ line, argv, reason }], check (every entry rechecked) }.
+  // 'exact', client (only entries from this client, and the commands its
+  // scripts ran). Returns { name, args (ACL SETUSER arguments), setuser
+  // (the command), aclfile (the ACL file line, with a placeholder ACL LOAD
+  // refuses when there's no password: placeholder true), commands
+  // [{ command, count }], keys, channels, skipped [{ line, argv, reason }],
+  // check (every entry rechecked), error, lines (how many entries it read),
+  // approximate (names with spaces), manyPatterns (the count, past 1000) }.
   function build(entries, versionId, opts) {
     opts = opts || {};
     const ctx = context(versionId, opts);
     const v = ctx.v, f = ctx.f;
-    const list = entries.map((e) => (Array.isArray(e) ? { argv: e, db: null, client: null, line: null } : e)).filter((e) => !opts.client || e.client === opts.client);
+    const all = entries.map((e) => (Array.isArray(e) ? { argv: e, db: null, client: null, line: null } : e));
+    let list = all;
+    if (opts.client) {
+      // A script's commands go with the client that ran the script.
+      list = [];
+      let caller = null;
+      for (const e of all) {
+        if (e.client === 'lua') { if (caller === opts.client) list.push(e); continue; }
+        if (e.argv.length && SCRIPT_CALLS.has(lower(e.argv[0]))) caller = e.client;
+        if (e.client === opts.client) list.push(e);
+      }
+    }
     const used = new Map(), skipped = [], keys = new Map(), channels = new Map(), patterns = new Set(), dbs = new Set();
     let current = null, allDbs = false;
     for (const e of list) {
@@ -1874,7 +2090,8 @@
       }
     }
     const args = ['reset', 'on'];
-    args.push(opts.password != null ? '>' + opts.password : '>CHANGE-ME');
+    const placeholder = opts.password == null;
+    args.push(placeholder ? '>CHANGE-ME' : '>' + opts.password);
     // Key patterns: read-only groups get %R~, write-only %W~ (7.0 and later).
     const keyRules = [];
     for (const group of groupNames([...keys.keys()].sort(), opts.keys === 'exact')) {
@@ -1883,49 +2100,87 @@
       const pat = patternFor(group);
       keyRules.push(f.fam === 6 || need === 3 ? '~' + pat : need === 1 ? '%R~' + pat : '%W~' + pat);
     }
-    args.push(...keyRules);
+    for (const r of keyRules) args.push(r);
     args.push('resetchannels');
     const chanRules = [];
     for (const group of groupNames([...channels.keys()].sort(), opts.keys === 'exact')) chanRules.push('&' + patternFor(group));
-    for (const p of [...patterns].sort()) if (!chanRules.includes('&' + p) && !hasSpaces(p)) chanRules.push('&' + p);
-    args.push(...chanRules);
+    const have = new Set(chanRules);
+    for (const p of [...patterns].sort()) if (!have.has('&' + p) && !hasSpaces(p)) { chanRules.push('&' + p); have.add('&' + p); }
+    for (const r of chanRules) args.push(r);
     if (f.dbPerms && !allDbs && dbs.size && dbs.size < ctx.databases) args.push('db=' + [...dbs].sort((a, b) => a - b).join(','));
     args.push('-@all');
     const names = [...used.keys()].filter((n) => !lookupAcl(v, n).noAuth).sort();
     for (const n of names) args.push('+' + n);
     const name = opts.name || 'app';
-    // Every entry, checked against the draft.
+    // Every entry, checked against the draft (the ones left out above aren't).
     const made = setUser(null, name, args, v.id, opts);
     const checked = [];
     if (made.ok) {
       let db = 0;
       for (const e of list) {
-        const r = check(made.user, e.argv, v.id, Object.assign({}, opts, { db: e.db != null ? e.db : db }));
         const cmd = lookupCommand(v, e.argv);
-        if (cmd && cmd.fullname === 'select' && string2ll(e.argv[1]) !== null) db = Number(string2ll(e.argv[1]));
-        if (r.command && arityOk(lookupCommand(v, e.argv), e.argv.length)) checked.push({ line: e.line, argv: e.argv, allowed: r.allowed, reason: r.reason });
+        if (!cmd || !arityOk(cmd, e.argv.length)) continue;
+        const r = check(made.user, e.argv, v.id, Object.assign({}, opts, { db: e.db != null ? e.db : db }));
+        if (cmd.fullname === 'select' && string2ll(e.argv[1]) !== null) db = Number(string2ll(e.argv[1]));
+        checked.push({ line: e.line, argv: e.argv, allowed: r.allowed, reason: r.reason });
       }
     }
     const quoted = args.map((a) => quote(a));
-    const fileArgs = args.slice(1).map((a) => (a[0] === '>' ? '#' + sha256hex(a.slice(1)) : a));
+    const fileArgs = args.slice(1).map((a) => (a[0] !== '>' ? a : placeholder ? HASH_PLACEHOLDER : '#' + sha256hex(a.slice(1))));
+    const count = keyRules.length + chanRules.length;
     return {
       name: name, args: args, setuser: 'ACL SETUSER ' + quote(name) + ' ' + quoted.join(' '),
-      aclfile: 'user ' + name + ' ' + fileArgs.join(' '),
+      aclfile: 'user ' + name + ' ' + fileArgs.join(' '), placeholder: placeholder,
       commands: names.map((n) => ({ command: display(n), count: used.get(n) })),
       keys: keyRules, channels: chanRules, skipped: skipped, check: checked,
-      error: made.ok ? null : made.error,
-      approximate: [...keys.keys()].some((k) => hasSpaces(k)) || [...channels.keys()].some((c) => hasSpaces(c))
+      error: made.ok ? null : made.error, lines: list.length,
+      approximate: [...keys.keys()].some((k) => hasSpaces(k)) || [...channels.keys()].some((c) => hasSpaces(c)),
+      manyPatterns: count > MANY_PATTERNS ? count : 0
     };
   }
+
+  // Bytes as text to show a person: UTF-8 reads as text, and what would
+  // hide or move text on a screen shows as \xHH: control characters, a
+  // byte order mark, marks that change the direction of text, and bytes
+  // that aren't UTF-8. So the cause of an error shows, and a crafted file
+  // can't send escape sequences to a terminal.
+  function readable(s) {
+    let out = '';
+    const esc = (from, to) => { for (let k = from; k < to; k++) out += '\\x' + s.charCodeAt(k).toString(16).padStart(2, '0'); };
+    for (let i = 0; i < s.length;) {
+      const c = s.charCodeAt(i);
+      if (c < 0x80) {
+        if (c < 0x20 || c === 0x7f) esc(i, i + 1); else out += s[i];
+        i++;
+        continue;
+      }
+      const n = c >= 0xc2 && c <= 0xdf ? 1 : c >= 0xe0 && c <= 0xef ? 2 : c >= 0xf0 && c <= 0xf4 ? 3 : 0;
+      let cp = n === 1 ? c & 0x1f : n === 2 ? c & 0x0f : c & 0x07;
+      let ok = n > 0 && i + n < s.length;
+      for (let k = 1; ok && k <= n; k++) {
+        const d = s.charCodeAt(i + k);
+        if ((d & 0xc0) !== 0x80) ok = false;
+        else cp = (cp << 6) | (d & 0x3f);
+      }
+      if (ok && (cp < [0, 0x80, 0x800, 0x10000][n] || cp > 0x10ffff || (cp >= 0xd800 && cp <= 0xdfff))) ok = false;
+      if (!ok) { esc(i, i + 1); i++; continue; }
+      if (hiddenChar(cp)) esc(i, i + n + 1); else out += String.fromCodePoint(cp);
+      i += n + 1;
+    }
+    return out;
+  }
+  const hiddenChar = (cp) => (cp >= 0x80 && cp <= 0x9f) || cp === 0xad || cp === 0x61c || cp === 0x180e || (cp >= 0x200b && cp <= 0x200f) ||
+    (cp >= 0x2028 && cp <= 0x202e) || (cp >= 0x2060 && cp <= 0x206f) || cp === 0xfeff || (cp >= 0xfff9 && cp <= 0xfffb) ||
+    (cp & 0xfffe) === 0xfffe || (cp >= 0xe0000 && cp <= 0xe007f);
 
   // ---- exports (more below as the file grows) ----
   return {
     versions: versions, findVersion: findVersion, getVersion: getVersion,
     newUser: newUser, defaultUser: defaultUser, setUser: setUser, listLine: listLine, copyUser: copyUser,
-    checkUserLine: checkUserLine, startupUsers: startupUsers, loadFile: loadFile,
+    checkUserLine: checkUserLine, startupUsers: startupUsers, loadFile: loadFile, loadConfig: loadConfig,
     check: check, getKeys: getKeys, lookupCommand: (argv, id) => lookupCommand(getVersion(id), argv),
     readRules: readRules, explain: explain, parseMonitor: parseMonitor, build: build,
-    splitArgs: splitArgs, toBinary: toBinary, fromBinary: fromBinary, printable: printable, quote: quote,
+    splitArgs: splitArgs, toBinary: toBinary, fromBinary: fromBinary, printable: printable, readable: readable, quote: quote,
     sha256hex: sha256hex, globMatch: globMatch, globEscape: globEscape, errorText: errorText,
     _internal: { context: context, setUserOp: setUserOp, setSelector: setSelector, lookupAcl: lookupAcl, mergeSelectors: mergeSelectors, cstr: cstr, keysOf: keysOf }
   };

@@ -77,17 +77,18 @@
         </select>
       </div>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="open-rules">Open a file</button>
-      <input type="file" id="file-rules" class="file-input" accept=".acl,.conf,.txt,text/plain">
+      <button type="button" class="btn" id="open-rules" aria-label="Open a file of rules">Open a file</button>
+      <input type="file" id="file-rules" class="file-input" accept=".acl,.conf,.txt,text/plain" tabindex="-1" aria-hidden="true">
       <button type="button" class="btn" id="ex-app">An app</button>
       <button type="button" class="btn" id="ex-file">An ACL file</button>
       <button type="button" class="btn" id="ex-mistakes">Mistakes</button>
     </div>
     <div class="field">
-      <label for="rules" class="hint" id="rules-label">Nothing you paste leaves your browser.</label>
-      <textarea id="rules" spellcheck="false" autocomplete="off" placeholder="ACL SETUSER app on >s3cret ~app:* %R~cache:* &amp;events:* -@all +@read +set +del"></textarea>
+      <label for="rules" class="sr-only">The user's rules</label>
+      <span class="hint" id="rules-hint">Nothing you paste leaves your browser.</span>
+      <textarea id="rules" spellcheck="false" autocomplete="off" aria-describedby="rules-hint" placeholder="ACL SETUSER app on >s3cret ~app:* %R~cache:* &amp;events:* -@all +@read +set +del"></textarea>
     </div>
-    <div id="rules-result" class="result" aria-live="polite"></div>
+    <div id="rules-result" class="result"></div>
   </section>
 
   <section class="section" aria-labelledby="h-check">
@@ -104,15 +105,16 @@
       </div>
     </div>
     <div class="field">
-      <label for="commands" class="hint">GET app:42</label>
-      <textarea id="commands" spellcheck="false" autocomplete="off" placeholder="GET app:42&#10;SET cache:x 1&#10;KEYS *"></textarea>
+      <label for="commands" class="sr-only">Commands to check, one per line</label>
+      <span class="hint" id="commands-hint">Such as GET app:42</span>
+      <textarea id="commands" spellcheck="false" autocomplete="off" aria-describedby="commands-hint" placeholder="GET app:42&#10;SET cache:x 1&#10;KEYS *"></textarea>
     </div>
-    <div id="check-result" class="result" aria-live="polite"></div>
+    <div id="check-result" class="result"></div>
   </section>
 
   <section class="section" aria-labelledby="h-build">
     <h2 id="h-build">Draft a user from what a client does</h2>
-    <p class="lede">Run <code>MONITOR</code> in redis-cli or valkey-cli while the app works, then paste what it printed. The builder drafts a user that may run exactly those commands on those keys and channels, and checks every line against it. MONITOR slows a busy server down, so keep it short.</p>
+    <p class="lede">Run <code>MONITOR</code> in redis-cli or valkey-cli while the app works, then paste what it printed. The builder drafts a user that may run those commands and no others, with key and channel patterns made from the names it saw, and checks every line against it. MONITOR slows a busy server down, so keep it short.</p>
     <div class="row">
       <div class="field">
         <label for="name">User name</label>
@@ -130,16 +132,18 @@
         <select id="client"></select>
       </div>
       <span class="spacer"></span>
-      <button type="button" class="btn" id="open-monitor">Open a file</button>
-      <input type="file" id="file-monitor" class="file-input" accept=".txt,.log,text/plain">
+      <button type="button" class="btn" id="open-monitor" aria-label="Open a file of MONITOR output">Open a file</button>
+      <input type="file" id="file-monitor" class="file-input" accept=".txt,.log,text/plain" tabindex="-1" aria-hidden="true">
       <button type="button" class="btn" id="ex-monitor">An example</button>
     </div>
     <div class="field">
-      <label for="monitor" class="hint">redis-cli MONITOR &gt; monitor.txt</label>
-      <textarea id="monitor" spellcheck="false" autocomplete="off" placeholder='1759734012.304117 [0 10.0.0.7:52310] "GET" "user:42:profile"'></textarea>
+      <label for="monitor" class="sr-only">What MONITOR printed</label>
+      <span class="hint" id="monitor-hint">redis-cli MONITOR &gt; monitor.txt</span>
+      <textarea id="monitor" spellcheck="false" autocomplete="off" aria-describedby="monitor-hint" placeholder='1759734012.304117 [0 10.0.0.7:52310] "GET" "user:42:profile"'></textarea>
     </div>
-    <div id="build-result" class="result" aria-live="polite"></div>
+    <div id="build-result" class="result"></div>
   </section>
+  <div id="announce" class="sr-only" role="status"></div>
 </main>
 
 <footer class="wrap privacy">
