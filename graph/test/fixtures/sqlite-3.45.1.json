@@ -1,0 +1,785 @@
+{
+ "sqlite": "3.45.1",
+ "order": [
+  "i/100%25/follows/alice",
+  "i/Bob/knows/alice",
+  "i/Zoë/knows/alice",
+  "i/alice%2Fx/knows/alice",
+  "i/alice-2/knows/alice",
+  "i/alice/follows/100%25",
+  "i/alice/knows/Zoë",
+  "i/alice/knows/i",
+  "i/alice/owns/team one",
+  "i/bob/knows/alice",
+  "i/bob/knows/alice-2",
+  "i/carol/knows/alice%2Fx",
+  "i/i/knows/n",
+  "i/n/knows/o",
+  "i/o/knows/alice",
+  "i/東京/near/😀",
+  "i/～/near/東京",
+  "i/😀/near/～",
+  "n/100%25",
+  "n/Bob",
+  "n/Zoë",
+  "n/alice",
+  "n/alice%2Fx",
+  "n/alice-2",
+  "n/bob",
+  "n/carol",
+  "n/i",
+  "n/n",
+  "n/o",
+  "n/team one",
+  "n/東京",
+  "n/～",
+  "n/😀",
+  "o/100%25/follows/alice",
+  "o/Zoë/knows/alice",
+  "o/alice%2Fx/knows/carol",
+  "o/alice-2/knows/bob",
+  "o/alice/follows/100%25",
+  "o/alice/knows/Bob",
+  "o/alice/knows/Zoë",
+  "o/alice/knows/alice%2Fx",
+  "o/alice/knows/alice-2",
+  "o/alice/knows/bob",
+  "o/alice/knows/o",
+  "o/i/knows/alice",
+  "o/n/knows/i",
+  "o/o/knows/n",
+  "o/team one/owns/alice",
+  "o/東京/near/～",
+  "o/～/near/😀",
+  "o/😀/near/東京"
+ ],
+ "scans": [
+  {
+   "prefix": "o/100%25/",
+   "keys": [
+    "o/100%25/follows/alice"
+   ]
+  },
+  {
+   "prefix": "i/100%25/",
+   "keys": [
+    "i/100%25/follows/alice"
+   ]
+  },
+  {
+   "prefix": "o/100%25/follows/",
+   "keys": [
+    "o/100%25/follows/alice"
+   ]
+  },
+  {
+   "prefix": "i/100%25/follows/",
+   "keys": [
+    "i/100%25/follows/alice"
+   ]
+  },
+  {
+   "prefix": "o/100%25/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/100%25/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/100%25/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/100%25/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/100%25/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/100%25/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/Bob/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Bob/",
+   "keys": [
+    "i/Bob/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/Bob/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Bob/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/Bob/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Bob/knows/",
+   "keys": [
+    "i/Bob/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/Bob/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Bob/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/Bob/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Bob/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/Zoë/",
+   "keys": [
+    "o/Zoë/knows/alice"
+   ]
+  },
+  {
+   "prefix": "i/Zoë/",
+   "keys": [
+    "i/Zoë/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/Zoë/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Zoë/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/Zoë/knows/",
+   "keys": [
+    "o/Zoë/knows/alice"
+   ]
+  },
+  {
+   "prefix": "i/Zoë/knows/",
+   "keys": [
+    "i/Zoë/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/Zoë/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Zoë/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/Zoë/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/Zoë/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice/",
+   "keys": [
+    "o/alice/follows/100%25",
+    "o/alice/knows/Bob",
+    "o/alice/knows/Zoë",
+    "o/alice/knows/alice%2Fx",
+    "o/alice/knows/alice-2",
+    "o/alice/knows/bob",
+    "o/alice/knows/o"
+   ]
+  },
+  {
+   "prefix": "i/alice/",
+   "keys": [
+    "i/alice/follows/100%25",
+    "i/alice/knows/Zoë",
+    "i/alice/knows/i",
+    "i/alice/owns/team one"
+   ]
+  },
+  {
+   "prefix": "o/alice/follows/",
+   "keys": [
+    "o/alice/follows/100%25"
+   ]
+  },
+  {
+   "prefix": "i/alice/follows/",
+   "keys": [
+    "i/alice/follows/100%25"
+   ]
+  },
+  {
+   "prefix": "o/alice/knows/",
+   "keys": [
+    "o/alice/knows/Bob",
+    "o/alice/knows/Zoë",
+    "o/alice/knows/alice%2Fx",
+    "o/alice/knows/alice-2",
+    "o/alice/knows/bob",
+    "o/alice/knows/o"
+   ]
+  },
+  {
+   "prefix": "i/alice/knows/",
+   "keys": [
+    "i/alice/knows/Zoë",
+    "i/alice/knows/i"
+   ]
+  },
+  {
+   "prefix": "o/alice/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice/owns/",
+   "keys": [
+    "i/alice/owns/team one"
+   ]
+  },
+  {
+   "prefix": "o/alice%2Fx/",
+   "keys": [
+    "o/alice%2Fx/knows/carol"
+   ]
+  },
+  {
+   "prefix": "i/alice%2Fx/",
+   "keys": [
+    "i/alice%2Fx/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/alice%2Fx/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice%2Fx/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice%2Fx/knows/",
+   "keys": [
+    "o/alice%2Fx/knows/carol"
+   ]
+  },
+  {
+   "prefix": "i/alice%2Fx/knows/",
+   "keys": [
+    "i/alice%2Fx/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/alice%2Fx/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice%2Fx/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice%2Fx/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice%2Fx/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice-2/",
+   "keys": [
+    "o/alice-2/knows/bob"
+   ]
+  },
+  {
+   "prefix": "i/alice-2/",
+   "keys": [
+    "i/alice-2/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/alice-2/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice-2/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice-2/knows/",
+   "keys": [
+    "o/alice-2/knows/bob"
+   ]
+  },
+  {
+   "prefix": "i/alice-2/knows/",
+   "keys": [
+    "i/alice-2/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/alice-2/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice-2/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/alice-2/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/alice-2/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/bob/",
+   "keys": []
+  },
+  {
+   "prefix": "i/bob/",
+   "keys": [
+    "i/bob/knows/alice",
+    "i/bob/knows/alice-2"
+   ]
+  },
+  {
+   "prefix": "o/bob/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/bob/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/bob/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/bob/knows/",
+   "keys": [
+    "i/bob/knows/alice",
+    "i/bob/knows/alice-2"
+   ]
+  },
+  {
+   "prefix": "o/bob/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/bob/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/bob/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/bob/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/carol/",
+   "keys": []
+  },
+  {
+   "prefix": "i/carol/",
+   "keys": [
+    "i/carol/knows/alice%2Fx"
+   ]
+  },
+  {
+   "prefix": "o/carol/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/carol/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/carol/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/carol/knows/",
+   "keys": [
+    "i/carol/knows/alice%2Fx"
+   ]
+  },
+  {
+   "prefix": "o/carol/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/carol/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/carol/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/carol/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/i/",
+   "keys": [
+    "o/i/knows/alice"
+   ]
+  },
+  {
+   "prefix": "i/i/",
+   "keys": [
+    "i/i/knows/n"
+   ]
+  },
+  {
+   "prefix": "o/i/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/i/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/i/knows/",
+   "keys": [
+    "o/i/knows/alice"
+   ]
+  },
+  {
+   "prefix": "i/i/knows/",
+   "keys": [
+    "i/i/knows/n"
+   ]
+  },
+  {
+   "prefix": "o/i/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/i/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/i/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/i/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/n/",
+   "keys": [
+    "o/n/knows/i"
+   ]
+  },
+  {
+   "prefix": "i/n/",
+   "keys": [
+    "i/n/knows/o"
+   ]
+  },
+  {
+   "prefix": "o/n/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/n/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/n/knows/",
+   "keys": [
+    "o/n/knows/i"
+   ]
+  },
+  {
+   "prefix": "i/n/knows/",
+   "keys": [
+    "i/n/knows/o"
+   ]
+  },
+  {
+   "prefix": "o/n/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/n/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/n/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/n/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/o/",
+   "keys": [
+    "o/o/knows/n"
+   ]
+  },
+  {
+   "prefix": "i/o/",
+   "keys": [
+    "i/o/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/o/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/o/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/o/knows/",
+   "keys": [
+    "o/o/knows/n"
+   ]
+  },
+  {
+   "prefix": "i/o/knows/",
+   "keys": [
+    "i/o/knows/alice"
+   ]
+  },
+  {
+   "prefix": "o/o/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/o/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/o/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/o/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/team one/",
+   "keys": [
+    "o/team one/owns/alice"
+   ]
+  },
+  {
+   "prefix": "i/team one/",
+   "keys": []
+  },
+  {
+   "prefix": "o/team one/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/team one/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/team one/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/team one/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/team one/near/",
+   "keys": []
+  },
+  {
+   "prefix": "i/team one/near/",
+   "keys": []
+  },
+  {
+   "prefix": "o/team one/owns/",
+   "keys": [
+    "o/team one/owns/alice"
+   ]
+  },
+  {
+   "prefix": "i/team one/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/東京/",
+   "keys": [
+    "o/東京/near/～"
+   ]
+  },
+  {
+   "prefix": "i/東京/",
+   "keys": [
+    "i/東京/near/😀"
+   ]
+  },
+  {
+   "prefix": "o/東京/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/東京/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/東京/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/東京/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/東京/near/",
+   "keys": [
+    "o/東京/near/～"
+   ]
+  },
+  {
+   "prefix": "i/東京/near/",
+   "keys": [
+    "i/東京/near/😀"
+   ]
+  },
+  {
+   "prefix": "o/東京/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/東京/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/～/",
+   "keys": [
+    "o/～/near/😀"
+   ]
+  },
+  {
+   "prefix": "i/～/",
+   "keys": [
+    "i/～/near/東京"
+   ]
+  },
+  {
+   "prefix": "o/～/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/～/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/～/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/～/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/～/near/",
+   "keys": [
+    "o/～/near/😀"
+   ]
+  },
+  {
+   "prefix": "i/～/near/",
+   "keys": [
+    "i/～/near/東京"
+   ]
+  },
+  {
+   "prefix": "o/～/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/～/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "o/😀/",
+   "keys": [
+    "o/😀/near/東京"
+   ]
+  },
+  {
+   "prefix": "i/😀/",
+   "keys": [
+    "i/😀/near/～"
+   ]
+  },
+  {
+   "prefix": "o/😀/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/😀/follows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/😀/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "i/😀/knows/",
+   "keys": []
+  },
+  {
+   "prefix": "o/😀/near/",
+   "keys": [
+    "o/😀/near/東京"
+   ]
+  },
+  {
+   "prefix": "i/😀/near/",
+   "keys": [
+    "i/😀/near/～"
+   ]
+  },
+  {
+   "prefix": "o/😀/owns/",
+   "keys": []
+  },
+  {
+   "prefix": "i/😀/owns/",
+   "keys": []
+  }
+ ]
+}

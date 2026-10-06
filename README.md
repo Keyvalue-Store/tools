@@ -17,6 +17,7 @@ Free tools for the key-value stores you run: Redis and Valkey, DynamoDB, etcd, a
 | [ACL Builder](https://keyvaluestore.com/tools/acl/) | ACL rules applied the way each of 15 versions applies them: ACL SETUSER's error or ACL LIST's line, what the user may do, ACL DRYRUN for commands, and least-privilege users drafted from MONITOR | [`acl/`](acl/) |
 | [Expression Tester](https://keyvaluestore.com/tools/expressions/) | DynamoDB key conditions, filters, conditions, updates and projections checked the way DynamoDB checks them, with its error messages, then run on your items | [`expressions/`](expressions/) |
 | [Revision Viewer](https://keyvaluestore.com/tools/revisions/) | An etcd snapshot opened: what fills it, Kubernetes resources and old revisions, free pages, Secrets in the clear, and every revision of a key, printed the way kubectl prints it | [`revisions/`](revisions/) |
+| [Graph Key Builder](https://keyvaluestore.com/tools/graph/) | A list of links turned into the keys a graph takes in an ordered key-value store, then followed hop by hop with every prefix scan counted | [`graph/`](graph/) |
 
 Each folder's README is the tool's manual, with a plain-language explanation of the technology behind it.
 
@@ -24,7 +25,7 @@ Each folder's README is the tool's manual, with a plain-language explanation of 
 
 - **One library file each.** Each tool's logic is one JavaScript file with no dependencies. The web page, the command line and the tests all load that same file. There's nothing to install and nothing to build.
 - **Your data stays with you.** The tools don't send anything anywhere, and each web page's security policy stops it from fetching or loading anything from another site: no fetch, no beacons, no scripts, styles or images from elsewhere.
-- **Checked against the real thing.** Each tool was checked against real servers or reference code: 15 versions of Redis and Valkey built from source, DynamoDB Local, etcd 3.4 to 3.6 with Kubernetes' own Go packages, the AWS SDK, the Python `mmh3` package, the code printed in the jump hash paper, and values written by Python, PHP, Java and Ruby themselves. The tests replay the recorded answers, which are in each tool's `test/fixtures/`, and the full measurements are in `test/results/`.
+- **Checked against the real thing.** Each tool was checked against real servers or reference code: 15 versions of Redis and Valkey built from source, DynamoDB Local, etcd 3.4 to 3.6 with Kubernetes' own Go packages, the AWS SDK, the Python `mmh3` package, the code printed in the jump hash paper, SQLite's own key order, and values written by Python, PHP, Java and Ruby themselves. The tests replay the recorded answers, which are in each tool's `test/fixtures/`, and the full measurements are in `test/results/`.
 
 ## Run them
 
@@ -44,6 +45,7 @@ node config/cli.js --help
 node acl/cli.js --help
 node expressions/cli.js --help
 node revisions/cli.js --help
+node graph/cli.js --help
 ```
 
 Each tool's page is in its `app/` folder. Open `app/index.html` straight from the folder, or serve the repository with any static web server.

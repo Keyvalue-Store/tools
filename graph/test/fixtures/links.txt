@@ -1,0 +1,21 @@
+# Names that test the key layout: a slash, a percent sign, a space,
+# capitals, a hyphen, letters outside ASCII, and one-letter names that
+# match the key prefixes.
+alice,knows,bob
+alice,knows,Bob
+alice,knows,alice/x
+alice/x,knows,carol
+alice,follows,100%
+100%,follows,alice
+alice,knows,alice-2
+alice-2,knows,bob
+Zoë,knows,alice
+alice,knows,Zoë
+東京,near,～
+～,near,😀
+😀,near,東京
+team one,owns,alice
+alice,knows,o
+o,knows,n
+n,knows,i
+i,knows,alice
