@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; worker-src 'self'; style-src 'self' file: 'unsafe-inline'; img-src data: blob:; form-action 'none'; base-uri 'none'">
+<title>Revision Viewer | KeyValueStore.com</title>
+<meta name="description" content="Open an etcd snapshot in your browser: what fills it, how close it is to the quota, old revisions, free pages, Secrets in the clear, and the history of any key, with Kubernetes objects shown as kubectl shows them. Nothing is uploaded.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/revisions/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Cpath d='M9 8v16M9 12h7M9 18h11M9 24h5' stroke='%2350C4CC' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='21' cy='12' r='2.5' fill='%2350C4CC'/%3E%3C/svg%3E">
+<script src="../../common/embed.js"></script>
+<link rel="stylesheet" href="../../common/tool.css">
+<style>
+  .drop { border: 2px dashed var(--line); border-radius: 12px; padding: 22px 18px; text-align: center; background: var(--soft); }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop p { margin: 4px 0; }
+  .progress { height: 8px; border-radius: 4px; background: var(--line-soft); overflow: hidden; margin: 10px 0; position: relative; }
+  .progress span { display: block; height: 100%; background: var(--accent); width: 30%; position: absolute; left: 0; }
+  .progress.busy span { animation: slide 1.3s ease-in-out infinite; }
+  @keyframes slide { 0% { left: -30%; } 100% { left: 100%; } }
+  @media (prefers-reduced-motion: reduce) { .progress.busy span { animation: none; width: 100%; opacity: .5; } }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 8px 0 12px; font-size: .92rem; }
+  .facts dt { color: var(--muted); }
+  .facts dd { margin: 0; overflow-wrap: anywhere; }
+  tr.pick { cursor: pointer; }
+  tr.pick:hover td, tr.pick:focus td { background: var(--soft); }
+  tr.pick:focus { outline: none; }
+  tr.pick:focus-visible td { box-shadow: inset 0 0 0 2px rgba(14, 124, 134, .35); }
+  tr.pick.on td { background: var(--accent-soft); }
+  .pick-table td.key { min-width: 16ch; }
+  @media (max-width: 640px) { .keys-table th:nth-child(4), .keys-table td:nth-child(4) { display: none; } }
+  .row > .field.grow { flex: 1; min-width: 220px; }
+  .chart svg.space { height: 34px; width: 100%; }
+  .seg.values, .swatch.values { fill: var(--accent); background: var(--accent); }
+  .seg.history, .swatch.history { fill: var(--brand); background: var(--brand); }
+  .seg.other, .swatch.other { fill: #AEB9C5; background: #AEB9C5; }
+  .seg.free, .swatch.free { fill: #E4EAF0; background: #E4EAF0; }
+  .seg.free { stroke: #C5D0DB; stroke-width: 1; }
+  .legend { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .9rem; color: var(--text); }
+  .legend li { display: flex; align-items: center; gap: 7px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+  .swatch.free { border: 1px solid #C5D0DB; }
+  .linkish { background: none; border: 0; padding: 0; font: inherit; color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .linkish:hover { color: var(--accent-strong); }
+  .crumbs { font-size: .92rem; }
+  .key-title { word-break: break-all; margin-top: 22px; }
+  .history-table { display: inline-block; max-width: 100%; }
+  .history-table table { width: auto; }
+  .history-table th, .history-table td { padding-left: 16px; padding-right: 16px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; }
+  .tab { font: 600 .9rem var(--sans); padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--text); cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); }
+  .value-text { max-height: 560px; }
+  .diff { white-space: pre-wrap; padding: 8px 0; max-height: 560px; }
+  .diff > div { padding: 0 14px; }
+  .diff .add { background: #E3F4E3; color: #0F3D0F; }
+  .diff .del { background: #FCE6E3; color: #6B1610; }
+  .diff .same { color: var(--muted); }
+  .diff .skip { color: var(--muted); font-style: italic; font-family: var(--sans); font-size: .85rem; padding: 2px 14px; }
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Revision Viewer</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/revisions/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-open">
+    <h2 id="h-open">Open a snapshot</h2>
+    <p class="lede">Load a snapshot made with <code>etcdctl snapshot save backup.db</code>, or a member's own database file, <code>member/snap/db</code> in its data folder, copied while etcd is stopped. Snapshots from etcd 3.5 and 3.6 work, and Kubernetes objects show as <code>kubectl get -o yaml</code> shows them.</p>
+    <div class="drop" id="drop">
+      <p><strong>Drop a snapshot here</strong>, or</p>
+      <div class="row" style="justify-content:center">
+        <label class="btn primary" for="file">Choose a file</label>
+        <input type="file" id="file" class="file-input">
+        <button type="button" class="btn" id="example">Try an example</button>
+      </div>
+    </div>
+    <div id="status" aria-live="polite"></div>
+    <div id="result" class="result"></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-browse" id="browse" hidden>
+    <h2 id="h-browse">Browse the keys</h2>
+    <p class="lede">Find a key, then pick it to see every revision the file keeps and what changed in each.</p>
+    <div class="row">
+      <div class="field grow">
+        <label for="filter">Key contains</label>
+        <input type="text" id="filter" class="mono" autocomplete="off" spellcheck="false" placeholder="/registry/leases/">
+      </div>
+      <div class="field">
+        <label for="show">Show</label>
+        <select id="show">
+          <option value="all">Every key</option>
+          <option value="live">Keys that exist now</option>
+          <option value="history">Keys with old revisions</option>
+          <option value="deleted">Deleted keys</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="sort">Order</label>
+        <select id="sort">
+          <option value="key">By name</option>
+          <option value="bytes">Biggest first</option>
+          <option value="revisions">Most revisions first</option>
+        </select>
+      </div>
+    </div>
+    <div id="matches"></div>
+    <div id="detail" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser and sends nothing anywhere. The page's security policy stops it from fetching or loading anything from another site.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/revisions">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../kubernetes.js"></script>
+<script src="../revisions.js"></script>
+<script src="session.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

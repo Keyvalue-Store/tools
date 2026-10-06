@@ -8,3 +8,8 @@ ring/ring.js includes a JavaScript version of MurmurHash3 (32-bit x86),
 written by Austin Appleby and placed in the public domain, and a version of
 the jump consistent hash algorithm described by John Lamping and Eric Veach
 in "A Fast, Minimal Memory, Consistent Hash Algorithm" (2014).
+
+revisions/kubernetes.js lists the fields of Kubernetes' API types. It is made
+from the Kubernetes project's Go packages (k8s.io/api, k8s.io/apimachinery,
+k8s.io/apiextensions-apiserver and k8s.io/kube-aggregator), Copyright The
+Kubernetes Authors, licensed under the Apache License 2.0.

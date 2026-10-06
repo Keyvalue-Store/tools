@@ -1,0 +1,176 @@
+{
+  "snapshots": [
+    {
+      "snapshot": "etcd-3.6.15-cluster",
+      "etcd": "3.6",
+      "statusHash": {
+        "etcd": 4280581373,
+        "viewer": 4280581373
+      },
+      "totalSize": {
+        "etcd": 528384,
+        "viewer": 528384
+      },
+      "totalKey": {
+        "etcd": 104,
+        "viewer": 104
+      },
+      "revision": {
+        "etcd": 329,
+        "viewer": 329
+      },
+      "liveKeys": {
+        "etcd": 104,
+        "matched": 104
+      },
+      "oldRevisions": {
+        "etcd": 14,
+        "matched": 14
+      },
+      "pages": {
+        "bbolt": {
+          "free": 44,
+          "inUse": 85,
+          "keyValuePairs": 157
+        },
+        "viewer": {
+          "free": 44,
+          "inUse": 85,
+          "keyValuePairs": 157
+        }
+      }
+    },
+    {
+      "snapshot": "etcd-3.6.15-nospace",
+      "etcd": "3.6",
+      "statusHash": {
+        "etcd": 526832767,
+        "viewer": 526832767
+      },
+      "totalSize": {
+        "etcd": 1052672,
+        "viewer": 1052672
+      },
+      "totalKey": {
+        "etcd": 243,
+        "viewer": 243
+      },
+      "revision": {
+        "etcd": 351,
+        "viewer": 351
+      },
+      "liveKeys": {
+        "etcd": 243,
+        "matched": 243
+      },
+      "oldRevisions": {
+        "etcd": 14,
+        "matched": 14
+      },
+      "pages": {
+        "bbolt": {
+          "free": 11,
+          "inUse": 246,
+          "keyValuePairs": 298
+        },
+        "viewer": {
+          "free": 11,
+          "inUse": 246,
+          "keyValuePairs": 298
+        }
+      }
+    },
+    {
+      "snapshot": "etcd-3.5.34-encrypted",
+      "etcd": "3.5",
+      "statusHash": {
+        "etcd": 3094950326,
+        "viewer": 3094950326
+      },
+      "totalSize": {
+        "etcd": 196608,
+        "viewer": 196608
+      },
+      "totalKey": {
+        "etcd": 97,
+        "viewer": 97
+      },
+      "revision": {
+        "etcd": 147,
+        "viewer": 147
+      },
+      "liveKeys": {
+        "etcd": 40,
+        "matched": 40
+      },
+      "oldRevisions": {
+        "etcd": 14,
+        "matched": 14
+      },
+      "pages": {
+        "bbolt": {
+          "free": 9,
+          "inUse": 39,
+          "keyValuePairs": 97
+        },
+        "viewer": {
+          "free": 9,
+          "inUse": 39,
+          "keyValuePairs": 97
+        }
+      }
+    },
+    {
+      "snapshot": "etcd-3.4.45-small",
+      "etcd": "3.4",
+      "statusHash": {
+        "etcd": 4155158406,
+        "viewer": 4155158406
+      },
+      "totalSize": {
+        "etcd": 225280,
+        "viewer": 225280
+      },
+      "totalKey": {
+        "etcd": 91,
+        "viewer": 91
+      },
+      "revision": {
+        "etcd": 143,
+        "viewer": 143
+      },
+      "liveKeys": {
+        "etcd": 40,
+        "matched": 40
+      },
+      "oldRevisions": {
+        "etcd": 14,
+        "matched": 14
+      },
+      "pages": {
+        "bbolt": {
+          "free": 14,
+          "inUse": 41,
+          "keyValuePairs": 91
+        },
+        "viewer": {
+          "free": 14,
+          "inUse": 41,
+          "keyValuePairs": 91
+        }
+      }
+    }
+  ],
+  "kubernetesObjects": {
+    "reference": "k8s.io/api, apimachinery, apiextensions-apiserver and kube-aggregator 1.37.1, through test/generate/k8scodec",
+    "objects": 141,
+    "kinds": 27,
+    "jsonMatched": 141,
+    "yamlMatched": 139,
+    "kubectlCannotPrint": 2
+  },
+  "yamlCases": {
+    "objects": 240,
+    "yamlMatched": 240
+  }
+}

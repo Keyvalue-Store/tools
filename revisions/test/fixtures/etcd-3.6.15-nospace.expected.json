@@ -1,0 +1,2295 @@
+{
+ "alarms": [
+  "memberID:5296416153562158919 alarm:NOSPACE"
+ ],
+ "bbolt": {
+  "keyValuePairs": 298,
+  "pages": {
+   "branch": 3,
+   "free": 11,
+   "leaf": 241,
+   "meta": 2
+  }
+ },
+ "endpointStatus": {
+  "dbSize": 1052672,
+  "dbSizeInUse": 1011712,
+  "revision": 351
+ },
+ "history": {
+  "/registry/configmaps/monitoring/prometheus-rules": {
+   "25": {
+    "valueSha256": "2e11d78f7fc386fd743570c1623f864fe023e91f389d7ab39bcb7ed050c01a20",
+    "version": 1
+   },
+   "141": {
+    "valueSha256": "fde70628e216a7ca4b51604d3750c7348d493169cf1d715d46c351b8ddb0184a",
+    "version": 2
+   }
+  },
+  "/registry/leases/kube-node-lease/node-1": {
+   "107": {
+    "valueSha256": "528825bbb71c38230e3f4d26ba9782e432d7b6ff06e27cf78b72eba691800454",
+    "version": 15
+   },
+   "111": {
+    "valueSha256": "57131dc621353b2d1d2582fe869d2db1b47468d35fc24095b4b150817d185793",
+    "version": 16
+   },
+   "114": {
+    "valueSha256": "dc26646848368e45fb151ffe46ed37f4c3c82d7c6e023ac404d6596c544f4651",
+    "version": 17
+   },
+   "117": {
+    "valueSha256": "a4046010da53ade566f37aced2a5810b3bb9ce2d7b0fb5dddec90021bccf6ab6",
+    "version": 18
+   },
+   "120": {
+    "valueSha256": "5e5d6d64c23dfacca4deae1d122d58c202fac2a9f10bcd4181f56e544167784c",
+    "version": 19
+   },
+   "123": {
+    "valueSha256": "24e5adf5bcce1526f8ab5554bb71ea4aa435f5d25ef22a70d62f8b2c56f0a48a",
+    "version": 20
+   },
+   "126": {
+    "valueSha256": "2fc6e75997915df867e2fd667e427b25a580a6a364c80e4982de6b3043723274",
+    "version": 21
+   },
+   "129": {
+    "valueSha256": "ddd06588ee1ebe0873204bb2a352fcf2c61b3c60aaf8497c559fbdf04b3de785",
+    "version": 22
+   },
+   "132": {
+    "valueSha256": "cdb856ceb89e0c1f3635bc071a7e1182d025141f59e0014829c4b41ca5aad97c",
+    "version": 23
+   },
+   "135": {
+    "valueSha256": "7b8fa40e546bfd0162fd6c2c1b5fa3afa3257ce4e6f6b1b2734f7f17c6d14587",
+    "version": 24
+   },
+   "138": {
+    "valueSha256": "afb57f0266d5925d50f4b76ca6e7d734c57f3754482ec21a09faec04afa0ccea",
+    "version": 25
+   }
+  },
+  "/registry/leases/kube-system/kube-controller-manager": {
+   "110": {
+    "valueSha256": "1ecd3b062e0d00e579b00ef2f8db76e18df12da006e899d87ea80930e0eb5860",
+    "version": 8
+   }
+  }
+ },
+ "live": [
+  {
+   "createRevision": 31,
+   "key": "/registry/cert-manager.io/certificates/shop/web-tls",
+   "lease": "",
+   "modRevision": 31,
+   "valueBytes": 681,
+   "valueSha256": "a3a7ba73b5dea749091b4063063cf9db94fcc1431ac944602f1b577c6c2bea93",
+   "version": 1
+  },
+  {
+   "createRevision": 149,
+   "key": "/registry/configmaps/default/bulk-0",
+   "lease": "",
+   "modRevision": 149,
+   "valueBytes": 3230,
+   "valueSha256": "3eb5538e682f25d7ed5b94e9585aa032781e944b5fa535386875d485376b9407",
+   "version": 1
+  },
+  {
+   "createRevision": 150,
+   "key": "/registry/configmaps/default/bulk-1",
+   "lease": "",
+   "modRevision": 150,
+   "valueBytes": 3230,
+   "valueSha256": "caf0a6970062b03332e488f253c7d4b110628ef61ce684d0f6ab6f3ae2f5b223",
+   "version": 1
+  },
+  {
+   "createRevision": 159,
+   "key": "/registry/configmaps/default/bulk-10",
+   "lease": "",
+   "modRevision": 159,
+   "valueBytes": 3232,
+   "valueSha256": "60135d3324d4215257f3a181823b2efa60a7340c78c9e4ec2ceeea07e824ba79",
+   "version": 1
+  },
+  {
+   "createRevision": 249,
+   "key": "/registry/configmaps/default/bulk-100",
+   "lease": "",
+   "modRevision": 249,
+   "valueBytes": 3234,
+   "valueSha256": "1b8dac26a77bd4e9156b667a71cac3321bf72ed04bac74875f23373d6ec0d437",
+   "version": 1
+  },
+  {
+   "createRevision": 250,
+   "key": "/registry/configmaps/default/bulk-101",
+   "lease": "",
+   "modRevision": 250,
+   "valueBytes": 3234,
+   "valueSha256": "fd48942828ed8b5dbd23dac3d677b92052ac2c64d49e2ee05a935f61a56d583e",
+   "version": 1
+  },
+  {
+   "createRevision": 251,
+   "key": "/registry/configmaps/default/bulk-102",
+   "lease": "",
+   "modRevision": 251,
+   "valueBytes": 3234,
+   "valueSha256": "8ad8f3ff9b4829b916b3dcbdb992e61b2dd13564a16f32b1b155bfcddcc67fb8",
+   "version": 1
+  },
+  {
+   "createRevision": 252,
+   "key": "/registry/configmaps/default/bulk-103",
+   "lease": "",
+   "modRevision": 252,
+   "valueBytes": 3234,
+   "valueSha256": "03886f7dd1bf1fa7ee41795f2b2afc21e4303104f0a7c2d7667ade394cb8941b",
+   "version": 1
+  },
+  {
+   "createRevision": 253,
+   "key": "/registry/configmaps/default/bulk-104",
+   "lease": "",
+   "modRevision": 253,
+   "valueBytes": 3234,
+   "valueSha256": "9b095cf32cde409fd93bba97f81c231347e7cf4a40cc054c147755155364df1b",
+   "version": 1
+  },
+  {
+   "createRevision": 254,
+   "key": "/registry/configmaps/default/bulk-105",
+   "lease": "",
+   "modRevision": 254,
+   "valueBytes": 3234,
+   "valueSha256": "5492ef8e2025cb107f7bcc1e7a81185777ed9264a9ae668bcbcba22cd1c931c7",
+   "version": 1
+  },
+  {
+   "createRevision": 255,
+   "key": "/registry/configmaps/default/bulk-106",
+   "lease": "",
+   "modRevision": 255,
+   "valueBytes": 3234,
+   "valueSha256": "9c0e1d5b64f9e8a548edae40cddc04f9ac7a621fa551b8848b24f9d85d92a851",
+   "version": 1
+  },
+  {
+   "createRevision": 256,
+   "key": "/registry/configmaps/default/bulk-107",
+   "lease": "",
+   "modRevision": 256,
+   "valueBytes": 3234,
+   "valueSha256": "811813d72a9045f3cbe5ea40221d30ab9ec03b81fa4177d5139d0d9a22bfd200",
+   "version": 1
+  },
+  {
+   "createRevision": 257,
+   "key": "/registry/configmaps/default/bulk-108",
+   "lease": "",
+   "modRevision": 257,
+   "valueBytes": 3234,
+   "valueSha256": "27a314bf0a1978e6cb890f7c677cd8cce1ac0e1646275da8cedd934110134531",
+   "version": 1
+  },
+  {
+   "createRevision": 258,
+   "key": "/registry/configmaps/default/bulk-109",
+   "lease": "",
+   "modRevision": 258,
+   "valueBytes": 3234,
+   "valueSha256": "e7e82039ecb24aabdae2bb8ddecb00c5af78b985d4edc79f67d509b8a8ebf2d9",
+   "version": 1
+  },
+  {
+   "createRevision": 160,
+   "key": "/registry/configmaps/default/bulk-11",
+   "lease": "",
+   "modRevision": 160,
+   "valueBytes": 3232,
+   "valueSha256": "14870ed84a652ceb3cb3810b73b724afe8eb795393e5c2cb078f5d60ce426dda",
+   "version": 1
+  },
+  {
+   "createRevision": 259,
+   "key": "/registry/configmaps/default/bulk-110",
+   "lease": "",
+   "modRevision": 259,
+   "valueBytes": 3234,
+   "valueSha256": "8de4953b044018a2f1864212d35999802e0b8e71b1266b61fb7f3ae65b39911f",
+   "version": 1
+  },
+  {
+   "createRevision": 260,
+   "key": "/registry/configmaps/default/bulk-111",
+   "lease": "",
+   "modRevision": 260,
+   "valueBytes": 3234,
+   "valueSha256": "0e2bd640c9b31a4791870563e1354c3e9681dcf07324438a1be3ff90f8152a9e",
+   "version": 1
+  },
+  {
+   "createRevision": 261,
+   "key": "/registry/configmaps/default/bulk-112",
+   "lease": "",
+   "modRevision": 261,
+   "valueBytes": 3234,
+   "valueSha256": "13d29d121fe4873dbb30f2ba756ee8e33ee221faf333ff294f133cb37fe68dc5",
+   "version": 1
+  },
+  {
+   "createRevision": 262,
+   "key": "/registry/configmaps/default/bulk-113",
+   "lease": "",
+   "modRevision": 262,
+   "valueBytes": 3234,
+   "valueSha256": "3caf18b15612fec817eaeb4b33813fb142ec23c7361486c9e2d32de1c5dd5849",
+   "version": 1
+  },
+  {
+   "createRevision": 263,
+   "key": "/registry/configmaps/default/bulk-114",
+   "lease": "",
+   "modRevision": 263,
+   "valueBytes": 3234,
+   "valueSha256": "ce777bfa871749112b2931b876eb6cc1b57a23542927230bae2802193f8e9074",
+   "version": 1
+  },
+  {
+   "createRevision": 264,
+   "key": "/registry/configmaps/default/bulk-115",
+   "lease": "",
+   "modRevision": 264,
+   "valueBytes": 3234,
+   "valueSha256": "0422beb15b78ccfe907c1abee9cc32e60543f5451a441391201ec6b854418f09",
+   "version": 1
+  },
+  {
+   "createRevision": 265,
+   "key": "/registry/configmaps/default/bulk-116",
+   "lease": "",
+   "modRevision": 265,
+   "valueBytes": 3234,
+   "valueSha256": "3d6c2b8453aec8884ebc8ddd0921cf248d9832c9e8862e1d7f78b47a9bee9a76",
+   "version": 1
+  },
+  {
+   "createRevision": 266,
+   "key": "/registry/configmaps/default/bulk-117",
+   "lease": "",
+   "modRevision": 266,
+   "valueBytes": 3234,
+   "valueSha256": "7963b8933ca82b27c8a1a9e46fdc836108e1c5775215a692f81d60d75aff830a",
+   "version": 1
+  },
+  {
+   "createRevision": 267,
+   "key": "/registry/configmaps/default/bulk-118",
+   "lease": "",
+   "modRevision": 267,
+   "valueBytes": 3234,
+   "valueSha256": "cf7e36a335c13fde42b591b847a99e10b9f70b0304c7f0fb80316dc4e20a7a47",
+   "version": 1
+  },
+  {
+   "createRevision": 268,
+   "key": "/registry/configmaps/default/bulk-119",
+   "lease": "",
+   "modRevision": 268,
+   "valueBytes": 3234,
+   "valueSha256": "73a085f0ee3c19506f781e32857c22455917a8e5bba57284133d69cf4e6558db",
+   "version": 1
+  },
+  {
+   "createRevision": 161,
+   "key": "/registry/configmaps/default/bulk-12",
+   "lease": "",
+   "modRevision": 161,
+   "valueBytes": 3232,
+   "valueSha256": "3a5a9e1c4347dc83e14369844f778d6a5cbddb5a3063a587d0f2845db405ab8c",
+   "version": 1
+  },
+  {
+   "createRevision": 269,
+   "key": "/registry/configmaps/default/bulk-120",
+   "lease": "",
+   "modRevision": 269,
+   "valueBytes": 3234,
+   "valueSha256": "c90c10c39f027a1655b90e69697e30a27492501f95b8bd9e3c96772651beeb38",
+   "version": 1
+  },
+  {
+   "createRevision": 270,
+   "key": "/registry/configmaps/default/bulk-121",
+   "lease": "",
+   "modRevision": 270,
+   "valueBytes": 3234,
+   "valueSha256": "2eb2480c98547e321b68b9c44bec44fc77a0508eff18fe45e6ca6058fcdc1223",
+   "version": 1
+  },
+  {
+   "createRevision": 271,
+   "key": "/registry/configmaps/default/bulk-122",
+   "lease": "",
+   "modRevision": 271,
+   "valueBytes": 3234,
+   "valueSha256": "10e0d7fe6b57623e07714db315644cfc204d8fea520bcbec999f2df5524d9e02",
+   "version": 1
+  },
+  {
+   "createRevision": 272,
+   "key": "/registry/configmaps/default/bulk-123",
+   "lease": "",
+   "modRevision": 272,
+   "valueBytes": 3234,
+   "valueSha256": "e76d040218a81383bcf1c62e4b08065ea5deded2b355b392f452483621070267",
+   "version": 1
+  },
+  {
+   "createRevision": 273,
+   "key": "/registry/configmaps/default/bulk-124",
+   "lease": "",
+   "modRevision": 273,
+   "valueBytes": 3234,
+   "valueSha256": "4acaded3a5ccb4edb2404dab65812fb6ffd571daf8efd28ae4a2fc003d3f6908",
+   "version": 1
+  },
+  {
+   "createRevision": 274,
+   "key": "/registry/configmaps/default/bulk-125",
+   "lease": "",
+   "modRevision": 274,
+   "valueBytes": 3234,
+   "valueSha256": "d2e3f4ed4538c7ee5be3571acfe8a81d5eadb3645f35abf91da982e7ec22aae1",
+   "version": 1
+  },
+  {
+   "createRevision": 275,
+   "key": "/registry/configmaps/default/bulk-126",
+   "lease": "",
+   "modRevision": 275,
+   "valueBytes": 3234,
+   "valueSha256": "db5040fe39a832306e5d472ea0cca253ecb911ec863cb565f614561b70eadb83",
+   "version": 1
+  },
+  {
+   "createRevision": 276,
+   "key": "/registry/configmaps/default/bulk-127",
+   "lease": "",
+   "modRevision": 276,
+   "valueBytes": 3234,
+   "valueSha256": "d0a93fc45a6aaef3f8eef1a43775885c3ed309c84ced1bad55c49b262fab92a3",
+   "version": 1
+  },
+  {
+   "createRevision": 277,
+   "key": "/registry/configmaps/default/bulk-128",
+   "lease": "",
+   "modRevision": 277,
+   "valueBytes": 3234,
+   "valueSha256": "cf9500c32a91497c3b9fd3a84de3614e16723c9e523fc059b23670dc58c62c43",
+   "version": 1
+  },
+  {
+   "createRevision": 278,
+   "key": "/registry/configmaps/default/bulk-129",
+   "lease": "",
+   "modRevision": 278,
+   "valueBytes": 3234,
+   "valueSha256": "556bc8ded9013fbd77884a0f31e3595a5e7c2fb291fab496ff4e4c7e7848d720",
+   "version": 1
+  },
+  {
+   "createRevision": 162,
+   "key": "/registry/configmaps/default/bulk-13",
+   "lease": "",
+   "modRevision": 162,
+   "valueBytes": 3232,
+   "valueSha256": "0d6b7aa9871f37ef69fb8e39b9a72abacae20f859be0061dcc6cf2b1ec499f40",
+   "version": 1
+  },
+  {
+   "createRevision": 279,
+   "key": "/registry/configmaps/default/bulk-130",
+   "lease": "",
+   "modRevision": 279,
+   "valueBytes": 3234,
+   "valueSha256": "e5c0716978877d8ab7d34987c9967b289ce5302cbcbc02aa42c5d8997868f1b8",
+   "version": 1
+  },
+  {
+   "createRevision": 280,
+   "key": "/registry/configmaps/default/bulk-131",
+   "lease": "",
+   "modRevision": 280,
+   "valueBytes": 3234,
+   "valueSha256": "b7eabab11b93562e070d8fc31790587bf747864a3e12970d24d8ca321c06ec19",
+   "version": 1
+  },
+  {
+   "createRevision": 281,
+   "key": "/registry/configmaps/default/bulk-132",
+   "lease": "",
+   "modRevision": 281,
+   "valueBytes": 3234,
+   "valueSha256": "211cf2b76ab206f97e464dacd5d3edb87f72f551b6423c119eb843a1023872ca",
+   "version": 1
+  },
+  {
+   "createRevision": 282,
+   "key": "/registry/configmaps/default/bulk-133",
+   "lease": "",
+   "modRevision": 282,
+   "valueBytes": 3234,
+   "valueSha256": "ef236401fff0f74be7ed0cba36d35de971c68035331a3a914708168f1a0fb6f1",
+   "version": 1
+  },
+  {
+   "createRevision": 283,
+   "key": "/registry/configmaps/default/bulk-134",
+   "lease": "",
+   "modRevision": 283,
+   "valueBytes": 3234,
+   "valueSha256": "617f519ddc14061fa7fdcc748bccecaf2ce11599fa3b31fdb3ddbd3039183450",
+   "version": 1
+  },
+  {
+   "createRevision": 284,
+   "key": "/registry/configmaps/default/bulk-135",
+   "lease": "",
+   "modRevision": 284,
+   "valueBytes": 3234,
+   "valueSha256": "2b558e7085e3bd9d502dab729b426b142abefee227e20c098b4d6166a8fc484e",
+   "version": 1
+  },
+  {
+   "createRevision": 285,
+   "key": "/registry/configmaps/default/bulk-136",
+   "lease": "",
+   "modRevision": 285,
+   "valueBytes": 3234,
+   "valueSha256": "27e8227ba4b085388e86740c059078f52d8087ca9f9753b750c61619d8170f7f",
+   "version": 1
+  },
+  {
+   "createRevision": 286,
+   "key": "/registry/configmaps/default/bulk-137",
+   "lease": "",
+   "modRevision": 286,
+   "valueBytes": 3234,
+   "valueSha256": "33eec3a5abecdde70f1981788999d5d921eedc6bb7797b4ab3b70f618fcc5ae7",
+   "version": 1
+  },
+  {
+   "createRevision": 287,
+   "key": "/registry/configmaps/default/bulk-138",
+   "lease": "",
+   "modRevision": 287,
+   "valueBytes": 3234,
+   "valueSha256": "c44eb16f0b96b16c1bef2c2e0ab73265b8974cf0d9c6a5ffff8add2e95b5bfce",
+   "version": 1
+  },
+  {
+   "createRevision": 288,
+   "key": "/registry/configmaps/default/bulk-139",
+   "lease": "",
+   "modRevision": 288,
+   "valueBytes": 3234,
+   "valueSha256": "94686ee5f4839a50e923bb864ac7dce904f8a8a794702a7950bc54a1f3a62285",
+   "version": 1
+  },
+  {
+   "createRevision": 163,
+   "key": "/registry/configmaps/default/bulk-14",
+   "lease": "",
+   "modRevision": 163,
+   "valueBytes": 3232,
+   "valueSha256": "de6ee9c27cb37ea048b5253aa6dc45df1ee5bd213c0c07e11ad20eb917912e0d",
+   "version": 1
+  },
+  {
+   "createRevision": 289,
+   "key": "/registry/configmaps/default/bulk-140",
+   "lease": "",
+   "modRevision": 289,
+   "valueBytes": 3234,
+   "valueSha256": "04099dc9f141547e952500a7977f64e1f132149b6cd3d80bdefc8e965aabfec8",
+   "version": 1
+  },
+  {
+   "createRevision": 290,
+   "key": "/registry/configmaps/default/bulk-141",
+   "lease": "",
+   "modRevision": 290,
+   "valueBytes": 3234,
+   "valueSha256": "3ed20a6dfdf742716e17319609beada002b44bc7f0da16b0fbc9c7f1c52f5bfb",
+   "version": 1
+  },
+  {
+   "createRevision": 291,
+   "key": "/registry/configmaps/default/bulk-142",
+   "lease": "",
+   "modRevision": 291,
+   "valueBytes": 3234,
+   "valueSha256": "064ff9aab474308497effe9f572976e347dc9b6636b72822b5147e6f302e94d7",
+   "version": 1
+  },
+  {
+   "createRevision": 292,
+   "key": "/registry/configmaps/default/bulk-143",
+   "lease": "",
+   "modRevision": 292,
+   "valueBytes": 3234,
+   "valueSha256": "8107c809d95e91eb674913b73e032c57a22fc438369aa1184f37c3c04054ebd9",
+   "version": 1
+  },
+  {
+   "createRevision": 293,
+   "key": "/registry/configmaps/default/bulk-144",
+   "lease": "",
+   "modRevision": 293,
+   "valueBytes": 3234,
+   "valueSha256": "71b0251492b9f9b22242a0201e6fc11fc34c175107b052b126a277395a29ac42",
+   "version": 1
+  },
+  {
+   "createRevision": 294,
+   "key": "/registry/configmaps/default/bulk-145",
+   "lease": "",
+   "modRevision": 294,
+   "valueBytes": 3234,
+   "valueSha256": "c8ebdf29e9317089b0a1b540ad170fea90052dfc8735cf3eddd8c5a92a9044b2",
+   "version": 1
+  },
+  {
+   "createRevision": 295,
+   "key": "/registry/configmaps/default/bulk-146",
+   "lease": "",
+   "modRevision": 295,
+   "valueBytes": 3234,
+   "valueSha256": "01d8979dd4116be2e0565bf89358dc46a10920c3e51c1f92b5481c82261f1618",
+   "version": 1
+  },
+  {
+   "createRevision": 296,
+   "key": "/registry/configmaps/default/bulk-147",
+   "lease": "",
+   "modRevision": 296,
+   "valueBytes": 3234,
+   "valueSha256": "75994827ff33265290e073b36f898abef1a5fca4f0f4e1041df6eb4fecf3bf99",
+   "version": 1
+  },
+  {
+   "createRevision": 297,
+   "key": "/registry/configmaps/default/bulk-148",
+   "lease": "",
+   "modRevision": 297,
+   "valueBytes": 3234,
+   "valueSha256": "c6d8de2cabe4892099cf640df525822d2a958f938ebcd358039864534b67464a",
+   "version": 1
+  },
+  {
+   "createRevision": 298,
+   "key": "/registry/configmaps/default/bulk-149",
+   "lease": "",
+   "modRevision": 298,
+   "valueBytes": 3234,
+   "valueSha256": "6f0a9dd10025fdcf31368d3f6c728c1da850bb0c6e2ebd68e3ed629500cadcac",
+   "version": 1
+  },
+  {
+   "createRevision": 164,
+   "key": "/registry/configmaps/default/bulk-15",
+   "lease": "",
+   "modRevision": 164,
+   "valueBytes": 3232,
+   "valueSha256": "dd79be427c584ddffa57f1499394ea7490cdb9745855bae969962141844941b7",
+   "version": 1
+  },
+  {
+   "createRevision": 299,
+   "key": "/registry/configmaps/default/bulk-150",
+   "lease": "",
+   "modRevision": 299,
+   "valueBytes": 3234,
+   "valueSha256": "870ad7680de904c20d5e4f223cd3134ec6a5743b75b6c193ba654089e2934522",
+   "version": 1
+  },
+  {
+   "createRevision": 300,
+   "key": "/registry/configmaps/default/bulk-151",
+   "lease": "",
+   "modRevision": 300,
+   "valueBytes": 3234,
+   "valueSha256": "5808a527a972a9cacdf11c12089a5ebef4186beaa86abed4c55a11a66531df4b",
+   "version": 1
+  },
+  {
+   "createRevision": 301,
+   "key": "/registry/configmaps/default/bulk-152",
+   "lease": "",
+   "modRevision": 301,
+   "valueBytes": 3234,
+   "valueSha256": "6eb38a8504c4481821aa98912177ef24edac202e4acb2a8a011a70a6b3ddab56",
+   "version": 1
+  },
+  {
+   "createRevision": 302,
+   "key": "/registry/configmaps/default/bulk-153",
+   "lease": "",
+   "modRevision": 302,
+   "valueBytes": 3234,
+   "valueSha256": "8f33dadcb69c9dc34d7f7e5f3c55401cbf09b59a57f0044db0b9b7734e29838c",
+   "version": 1
+  },
+  {
+   "createRevision": 303,
+   "key": "/registry/configmaps/default/bulk-154",
+   "lease": "",
+   "modRevision": 303,
+   "valueBytes": 3234,
+   "valueSha256": "cf99b987a2e7a0d90c445fda212902be4e8cd287dfdd39a3ac09102362c96858",
+   "version": 1
+  },
+  {
+   "createRevision": 304,
+   "key": "/registry/configmaps/default/bulk-155",
+   "lease": "",
+   "modRevision": 304,
+   "valueBytes": 3234,
+   "valueSha256": "b758d317bf9c9ea16c284ecff72b08d2d2da99497bf8ab20a61ccff8c94bf5e2",
+   "version": 1
+  },
+  {
+   "createRevision": 305,
+   "key": "/registry/configmaps/default/bulk-156",
+   "lease": "",
+   "modRevision": 305,
+   "valueBytes": 3234,
+   "valueSha256": "973e9f3c880f353fab52878cf95e87703839fc5874d282b9b5fa98a896b4542c",
+   "version": 1
+  },
+  {
+   "createRevision": 306,
+   "key": "/registry/configmaps/default/bulk-157",
+   "lease": "",
+   "modRevision": 306,
+   "valueBytes": 3234,
+   "valueSha256": "a3cd34b13fa8d9650e5c5d76a107e5b3272f908df277c18d517ef253a1760d5e",
+   "version": 1
+  },
+  {
+   "createRevision": 307,
+   "key": "/registry/configmaps/default/bulk-158",
+   "lease": "",
+   "modRevision": 307,
+   "valueBytes": 3234,
+   "valueSha256": "5c7454ec457e59e345f1d061fccaaa11a8ad808a3f0d05289747c23b56caf6bb",
+   "version": 1
+  },
+  {
+   "createRevision": 308,
+   "key": "/registry/configmaps/default/bulk-159",
+   "lease": "",
+   "modRevision": 308,
+   "valueBytes": 3234,
+   "valueSha256": "bf9c0b72b3d7d6d3acea3a859a48a4fa1860909a64293cdeef3547ba78140bc5",
+   "version": 1
+  },
+  {
+   "createRevision": 165,
+   "key": "/registry/configmaps/default/bulk-16",
+   "lease": "",
+   "modRevision": 165,
+   "valueBytes": 3232,
+   "valueSha256": "cafae06aed900e1f95a60db65d2549a1fd3ec598a180ffe0e09fcabf52a714d2",
+   "version": 1
+  },
+  {
+   "createRevision": 309,
+   "key": "/registry/configmaps/default/bulk-160",
+   "lease": "",
+   "modRevision": 309,
+   "valueBytes": 3234,
+   "valueSha256": "77ca701bf1c565c7e9c25b4337de1a3ddbc8a1a6b7df36569aa7a05ea5b83997",
+   "version": 1
+  },
+  {
+   "createRevision": 310,
+   "key": "/registry/configmaps/default/bulk-161",
+   "lease": "",
+   "modRevision": 310,
+   "valueBytes": 3234,
+   "valueSha256": "c151c6cc8b6d15d5c345763037a8ce2412b5e2325a410b6afb2f79bb66c4e850",
+   "version": 1
+  },
+  {
+   "createRevision": 311,
+   "key": "/registry/configmaps/default/bulk-162",
+   "lease": "",
+   "modRevision": 311,
+   "valueBytes": 3234,
+   "valueSha256": "8eba559bcc9c5f61d08bea5db11faf7bb0e6988800a8605a6649ec78ba2ae578",
+   "version": 1
+  },
+  {
+   "createRevision": 312,
+   "key": "/registry/configmaps/default/bulk-163",
+   "lease": "",
+   "modRevision": 312,
+   "valueBytes": 3234,
+   "valueSha256": "1c920c7d65b0b0e792e69b70b1c1ff8e27ad9b3b926909d3f4ac86b259234077",
+   "version": 1
+  },
+  {
+   "createRevision": 313,
+   "key": "/registry/configmaps/default/bulk-164",
+   "lease": "",
+   "modRevision": 313,
+   "valueBytes": 3234,
+   "valueSha256": "649748b4695f9b59cc39b01442d232f449c06b32c84204b0eb928be420e3aeff",
+   "version": 1
+  },
+  {
+   "createRevision": 314,
+   "key": "/registry/configmaps/default/bulk-165",
+   "lease": "",
+   "modRevision": 314,
+   "valueBytes": 3234,
+   "valueSha256": "75687ce80289e4e4be94d1315b77abde231a3902ed0ffe1e38b62e22e25fe24a",
+   "version": 1
+  },
+  {
+   "createRevision": 315,
+   "key": "/registry/configmaps/default/bulk-166",
+   "lease": "",
+   "modRevision": 315,
+   "valueBytes": 3234,
+   "valueSha256": "88739ad1bad2016df0d12c04df227205f531406306adca034279858940e71e26",
+   "version": 1
+  },
+  {
+   "createRevision": 316,
+   "key": "/registry/configmaps/default/bulk-167",
+   "lease": "",
+   "modRevision": 316,
+   "valueBytes": 3234,
+   "valueSha256": "c5f2d28e2daee99cd080376b1c028c545d1d74c927d4d05a2ed53812f3ad1fb1",
+   "version": 1
+  },
+  {
+   "createRevision": 317,
+   "key": "/registry/configmaps/default/bulk-168",
+   "lease": "",
+   "modRevision": 317,
+   "valueBytes": 3234,
+   "valueSha256": "265f004effbb785093316a462701d3f2eb2ef6c6e0097a6c5e9478e4aa8dc60b",
+   "version": 1
+  },
+  {
+   "createRevision": 318,
+   "key": "/registry/configmaps/default/bulk-169",
+   "lease": "",
+   "modRevision": 318,
+   "valueBytes": 3234,
+   "valueSha256": "c91396272735413f703794b133cadcee632fbc13ee6f1e6739907e7170d373bb",
+   "version": 1
+  },
+  {
+   "createRevision": 166,
+   "key": "/registry/configmaps/default/bulk-17",
+   "lease": "",
+   "modRevision": 166,
+   "valueBytes": 3232,
+   "valueSha256": "bc3643c6414e9415435dd25c5684ff124a628fb1e9e67c29650165ebed2b5b75",
+   "version": 1
+  },
+  {
+   "createRevision": 319,
+   "key": "/registry/configmaps/default/bulk-170",
+   "lease": "",
+   "modRevision": 319,
+   "valueBytes": 3234,
+   "valueSha256": "84f107fd4274ce4429fb0bd6e09c1fa11bae76560662d0a79fbfbfa18c62a1ff",
+   "version": 1
+  },
+  {
+   "createRevision": 320,
+   "key": "/registry/configmaps/default/bulk-171",
+   "lease": "",
+   "modRevision": 320,
+   "valueBytes": 3234,
+   "valueSha256": "c5d97cdc3db367065079a7b31cc719ff29abfe375b158c4ff0a5c097c059a1ed",
+   "version": 1
+  },
+  {
+   "createRevision": 321,
+   "key": "/registry/configmaps/default/bulk-172",
+   "lease": "",
+   "modRevision": 321,
+   "valueBytes": 3234,
+   "valueSha256": "0971caf359283a8ba000af3584d40489e52fc74a1013f8a6e5829253910a8327",
+   "version": 1
+  },
+  {
+   "createRevision": 322,
+   "key": "/registry/configmaps/default/bulk-173",
+   "lease": "",
+   "modRevision": 322,
+   "valueBytes": 3234,
+   "valueSha256": "fd461dbc6475edf25ab7de03a4af05649d2f416b97a8004677a69378ef9491d2",
+   "version": 1
+  },
+  {
+   "createRevision": 323,
+   "key": "/registry/configmaps/default/bulk-174",
+   "lease": "",
+   "modRevision": 323,
+   "valueBytes": 3234,
+   "valueSha256": "dd7d600eaa3c9b67ecf5696f8b1e811cb7f2e1061b8901f4cab85a7f0beab335",
+   "version": 1
+  },
+  {
+   "createRevision": 324,
+   "key": "/registry/configmaps/default/bulk-175",
+   "lease": "",
+   "modRevision": 324,
+   "valueBytes": 3234,
+   "valueSha256": "a2817bda478de99f2b56e26f26b42220dfabc23f1969a9de9e915d7e22d1c3e2",
+   "version": 1
+  },
+  {
+   "createRevision": 325,
+   "key": "/registry/configmaps/default/bulk-176",
+   "lease": "",
+   "modRevision": 325,
+   "valueBytes": 3234,
+   "valueSha256": "77c176f9036c03d58bb0e9ad5fc6291612cb4324ba2f2d83a4df7be913a324d7",
+   "version": 1
+  },
+  {
+   "createRevision": 326,
+   "key": "/registry/configmaps/default/bulk-177",
+   "lease": "",
+   "modRevision": 326,
+   "valueBytes": 3234,
+   "valueSha256": "20287c2dbe8390e6b26962759c2978fec1963e50c4d2ed2e2d560596f828e834",
+   "version": 1
+  },
+  {
+   "createRevision": 327,
+   "key": "/registry/configmaps/default/bulk-178",
+   "lease": "",
+   "modRevision": 327,
+   "valueBytes": 3234,
+   "valueSha256": "0b324074176e5544ab7c653650039eb66c5177bb4b4cea2308ff6dd55d8bd041",
+   "version": 1
+  },
+  {
+   "createRevision": 328,
+   "key": "/registry/configmaps/default/bulk-179",
+   "lease": "",
+   "modRevision": 328,
+   "valueBytes": 3234,
+   "valueSha256": "d421369a46fd45ab7a54b4355d605cc6f8a2e743ee15060599d393e3226dafc3",
+   "version": 1
+  },
+  {
+   "createRevision": 167,
+   "key": "/registry/configmaps/default/bulk-18",
+   "lease": "",
+   "modRevision": 167,
+   "valueBytes": 3232,
+   "valueSha256": "dba1bc17914c65f70ad4bbc7b86f8f865e907b1cee3881c5dc7dd271649f7e0b",
+   "version": 1
+  },
+  {
+   "createRevision": 329,
+   "key": "/registry/configmaps/default/bulk-180",
+   "lease": "",
+   "modRevision": 329,
+   "valueBytes": 3234,
+   "valueSha256": "c566cf05343cca2e4fd9b2da992fb250714008b50c39a0515e24fad3b6108200",
+   "version": 1
+  },
+  {
+   "createRevision": 330,
+   "key": "/registry/configmaps/default/bulk-181",
+   "lease": "",
+   "modRevision": 330,
+   "valueBytes": 3234,
+   "valueSha256": "6fb0c60be3a1f32362e161de9deab5877c385aa6e15d7d8766c8784341ee98fa",
+   "version": 1
+  },
+  {
+   "createRevision": 331,
+   "key": "/registry/configmaps/default/bulk-182",
+   "lease": "",
+   "modRevision": 331,
+   "valueBytes": 3234,
+   "valueSha256": "756239a969030085487b2a9857f3ce8b8f22e4b30309d994a1204e8d61aa083f",
+   "version": 1
+  },
+  {
+   "createRevision": 332,
+   "key": "/registry/configmaps/default/bulk-183",
+   "lease": "",
+   "modRevision": 332,
+   "valueBytes": 3234,
+   "valueSha256": "4453bb7080b3e8fde0d4cd0d95c1b4be1fa3466b3c986c30e9d426feba67ea94",
+   "version": 1
+  },
+  {
+   "createRevision": 333,
+   "key": "/registry/configmaps/default/bulk-184",
+   "lease": "",
+   "modRevision": 333,
+   "valueBytes": 3234,
+   "valueSha256": "acdc97b1fb6a7cec8f2d24f5a2606de2a98f7389691860c8c9e8f03d17411aeb",
+   "version": 1
+  },
+  {
+   "createRevision": 334,
+   "key": "/registry/configmaps/default/bulk-185",
+   "lease": "",
+   "modRevision": 334,
+   "valueBytes": 3234,
+   "valueSha256": "6aabc597ad9ddff90881a7d3f52e29c6f4fde7f03b1a31dad77dacf9937a2bce",
+   "version": 1
+  },
+  {
+   "createRevision": 335,
+   "key": "/registry/configmaps/default/bulk-186",
+   "lease": "",
+   "modRevision": 335,
+   "valueBytes": 3234,
+   "valueSha256": "3a5efb39300861b7633daf030b28ccd0fd26959653caa3d73dc5ab4e881a98cb",
+   "version": 1
+  },
+  {
+   "createRevision": 336,
+   "key": "/registry/configmaps/default/bulk-187",
+   "lease": "",
+   "modRevision": 336,
+   "valueBytes": 3234,
+   "valueSha256": "46f83a5ee9e551364c41f714c3e1bc293c9da710d9df248eab1b25ee6ffcc387",
+   "version": 1
+  },
+  {
+   "createRevision": 337,
+   "key": "/registry/configmaps/default/bulk-188",
+   "lease": "",
+   "modRevision": 337,
+   "valueBytes": 3234,
+   "valueSha256": "735db23314bad07e50effa2d799bffc690f918d764900e6a0108d52986d01d96",
+   "version": 1
+  },
+  {
+   "createRevision": 338,
+   "key": "/registry/configmaps/default/bulk-189",
+   "lease": "",
+   "modRevision": 338,
+   "valueBytes": 3234,
+   "valueSha256": "6a04398dd06c1a1235ab35e7451351674add7e9e4e523a5c2470c3cc9631a8c2",
+   "version": 1
+  },
+  {
+   "createRevision": 168,
+   "key": "/registry/configmaps/default/bulk-19",
+   "lease": "",
+   "modRevision": 168,
+   "valueBytes": 3232,
+   "valueSha256": "cf298a84be6fc444be12d0c2853a180066b506c7eb42413d00fd818beadc2b02",
+   "version": 1
+  },
+  {
+   "createRevision": 339,
+   "key": "/registry/configmaps/default/bulk-190",
+   "lease": "",
+   "modRevision": 339,
+   "valueBytes": 3234,
+   "valueSha256": "7c312f4685765bcaecde4f0015dda34aad6c786d488299fa47c6405b8dca68d9",
+   "version": 1
+  },
+  {
+   "createRevision": 340,
+   "key": "/registry/configmaps/default/bulk-191",
+   "lease": "",
+   "modRevision": 340,
+   "valueBytes": 3234,
+   "valueSha256": "a8bb0c2025f2b412f713c5348cdd9f11d25c0fabfaf2fe418b3597ce9dbccd6c",
+   "version": 1
+  },
+  {
+   "createRevision": 341,
+   "key": "/registry/configmaps/default/bulk-192",
+   "lease": "",
+   "modRevision": 341,
+   "valueBytes": 3234,
+   "valueSha256": "3b9af74f78fff10d784c5a25f30fe5be86e0bb22da8e70696a50533539489aa0",
+   "version": 1
+  },
+  {
+   "createRevision": 342,
+   "key": "/registry/configmaps/default/bulk-193",
+   "lease": "",
+   "modRevision": 342,
+   "valueBytes": 3234,
+   "valueSha256": "d8b697baf349c9d5d36a80f476f2cd0dcc922e8a81f878f1e4c2a9b88d089adf",
+   "version": 1
+  },
+  {
+   "createRevision": 343,
+   "key": "/registry/configmaps/default/bulk-194",
+   "lease": "",
+   "modRevision": 343,
+   "valueBytes": 3234,
+   "valueSha256": "41df86c5cfc2ce3032f385db83456092d944e606a337853eee08e4d6b973c825",
+   "version": 1
+  },
+  {
+   "createRevision": 344,
+   "key": "/registry/configmaps/default/bulk-195",
+   "lease": "",
+   "modRevision": 344,
+   "valueBytes": 3234,
+   "valueSha256": "3bf1b048558286e50c2b96abb4b0ee3b0dda66fe109a2cdef299eeb666416063",
+   "version": 1
+  },
+  {
+   "createRevision": 345,
+   "key": "/registry/configmaps/default/bulk-196",
+   "lease": "",
+   "modRevision": 345,
+   "valueBytes": 3234,
+   "valueSha256": "def9ef2b9c59a9c9cc168280052825b0a8d77de1ac193994b5ea9c4e9f5b3bc7",
+   "version": 1
+  },
+  {
+   "createRevision": 346,
+   "key": "/registry/configmaps/default/bulk-197",
+   "lease": "",
+   "modRevision": 346,
+   "valueBytes": 3234,
+   "valueSha256": "5df1c98c3604f0e7502f81a0b4b437c24db5422febe6abb225b114ef45abdab4",
+   "version": 1
+  },
+  {
+   "createRevision": 347,
+   "key": "/registry/configmaps/default/bulk-198",
+   "lease": "",
+   "modRevision": 347,
+   "valueBytes": 3234,
+   "valueSha256": "035890ec0a4df57e390d5c12f6badd3accdb0bf87d5b551bc421e31f9aee6e5a",
+   "version": 1
+  },
+  {
+   "createRevision": 348,
+   "key": "/registry/configmaps/default/bulk-199",
+   "lease": "",
+   "modRevision": 348,
+   "valueBytes": 3234,
+   "valueSha256": "ee9ce1c1770b08062f085ab4f262d7d6d1fee41a718462d867c0df0ee2c7879c",
+   "version": 1
+  },
+  {
+   "createRevision": 151,
+   "key": "/registry/configmaps/default/bulk-2",
+   "lease": "",
+   "modRevision": 151,
+   "valueBytes": 3230,
+   "valueSha256": "b304f90b9fc9ba48cbd74987ad638c3ecfd8664bc076541809e347276f286c54",
+   "version": 1
+  },
+  {
+   "createRevision": 169,
+   "key": "/registry/configmaps/default/bulk-20",
+   "lease": "",
+   "modRevision": 169,
+   "valueBytes": 3232,
+   "valueSha256": "94035a390d839a5f11464e8347cae0c42575e8127cdf3f90880d2b22d4b099b5",
+   "version": 1
+  },
+  {
+   "createRevision": 349,
+   "key": "/registry/configmaps/default/bulk-200",
+   "lease": "",
+   "modRevision": 349,
+   "valueBytes": 3234,
+   "valueSha256": "82a455bd6c76552fbf50b178f06ec5a2703ea4ca12a17aa9c19e956221d7a0fb",
+   "version": 1
+  },
+  {
+   "createRevision": 350,
+   "key": "/registry/configmaps/default/bulk-201",
+   "lease": "",
+   "modRevision": 350,
+   "valueBytes": 3234,
+   "valueSha256": "3e5d9f6a7ed325c3299c8b335cda6d206d1d195719bd8280d825fd45fea962dd",
+   "version": 1
+  },
+  {
+   "createRevision": 351,
+   "key": "/registry/configmaps/default/bulk-202",
+   "lease": "",
+   "modRevision": 351,
+   "valueBytes": 3234,
+   "valueSha256": "b77695c11a956ce7e7c5451c5318c48fcc0cb552a6e2c974ce4bd2b03c05e706",
+   "version": 1
+  },
+  {
+   "createRevision": 170,
+   "key": "/registry/configmaps/default/bulk-21",
+   "lease": "",
+   "modRevision": 170,
+   "valueBytes": 3232,
+   "valueSha256": "353f18e4fed6b0fd33bd7f4d2fc6527ef21476b9a54b4074076d7dcc99b3dedc",
+   "version": 1
+  },
+  {
+   "createRevision": 171,
+   "key": "/registry/configmaps/default/bulk-22",
+   "lease": "",
+   "modRevision": 171,
+   "valueBytes": 3232,
+   "valueSha256": "b0f5b46cffd4d1442d41012701d3a6370db05a0fa3ed216381a8e99ade6acdfd",
+   "version": 1
+  },
+  {
+   "createRevision": 172,
+   "key": "/registry/configmaps/default/bulk-23",
+   "lease": "",
+   "modRevision": 172,
+   "valueBytes": 3232,
+   "valueSha256": "e8027208ace9e85ffe95e10782361e793cf6ceeb8bd81c8b0e3d04927cd1d23b",
+   "version": 1
+  },
+  {
+   "createRevision": 173,
+   "key": "/registry/configmaps/default/bulk-24",
+   "lease": "",
+   "modRevision": 173,
+   "valueBytes": 3232,
+   "valueSha256": "6ab582b3e74a860821b67a76dd101c5043090044aebc80e51f810c72eb450d81",
+   "version": 1
+  },
+  {
+   "createRevision": 174,
+   "key": "/registry/configmaps/default/bulk-25",
+   "lease": "",
+   "modRevision": 174,
+   "valueBytes": 3232,
+   "valueSha256": "842b067bdc8427682671bb420be01ea7f561b8a68a69401f47245b22f0ee4134",
+   "version": 1
+  },
+  {
+   "createRevision": 175,
+   "key": "/registry/configmaps/default/bulk-26",
+   "lease": "",
+   "modRevision": 175,
+   "valueBytes": 3232,
+   "valueSha256": "4af5a27608fd87590f2540a73878e895274bf517dbedc0bfdcb8f94d4667f687",
+   "version": 1
+  },
+  {
+   "createRevision": 176,
+   "key": "/registry/configmaps/default/bulk-27",
+   "lease": "",
+   "modRevision": 176,
+   "valueBytes": 3232,
+   "valueSha256": "c4cf876c4b7703496249da91c16ff4be9dacb8fec00dcc4bc1dd92269c0e6535",
+   "version": 1
+  },
+  {
+   "createRevision": 177,
+   "key": "/registry/configmaps/default/bulk-28",
+   "lease": "",
+   "modRevision": 177,
+   "valueBytes": 3232,
+   "valueSha256": "23bcd2b590e7e454f26a36d32f46e9613858c492291ccc9d3cbb89d984e6ca58",
+   "version": 1
+  },
+  {
+   "createRevision": 178,
+   "key": "/registry/configmaps/default/bulk-29",
+   "lease": "",
+   "modRevision": 178,
+   "valueBytes": 3232,
+   "valueSha256": "1701976ca505e0335dbdd32e3fde63b58fef741301d0706db7ad1098cd94d650",
+   "version": 1
+  },
+  {
+   "createRevision": 152,
+   "key": "/registry/configmaps/default/bulk-3",
+   "lease": "",
+   "modRevision": 152,
+   "valueBytes": 3230,
+   "valueSha256": "3c2b99c34c9855c7a750c75fb135a302bdf97dea47fb2e99e9d7daad2312e12a",
+   "version": 1
+  },
+  {
+   "createRevision": 179,
+   "key": "/registry/configmaps/default/bulk-30",
+   "lease": "",
+   "modRevision": 179,
+   "valueBytes": 3232,
+   "valueSha256": "15d1ae5eae8eacf600e45d7589e547adae3fddb738f17a9ad90b37c2ab6a70bf",
+   "version": 1
+  },
+  {
+   "createRevision": 180,
+   "key": "/registry/configmaps/default/bulk-31",
+   "lease": "",
+   "modRevision": 180,
+   "valueBytes": 3232,
+   "valueSha256": "03cb91abe99d0e086ff85189319fd36b813a64956dcab25bd49c0d9a79074816",
+   "version": 1
+  },
+  {
+   "createRevision": 181,
+   "key": "/registry/configmaps/default/bulk-32",
+   "lease": "",
+   "modRevision": 181,
+   "valueBytes": 3232,
+   "valueSha256": "1e9dd7c5e4a459a2246db25b7b52f44cdd718ee6690c844de37cdd7363b16e6d",
+   "version": 1
+  },
+  {
+   "createRevision": 182,
+   "key": "/registry/configmaps/default/bulk-33",
+   "lease": "",
+   "modRevision": 182,
+   "valueBytes": 3232,
+   "valueSha256": "d92ff28d62a5df8139656bffc9bdaddee2a3c51cc1a360ff7c2884f8422f28d7",
+   "version": 1
+  },
+  {
+   "createRevision": 183,
+   "key": "/registry/configmaps/default/bulk-34",
+   "lease": "",
+   "modRevision": 183,
+   "valueBytes": 3232,
+   "valueSha256": "7e99e17b07ed01b14b0f3356d7ba2d9f5b20e8e5cc78135b521555bda1afb408",
+   "version": 1
+  },
+  {
+   "createRevision": 184,
+   "key": "/registry/configmaps/default/bulk-35",
+   "lease": "",
+   "modRevision": 184,
+   "valueBytes": 3232,
+   "valueSha256": "6f1e1a12c8cc57bf572389e89aa7703a622f5083ff0ca3ade531c9f46a8b85df",
+   "version": 1
+  },
+  {
+   "createRevision": 185,
+   "key": "/registry/configmaps/default/bulk-36",
+   "lease": "",
+   "modRevision": 185,
+   "valueBytes": 3232,
+   "valueSha256": "da5f230dde2634b5bed1ccb4560161f5504bc5248f33e855236fea8ea3b5bf38",
+   "version": 1
+  },
+  {
+   "createRevision": 186,
+   "key": "/registry/configmaps/default/bulk-37",
+   "lease": "",
+   "modRevision": 186,
+   "valueBytes": 3232,
+   "valueSha256": "619bf3314294e1c47512c7242a230f7053f4c460d7a5c13d338cc875f44cd709",
+   "version": 1
+  },
+  {
+   "createRevision": 187,
+   "key": "/registry/configmaps/default/bulk-38",
+   "lease": "",
+   "modRevision": 187,
+   "valueBytes": 3232,
+   "valueSha256": "3cd03f8838b424f1a9645564767d4953bf7a8de59e1200cd72d725822519b6ec",
+   "version": 1
+  },
+  {
+   "createRevision": 188,
+   "key": "/registry/configmaps/default/bulk-39",
+   "lease": "",
+   "modRevision": 188,
+   "valueBytes": 3232,
+   "valueSha256": "2a3289651b71526b3c0df4bfb6d61f71913e6a8ebcd36a202622fc366cc05242",
+   "version": 1
+  },
+  {
+   "createRevision": 153,
+   "key": "/registry/configmaps/default/bulk-4",
+   "lease": "",
+   "modRevision": 153,
+   "valueBytes": 3230,
+   "valueSha256": "3e19272c21f955738d77bfcd37ef92f7d507b5c71863d99e4ba865849da8781c",
+   "version": 1
+  },
+  {
+   "createRevision": 189,
+   "key": "/registry/configmaps/default/bulk-40",
+   "lease": "",
+   "modRevision": 189,
+   "valueBytes": 3232,
+   "valueSha256": "ef97112a3a5c2ba0fdcc1dd597b41b2fba1ac41fbf8d0606996ccb2af13bcca7",
+   "version": 1
+  },
+  {
+   "createRevision": 190,
+   "key": "/registry/configmaps/default/bulk-41",
+   "lease": "",
+   "modRevision": 190,
+   "valueBytes": 3232,
+   "valueSha256": "027e6f50b6cbe47b732fbbd9bbf68e71f9904652749b9c3268efad97d342ab9d",
+   "version": 1
+  },
+  {
+   "createRevision": 191,
+   "key": "/registry/configmaps/default/bulk-42",
+   "lease": "",
+   "modRevision": 191,
+   "valueBytes": 3232,
+   "valueSha256": "583ee638fd296883dd419eb73233fccab4ee70fe7d357bb25d4debf440ef56f7",
+   "version": 1
+  },
+  {
+   "createRevision": 192,
+   "key": "/registry/configmaps/default/bulk-43",
+   "lease": "",
+   "modRevision": 192,
+   "valueBytes": 3232,
+   "valueSha256": "8732d772bd8bb5b4eaa063c5771099f213588474b19bb3db3e717f9c7cf7e31a",
+   "version": 1
+  },
+  {
+   "createRevision": 193,
+   "key": "/registry/configmaps/default/bulk-44",
+   "lease": "",
+   "modRevision": 193,
+   "valueBytes": 3232,
+   "valueSha256": "5de9759c8d561ef947a24d45a9a36ab18c0f4b82268f43a07b089d1a5d3b2021",
+   "version": 1
+  },
+  {
+   "createRevision": 194,
+   "key": "/registry/configmaps/default/bulk-45",
+   "lease": "",
+   "modRevision": 194,
+   "valueBytes": 3232,
+   "valueSha256": "e1174cbc16d17efe0151eac3c1f08d2dc1be5a3a5be29ec1e60bbaafc38bf129",
+   "version": 1
+  },
+  {
+   "createRevision": 195,
+   "key": "/registry/configmaps/default/bulk-46",
+   "lease": "",
+   "modRevision": 195,
+   "valueBytes": 3232,
+   "valueSha256": "dbc67b1474942e727ae1f491f6f036f14ac959c1fcccd2de5a0129a2fb0b4dcc",
+   "version": 1
+  },
+  {
+   "createRevision": 196,
+   "key": "/registry/configmaps/default/bulk-47",
+   "lease": "",
+   "modRevision": 196,
+   "valueBytes": 3232,
+   "valueSha256": "41c7386e88d0f72087007a5b442e5566f3344bae1540c610b0aa02adbd660205",
+   "version": 1
+  },
+  {
+   "createRevision": 197,
+   "key": "/registry/configmaps/default/bulk-48",
+   "lease": "",
+   "modRevision": 197,
+   "valueBytes": 3232,
+   "valueSha256": "11e77faaf07225927ba6400ae7fe0779febba5b32482c9b7ea35697d857c86c0",
+   "version": 1
+  },
+  {
+   "createRevision": 198,
+   "key": "/registry/configmaps/default/bulk-49",
+   "lease": "",
+   "modRevision": 198,
+   "valueBytes": 3232,
+   "valueSha256": "c95fd61125fec5eb5f21b3e18f735730bbd41131d2d548529b8b1c54f7ca21c2",
+   "version": 1
+  },
+  {
+   "createRevision": 154,
+   "key": "/registry/configmaps/default/bulk-5",
+   "lease": "",
+   "modRevision": 154,
+   "valueBytes": 3230,
+   "valueSha256": "475340953a22195d777909245103b273370c1d695e9151770e57a7b0476fa5dd",
+   "version": 1
+  },
+  {
+   "createRevision": 199,
+   "key": "/registry/configmaps/default/bulk-50",
+   "lease": "",
+   "modRevision": 199,
+   "valueBytes": 3232,
+   "valueSha256": "4f0172b8d154f61cc851487de14b91acc29f81aac4151fe802e7faec5f875905",
+   "version": 1
+  },
+  {
+   "createRevision": 200,
+   "key": "/registry/configmaps/default/bulk-51",
+   "lease": "",
+   "modRevision": 200,
+   "valueBytes": 3232,
+   "valueSha256": "e72d318820e199011a80a5c956a21ebcfbbc074b666ba7f7770c5b22cc32d57b",
+   "version": 1
+  },
+  {
+   "createRevision": 201,
+   "key": "/registry/configmaps/default/bulk-52",
+   "lease": "",
+   "modRevision": 201,
+   "valueBytes": 3232,
+   "valueSha256": "b8d1607a8e0441c7fc76e475e6436636a283c96a2d64229851ad5ecef57270c4",
+   "version": 1
+  },
+  {
+   "createRevision": 202,
+   "key": "/registry/configmaps/default/bulk-53",
+   "lease": "",
+   "modRevision": 202,
+   "valueBytes": 3232,
+   "valueSha256": "d8dee66abe4bd867620481518ff9ea43b286f9ba2631a7d813e2e09b69fed91f",
+   "version": 1
+  },
+  {
+   "createRevision": 203,
+   "key": "/registry/configmaps/default/bulk-54",
+   "lease": "",
+   "modRevision": 203,
+   "valueBytes": 3232,
+   "valueSha256": "73b3ea4528f811737a7ac8aa1234e2442ec393e30d8336d545fa51227ead911e",
+   "version": 1
+  },
+  {
+   "createRevision": 204,
+   "key": "/registry/configmaps/default/bulk-55",
+   "lease": "",
+   "modRevision": 204,
+   "valueBytes": 3232,
+   "valueSha256": "2bf5a6d07acbe9a836adf001c94ffd2c0f1b865239b261a0db5e915f87664cb3",
+   "version": 1
+  },
+  {
+   "createRevision": 205,
+   "key": "/registry/configmaps/default/bulk-56",
+   "lease": "",
+   "modRevision": 205,
+   "valueBytes": 3232,
+   "valueSha256": "c7651ff8b719fdc2159b2cf9c506ffdb5b2753521c96de8bf7359af396f0e7f3",
+   "version": 1
+  },
+  {
+   "createRevision": 206,
+   "key": "/registry/configmaps/default/bulk-57",
+   "lease": "",
+   "modRevision": 206,
+   "valueBytes": 3232,
+   "valueSha256": "86fa36fbce92c28370a48be620119b4443538cf208818d5227e5bfca59465364",
+   "version": 1
+  },
+  {
+   "createRevision": 207,
+   "key": "/registry/configmaps/default/bulk-58",
+   "lease": "",
+   "modRevision": 207,
+   "valueBytes": 3232,
+   "valueSha256": "af4a9b3040794bbf32367d81a8492ee20fc4f8e5771d73e38135d5592c4648a3",
+   "version": 1
+  },
+  {
+   "createRevision": 208,
+   "key": "/registry/configmaps/default/bulk-59",
+   "lease": "",
+   "modRevision": 208,
+   "valueBytes": 3232,
+   "valueSha256": "5187fbeb99fbae221a73fd1218e00ee4ef01ccb406e8cff899734f702c8e5b62",
+   "version": 1
+  },
+  {
+   "createRevision": 155,
+   "key": "/registry/configmaps/default/bulk-6",
+   "lease": "",
+   "modRevision": 155,
+   "valueBytes": 3230,
+   "valueSha256": "562aed263e50be975242a69af87ff54f598463912e3bbf1696e7ba740d0d4b46",
+   "version": 1
+  },
+  {
+   "createRevision": 209,
+   "key": "/registry/configmaps/default/bulk-60",
+   "lease": "",
+   "modRevision": 209,
+   "valueBytes": 3232,
+   "valueSha256": "7550e12419a3491bad3ad11e0ce66b55e9b93089302307bf294faae271bd3788",
+   "version": 1
+  },
+  {
+   "createRevision": 210,
+   "key": "/registry/configmaps/default/bulk-61",
+   "lease": "",
+   "modRevision": 210,
+   "valueBytes": 3232,
+   "valueSha256": "5256f4140d578711636f6d1d943a47cdb9348e1222a50dab838db28af93eeff9",
+   "version": 1
+  },
+  {
+   "createRevision": 211,
+   "key": "/registry/configmaps/default/bulk-62",
+   "lease": "",
+   "modRevision": 211,
+   "valueBytes": 3232,
+   "valueSha256": "e79a3ba5f98477025d25aed8b2d81ae4f0615c1fcbebe3c263299b504e06dca0",
+   "version": 1
+  },
+  {
+   "createRevision": 212,
+   "key": "/registry/configmaps/default/bulk-63",
+   "lease": "",
+   "modRevision": 212,
+   "valueBytes": 3232,
+   "valueSha256": "1d703b0d9092659d469d3f17f58bd938c9d76f6b5b23d5b89cf26ad78f38424d",
+   "version": 1
+  },
+  {
+   "createRevision": 213,
+   "key": "/registry/configmaps/default/bulk-64",
+   "lease": "",
+   "modRevision": 213,
+   "valueBytes": 3232,
+   "valueSha256": "d0c2e24ae6c81272787adeb67f8256ac71af59c3a174c2037ccd47c3c72b0300",
+   "version": 1
+  },
+  {
+   "createRevision": 214,
+   "key": "/registry/configmaps/default/bulk-65",
+   "lease": "",
+   "modRevision": 214,
+   "valueBytes": 3232,
+   "valueSha256": "360fb686f70e05c6f5c624bb6abb1407bad4d8bce37d940c2c43a3e957ca5409",
+   "version": 1
+  },
+  {
+   "createRevision": 215,
+   "key": "/registry/configmaps/default/bulk-66",
+   "lease": "",
+   "modRevision": 215,
+   "valueBytes": 3232,
+   "valueSha256": "4bcae0b070db6e1184f60733af311be11035bc9597451e6390e086b2aac35402",
+   "version": 1
+  },
+  {
+   "createRevision": 216,
+   "key": "/registry/configmaps/default/bulk-67",
+   "lease": "",
+   "modRevision": 216,
+   "valueBytes": 3232,
+   "valueSha256": "7ca62c05a995b216b270342ac00d2175d2cc103b60fa20500c9a779cedc2f560",
+   "version": 1
+  },
+  {
+   "createRevision": 217,
+   "key": "/registry/configmaps/default/bulk-68",
+   "lease": "",
+   "modRevision": 217,
+   "valueBytes": 3232,
+   "valueSha256": "cb1ed546fd370d96aaa541c53105d749da47fa2b506f81d9bb050a6de0618675",
+   "version": 1
+  },
+  {
+   "createRevision": 218,
+   "key": "/registry/configmaps/default/bulk-69",
+   "lease": "",
+   "modRevision": 218,
+   "valueBytes": 3232,
+   "valueSha256": "014657ad3e78a6a9b385302e5de5da5e204866d852c9652bc853f9911dce4fa7",
+   "version": 1
+  },
+  {
+   "createRevision": 156,
+   "key": "/registry/configmaps/default/bulk-7",
+   "lease": "",
+   "modRevision": 156,
+   "valueBytes": 3230,
+   "valueSha256": "a8400099691052aabffd78370e8a04e0aa6a47065c8c7fb4743487becbd616f3",
+   "version": 1
+  },
+  {
+   "createRevision": 219,
+   "key": "/registry/configmaps/default/bulk-70",
+   "lease": "",
+   "modRevision": 219,
+   "valueBytes": 3232,
+   "valueSha256": "0570fa4816d90efbd48c15afe7822636de956dd78e2688f96a14880c0476f27d",
+   "version": 1
+  },
+  {
+   "createRevision": 220,
+   "key": "/registry/configmaps/default/bulk-71",
+   "lease": "",
+   "modRevision": 220,
+   "valueBytes": 3232,
+   "valueSha256": "c78c924bfd46ad30d061d1d0b880e50c19ca32e79b6d30be8896babb7806947f",
+   "version": 1
+  },
+  {
+   "createRevision": 221,
+   "key": "/registry/configmaps/default/bulk-72",
+   "lease": "",
+   "modRevision": 221,
+   "valueBytes": 3232,
+   "valueSha256": "41cc6258fe7fa278d547dc90656ac347d2bca20c4a13882fc4f88a706fd86bba",
+   "version": 1
+  },
+  {
+   "createRevision": 222,
+   "key": "/registry/configmaps/default/bulk-73",
+   "lease": "",
+   "modRevision": 222,
+   "valueBytes": 3232,
+   "valueSha256": "32e03026eb8243dfbce6412f881c93af6eca9613fa23d8795a26e1f74227eb21",
+   "version": 1
+  },
+  {
+   "createRevision": 223,
+   "key": "/registry/configmaps/default/bulk-74",
+   "lease": "",
+   "modRevision": 223,
+   "valueBytes": 3232,
+   "valueSha256": "0af93556dd7413cd85a285bbfd760fff4396816c26e3a22bc8ff242468052856",
+   "version": 1
+  },
+  {
+   "createRevision": 224,
+   "key": "/registry/configmaps/default/bulk-75",
+   "lease": "",
+   "modRevision": 224,
+   "valueBytes": 3232,
+   "valueSha256": "c10eac5b5457716ecae2a31038da64b7e75d62e31a46e28e7605436577a3805f",
+   "version": 1
+  },
+  {
+   "createRevision": 225,
+   "key": "/registry/configmaps/default/bulk-76",
+   "lease": "",
+   "modRevision": 225,
+   "valueBytes": 3232,
+   "valueSha256": "915a9a82d53a44acf568834470d9f281679001cdc66de2130355e815a03fc7de",
+   "version": 1
+  },
+  {
+   "createRevision": 226,
+   "key": "/registry/configmaps/default/bulk-77",
+   "lease": "",
+   "modRevision": 226,
+   "valueBytes": 3232,
+   "valueSha256": "8f9cd254ece76b36e909956cd5dd08240dac34c11acfa3a63e685aec87b38bc6",
+   "version": 1
+  },
+  {
+   "createRevision": 227,
+   "key": "/registry/configmaps/default/bulk-78",
+   "lease": "",
+   "modRevision": 227,
+   "valueBytes": 3232,
+   "valueSha256": "68aa52ed81b0047326164230e7e8bce64b3e02d0cf3c8e1f2330e70307ca67c1",
+   "version": 1
+  },
+  {
+   "createRevision": 228,
+   "key": "/registry/configmaps/default/bulk-79",
+   "lease": "",
+   "modRevision": 228,
+   "valueBytes": 3232,
+   "valueSha256": "562a3b951e95d7e273525a6b751a91e204e252336c375e740384c2494be1a022",
+   "version": 1
+  },
+  {
+   "createRevision": 157,
+   "key": "/registry/configmaps/default/bulk-8",
+   "lease": "",
+   "modRevision": 157,
+   "valueBytes": 3230,
+   "valueSha256": "800c21669a342329db1c7b2a3ed6875c292d8b7ad56de179a5c3837226e18f65",
+   "version": 1
+  },
+  {
+   "createRevision": 229,
+   "key": "/registry/configmaps/default/bulk-80",
+   "lease": "",
+   "modRevision": 229,
+   "valueBytes": 3232,
+   "valueSha256": "aff955206ef04b05538643d3d780ef229e4ada211ee2805469973638a95a84e6",
+   "version": 1
+  },
+  {
+   "createRevision": 230,
+   "key": "/registry/configmaps/default/bulk-81",
+   "lease": "",
+   "modRevision": 230,
+   "valueBytes": 3232,
+   "valueSha256": "9cef202802e0fad1f5f099c9bcd52a2280398b44b9e24f2b350675d4890ab62c",
+   "version": 1
+  },
+  {
+   "createRevision": 231,
+   "key": "/registry/configmaps/default/bulk-82",
+   "lease": "",
+   "modRevision": 231,
+   "valueBytes": 3232,
+   "valueSha256": "f5c8a58032fdf0b491c0019eedf8b8483b427b9cfcbf58b0371517d7bf5ac047",
+   "version": 1
+  },
+  {
+   "createRevision": 232,
+   "key": "/registry/configmaps/default/bulk-83",
+   "lease": "",
+   "modRevision": 232,
+   "valueBytes": 3232,
+   "valueSha256": "dcc902a2b00cdbf354f3ebf8aef7a9de000a738729a709375345018674a5d7ef",
+   "version": 1
+  },
+  {
+   "createRevision": 233,
+   "key": "/registry/configmaps/default/bulk-84",
+   "lease": "",
+   "modRevision": 233,
+   "valueBytes": 3232,
+   "valueSha256": "504a20f3b988e61a293d9266311d5b93fe2efa8e51a1596d9a2de5d224ab550b",
+   "version": 1
+  },
+  {
+   "createRevision": 234,
+   "key": "/registry/configmaps/default/bulk-85",
+   "lease": "",
+   "modRevision": 234,
+   "valueBytes": 3232,
+   "valueSha256": "9b5f7b3752a4b3ed033ee851467e829b3c647c73e82dadeddaa23856cfe17f5c",
+   "version": 1
+  },
+  {
+   "createRevision": 235,
+   "key": "/registry/configmaps/default/bulk-86",
+   "lease": "",
+   "modRevision": 235,
+   "valueBytes": 3232,
+   "valueSha256": "69ea29ae476a67865dccb16c76689a618572d19bc9591f873717a5b7aae97c94",
+   "version": 1
+  },
+  {
+   "createRevision": 236,
+   "key": "/registry/configmaps/default/bulk-87",
+   "lease": "",
+   "modRevision": 236,
+   "valueBytes": 3232,
+   "valueSha256": "484c91a83204ed6088f5d0dcf313c2213db9db89bf843fd5857092937c642a64",
+   "version": 1
+  },
+  {
+   "createRevision": 237,
+   "key": "/registry/configmaps/default/bulk-88",
+   "lease": "",
+   "modRevision": 237,
+   "valueBytes": 3232,
+   "valueSha256": "a93c9cf5b3585449d415603fa94c635d760d10eab53439722db2a8fcc0941a4f",
+   "version": 1
+  },
+  {
+   "createRevision": 238,
+   "key": "/registry/configmaps/default/bulk-89",
+   "lease": "",
+   "modRevision": 238,
+   "valueBytes": 3232,
+   "valueSha256": "9270fe8070149ee8931eae75a615f64b5b84d993a21dc2699d31258515795693",
+   "version": 1
+  },
+  {
+   "createRevision": 158,
+   "key": "/registry/configmaps/default/bulk-9",
+   "lease": "",
+   "modRevision": 158,
+   "valueBytes": 3230,
+   "valueSha256": "31520bd9ad2943133f806a28d96156664605b3f6e4d1d893858271af16f06378",
+   "version": 1
+  },
+  {
+   "createRevision": 239,
+   "key": "/registry/configmaps/default/bulk-90",
+   "lease": "",
+   "modRevision": 239,
+   "valueBytes": 3232,
+   "valueSha256": "77acf685fcad2f347265da6183769fb12df5cbc8a6d1d83a8782b42eaef330be",
+   "version": 1
+  },
+  {
+   "createRevision": 240,
+   "key": "/registry/configmaps/default/bulk-91",
+   "lease": "",
+   "modRevision": 240,
+   "valueBytes": 3232,
+   "valueSha256": "664ee4426dcb6fdb0960f95563ec9dca9a891b66b425910da1438b8dcf3bbb19",
+   "version": 1
+  },
+  {
+   "createRevision": 241,
+   "key": "/registry/configmaps/default/bulk-92",
+   "lease": "",
+   "modRevision": 241,
+   "valueBytes": 3232,
+   "valueSha256": "35e20793bd7b837e9d09cb27d8620e3d398bee44a3fc80fd3de4d7843d238afc",
+   "version": 1
+  },
+  {
+   "createRevision": 242,
+   "key": "/registry/configmaps/default/bulk-93",
+   "lease": "",
+   "modRevision": 242,
+   "valueBytes": 3232,
+   "valueSha256": "7294e5509732f2b73ecd72d02b7584880620d87f60352b15293f171bb517ca56",
+   "version": 1
+  },
+  {
+   "createRevision": 243,
+   "key": "/registry/configmaps/default/bulk-94",
+   "lease": "",
+   "modRevision": 243,
+   "valueBytes": 3232,
+   "valueSha256": "40e36ce4ead45b4f1e053c32c6901255f2217f56c5fa241de2139d12b42ba961",
+   "version": 1
+  },
+  {
+   "createRevision": 244,
+   "key": "/registry/configmaps/default/bulk-95",
+   "lease": "",
+   "modRevision": 244,
+   "valueBytes": 3232,
+   "valueSha256": "ddba6ecc453d142530040bea772a5bf6fd30feb41901ed5ae57477b08a2db4e9",
+   "version": 1
+  },
+  {
+   "createRevision": 245,
+   "key": "/registry/configmaps/default/bulk-96",
+   "lease": "",
+   "modRevision": 245,
+   "valueBytes": 3232,
+   "valueSha256": "6f35b718e0f331fb7fe8807c988a6babd3c09944977fbfecb7d7776024c90c3f",
+   "version": 1
+  },
+  {
+   "createRevision": 246,
+   "key": "/registry/configmaps/default/bulk-97",
+   "lease": "",
+   "modRevision": 246,
+   "valueBytes": 3232,
+   "valueSha256": "78715f846bd749a0a331a5bee5f820830c6d9d45049a96d51f1da7bef11bcca4",
+   "version": 1
+  },
+  {
+   "createRevision": 247,
+   "key": "/registry/configmaps/default/bulk-98",
+   "lease": "",
+   "modRevision": 247,
+   "valueBytes": 3232,
+   "valueSha256": "29e63d024efcdb7f1f023a7d7d6f0f44a53ce65f4d26d691f0e7b64493870bb8",
+   "version": 1
+  },
+  {
+   "createRevision": 248,
+   "key": "/registry/configmaps/default/bulk-99",
+   "lease": "",
+   "modRevision": 248,
+   "valueBytes": 3232,
+   "valueSha256": "5dca08f780113edaac87d336939b57c210ad06d0a4fdedf67aa146b2ddd3c2c0",
+   "version": 1
+  },
+  {
+   "createRevision": 26,
+   "key": "/registry/configmaps/kube-system/coredns",
+   "lease": "",
+   "modRevision": 26,
+   "valueBytes": 511,
+   "valueSha256": "5c6f52927890c000b9840afc73d1b654f98e08303719b0396631339062c67eaa",
+   "version": 1
+  },
+  {
+   "createRevision": 25,
+   "key": "/registry/configmaps/monitoring/prometheus-rules",
+   "lease": "",
+   "modRevision": 141,
+   "valueBytes": 19921,
+   "valueSha256": "fde70628e216a7ca4b51604d3750c7348d493169cf1d715d46c351b8ddb0184a",
+   "version": 2
+  },
+  {
+   "createRevision": 19,
+   "key": "/registry/deployments/shop/cart",
+   "lease": "",
+   "modRevision": 19,
+   "valueBytes": 1434,
+   "valueSha256": "02d1ca57d4f9efb4534e685dfe87329a8c384148c92692878be4cd976d74da86",
+   "version": 1
+  },
+  {
+   "createRevision": 10,
+   "key": "/registry/deployments/shop/web",
+   "lease": "",
+   "modRevision": 10,
+   "valueBytes": 1424,
+   "valueSha256": "9e55710e1d4b82ba2d64da90322d7f5ed5902628f596560a4e3fb872e7e5190d",
+   "version": 1
+  },
+  {
+   "createRevision": 21,
+   "key": "/registry/endpointslices/shop/cart-abc12",
+   "lease": "",
+   "modRevision": 21,
+   "valueBytes": 552,
+   "valueSha256": "bd0a3a47b660577c93813f5ede10ec4235e7056c690eed3dd02e31ec73880a3f",
+   "version": 1
+  },
+  {
+   "createRevision": 12,
+   "key": "/registry/endpointslices/shop/web-abc12",
+   "lease": "",
+   "modRevision": 12,
+   "valueBytes": 831,
+   "valueSha256": "f459c4261b140bb903c3b569802f0733b80b04346554ef510ff7b04bdd970c1d",
+   "version": 1
+  },
+  {
+   "createRevision": 48,
+   "key": "/registry/events/default/echo-2.a5ae10456d42",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 49,
+   "valueBytes": 468,
+   "valueSha256": "0b600546a488c1164130c7afadb9c214207a08850e3638b7e05bffcf4ea803f0",
+   "version": 2
+  },
+  {
+   "createRevision": 50,
+   "key": "/registry/events/shop/cart-0.1fb774bff546",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 52,
+   "valueBytes": 459,
+   "valueSha256": "238a1ece5a03697040f7470878aeb8196f70f46a67cf1ed79221b50c6e1cc114",
+   "version": 3
+  },
+  {
+   "createRevision": 56,
+   "key": "/registry/events/shop/cart-0.7f1ab2d7abea",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 57,
+   "valueBytes": 459,
+   "valueSha256": "13e5bef5f2120bd1da69fa510208e93a0d99b2c56987ac389743fc3563353d22",
+   "version": 2
+  },
+  {
+   "createRevision": 45,
+   "key": "/registry/events/shop/cart-0.f3f8da48911c",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 45,
+   "valueBytes": 459,
+   "valueSha256": "15f9f717bfb98ffbccc01e8d6abdcbf576708982291dd3442c4c04e1d73c64b0",
+   "version": 1
+  },
+  {
+   "createRevision": 53,
+   "key": "/registry/events/shop/cart-1.a4d281621171",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 53,
+   "valueBytes": 459,
+   "valueSha256": "b6ee59a6d07746b57d21559b59e2480b1a260f6e9feb63924e905b9d9214d12a",
+   "version": 1
+  },
+  {
+   "createRevision": 46,
+   "key": "/registry/events/shop/cart-2.78fcb557208f",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 47,
+   "valueBytes": 459,
+   "valueSha256": "91fade61d9111e5e0182e0de6174e0edb014ca74ad31c7641c4560e433339cbb",
+   "version": 2
+  },
+  {
+   "createRevision": 54,
+   "key": "/registry/events/shop/web-0.907c998cc4b5",
+   "lease": "1747a10fd3aca121",
+   "modRevision": 55,
+   "valueBytes": 456,
+   "valueSha256": "b1d15814d4daf5b1ec9327beed5914b339a8d0e7595379bbd0756c3cf78b454b",
+   "version": 2
+  },
+  {
+   "createRevision": 58,
+   "key": "/registry/leases/kube-node-lease/node-1",
+   "lease": "",
+   "modRevision": 138,
+   "valueBytes": 297,
+   "valueSha256": "afb57f0266d5925d50f4b76ca6e7d734c57f3754482ec21a09faec04afa0ccea",
+   "version": 25
+  },
+  {
+   "createRevision": 59,
+   "key": "/registry/leases/kube-node-lease/node-2",
+   "lease": "",
+   "modRevision": 139,
+   "valueBytes": 297,
+   "valueSha256": "029de8293257aa5bc9a03bc5ba18f4507568254ef5192241c51a59fa701133bd",
+   "version": 25
+  },
+  {
+   "createRevision": 60,
+   "key": "/registry/leases/kube-node-lease/node-3",
+   "lease": "",
+   "modRevision": 140,
+   "valueBytes": 297,
+   "valueSha256": "c1a44bcc9dc6260aa3dafd2fdf44ee245ee9a45f1e91b8572746bc91fbb241c7",
+   "version": 25
+  },
+  {
+   "createRevision": 61,
+   "key": "/registry/leases/kube-system/kube-controller-manager",
+   "lease": "",
+   "modRevision": 110,
+   "valueBytes": 330,
+   "valueSha256": "1ecd3b062e0d00e579b00ef2f8db76e18df12da006e899d87ea80930e0eb5860",
+   "version": 8
+  },
+  {
+   "createRevision": 7,
+   "key": "/registry/minions/node-1",
+   "lease": "",
+   "modRevision": 7,
+   "valueBytes": 2653,
+   "valueSha256": "2c74c450229623e0a6f3d44bfa42e053159460ec7c2ac1a5dd2112cb2fe03a15",
+   "version": 1
+  },
+  {
+   "createRevision": 8,
+   "key": "/registry/minions/node-2",
+   "lease": "",
+   "modRevision": 8,
+   "valueBytes": 2652,
+   "valueSha256": "3a971bf75281d9d5f7ef3646f2ceff7cebcfb71989374a1bb5a531e07295ceab",
+   "version": 1
+  },
+  {
+   "createRevision": 9,
+   "key": "/registry/minions/node-3",
+   "lease": "",
+   "modRevision": 9,
+   "valueBytes": 2653,
+   "valueSha256": "75dd920772d2c5ff91e3ab9fa3cd8adae7149a8e0be7826799b88366344ca884",
+   "version": 1
+  },
+  {
+   "createRevision": 2,
+   "key": "/registry/namespaces/default",
+   "lease": "",
+   "modRevision": 2,
+   "valueBytes": 161,
+   "valueSha256": "871112f9ac0731a189594d6e0679f45f322ba0de8bb035c8bc8da81f10793e20",
+   "version": 1
+  },
+  {
+   "createRevision": 4,
+   "key": "/registry/namespaces/kube-node-lease",
+   "lease": "",
+   "modRevision": 4,
+   "valueBytes": 177,
+   "valueSha256": "3faab8ed2741facdd28e296449c887c4fcfd3611bf05d40ef6cf9e0f0442fc04",
+   "version": 1
+  },
+  {
+   "createRevision": 3,
+   "key": "/registry/namespaces/kube-system",
+   "lease": "",
+   "modRevision": 3,
+   "valueBytes": 169,
+   "valueSha256": "27f144d8db09327141692a28b7710ebfe5853a71277fb1c804b48b5737e60448",
+   "version": 1
+  },
+  {
+   "createRevision": 6,
+   "key": "/registry/namespaces/monitoring",
+   "lease": "",
+   "modRevision": 6,
+   "valueBytes": 167,
+   "valueSha256": "325bd5beee51cc8e22bcb07e75a70dc60ba10185453537fb80507ab8829893b3",
+   "version": 1
+  },
+  {
+   "createRevision": 5,
+   "key": "/registry/namespaces/shop",
+   "lease": "",
+   "modRevision": 5,
+   "valueBytes": 154,
+   "valueSha256": "b4c02fb495d7339e9a3e3722d550685766ba27e0d7c852447ec087dda2e9c311",
+   "version": 1
+  },
+  {
+   "createRevision": 22,
+   "key": "/registry/pods/shop/cart-0",
+   "lease": "",
+   "modRevision": 22,
+   "valueBytes": 2518,
+   "valueSha256": "df528cbd1e39cfcc475f5a1dc291b7ed0f2e7d9ec0764f06a3366fcec98a8e2d",
+   "version": 1
+  },
+  {
+   "createRevision": 23,
+   "key": "/registry/pods/shop/cart-1",
+   "lease": "",
+   "modRevision": 23,
+   "valueBytes": 2517,
+   "valueSha256": "3c498406e703eeb853c5e3f0bd58c006201e1e137eff187515304c8e1ab3cfbe",
+   "version": 1
+  },
+  {
+   "createRevision": 24,
+   "key": "/registry/pods/shop/cart-2",
+   "lease": "",
+   "modRevision": 24,
+   "valueBytes": 2518,
+   "valueSha256": "a5ede981ead255a741c3cb747df96118459ea6ca6cb9649f5d513f39a235a7ba",
+   "version": 1
+  },
+  {
+   "createRevision": 13,
+   "key": "/registry/pods/shop/web-0",
+   "lease": "",
+   "modRevision": 13,
+   "valueBytes": 2507,
+   "valueSha256": "5f49b2ee728a3aa4a88a3092f0014c9ad31930aef2c3230ca3e9f6932afaa333",
+   "version": 1
+  },
+  {
+   "createRevision": 15,
+   "key": "/registry/pods/shop/web-2",
+   "lease": "",
+   "modRevision": 148,
+   "valueBytes": 2505,
+   "valueSha256": "84a55bdd78e22103fc8f4d09f7d057c0a62b132acec32caabc55337fbcefc8e3",
+   "version": 2
+  },
+  {
+   "createRevision": 16,
+   "key": "/registry/pods/shop/web-3",
+   "lease": "",
+   "modRevision": 16,
+   "valueBytes": 2505,
+   "valueSha256": "4211948116ce97aeb077045b79409c65100baa0ce763811ff561c3e0a36190f5",
+   "version": 1
+  },
+  {
+   "createRevision": 17,
+   "key": "/registry/pods/shop/web-4",
+   "lease": "",
+   "modRevision": 17,
+   "valueBytes": 2508,
+   "valueSha256": "21fbccc8c60ea3739840e0c51bfe0401bdfa27a24a393fa57b4cc0fb353b804e",
+   "version": 1
+  },
+  {
+   "createRevision": 18,
+   "key": "/registry/pods/shop/web-5",
+   "lease": "",
+   "modRevision": 18,
+   "valueBytes": 2506,
+   "valueSha256": "1e92ae21fb75d623ed76c3e4c9e2e40b7f82adcf7bfd5989cf08fc0b9660be6d",
+   "version": 1
+  },
+  {
+   "createRevision": 30,
+   "key": "/registry/secrets/kube-system/bootstrap-token-x7k2p",
+   "lease": "",
+   "modRevision": 30,
+   "valueBytes": 346,
+   "valueSha256": "a9dc5e581ea126dd322c97ec267ee674351160749547df7d6cb1ec73d558aaf7",
+   "version": 1
+  },
+  {
+   "createRevision": 29,
+   "key": "/registry/secrets/monitoring/grafana-admin",
+   "lease": "",
+   "modRevision": 29,
+   "valueBytes": 329,
+   "valueSha256": "71b9afc9a06c11b1c352c255515e92fed8ae0de1ec84a8510888f470c7404821",
+   "version": 1
+  },
+  {
+   "createRevision": 27,
+   "key": "/registry/secrets/shop/db-credentials",
+   "lease": "",
+   "modRevision": 27,
+   "valueBytes": 325,
+   "valueSha256": "7650032d5cb752fdb183d7e7ddbef8f3e44b7a9334faf2700c4b6d86eac31b90",
+   "version": 1
+  },
+  {
+   "createRevision": 28,
+   "key": "/registry/secrets/shop/stripe-api",
+   "lease": "",
+   "modRevision": 28,
+   "valueBytes": 317,
+   "valueSha256": "d3864b0510bf01b8aa990dc29907091d4652e64466e66034acb3d25e37370a18",
+   "version": 1
+  },
+  {
+   "createRevision": 20,
+   "key": "/registry/services/specs/shop/cart",
+   "lease": "",
+   "modRevision": 20,
+   "valueBytes": 245,
+   "valueSha256": "7e13130bf6d38ec6dab8d787d88595a75a4a7616a437f18a3a0917898cbcbcbb",
+   "version": 1
+  },
+  {
+   "createRevision": 11,
+   "key": "/registry/services/specs/shop/web",
+   "lease": "",
+   "modRevision": 11,
+   "valueBytes": 242,
+   "valueSha256": "9554bd4ff0f387bc9a3639acd664099a1b511a696ceb958282419233b1243791",
+   "version": 1
+  }
+ ],
+ "members": [
+  {
+   "clientURLs": [
+    "http://127.0.0.1:23817"
+   ],
+   "name": "nospace",
+   "peerURLs": [
+    "http://127.0.0.1:24817"
+   ]
+  }
+ ],
+ "notes": {
+  "compactedAt": 110,
+  "eventLease": "1747a10fd3aca121",
+  "filledUpAfter": 203
+ },
+ "snapshotStatus": {
+  "hash": 526832767,
+  "revision": 351,
+  "totalKey": 243,
+  "totalSize": 1052672,
+  "version": "3.6.0"
+ }
+}

@@ -1,0 +1,464 @@
+{
+ "alarms": [],
+ "bbolt": {
+  "keyValuePairs": 91,
+  "pages": {
+   "branch": 1,
+   "free": 14,
+   "leaf": 38,
+   "meta": 2
+  }
+ },
+ "endpointStatus": {
+  "dbSize": 225280,
+  "dbSizeInUse": 180224,
+  "revision": 143
+ },
+ "history": {
+  "/registry/configmaps/monitoring/prometheus-rules": {
+   "25": {
+    "valueSha256": "6d635bd969de8a6cb369aa3ca05223ef675d674d6b114db3c5e14cddac1b5c7d",
+    "version": 1
+   },
+   "136": {
+    "valueSha256": "3add1dc60d94fe5ee0244f10634d304e31e2147c58e57c0802e2a674633e72c0",
+    "version": 2
+   }
+  },
+  "/registry/leases/kube-node-lease/node-1": {
+   "102": {
+    "valueSha256": "81f146eae4f74cf431b29e90769b56fe58a09cdfc0c0a7b25ef9ba1e4095e0a3",
+    "version": 15
+   },
+   "106": {
+    "valueSha256": "d86a0528b4600046dc4c39c11f77d7d9ad99bd938015c9dd30ffcf44a87ac651",
+    "version": 16
+   },
+   "109": {
+    "valueSha256": "653935ff85e755c7eaec169774947b3197d4833e64ebc6a7038686f51dbbd13c",
+    "version": 17
+   },
+   "112": {
+    "valueSha256": "cd9a1dda5955f2cd7a1736b0af08cf88e654dba8b4b19bdd824ec8874c214eb1",
+    "version": 18
+   },
+   "115": {
+    "valueSha256": "39f95fbcc8063afda06b0d08a745c66e905056205d8990dcfe8bdf4cee684283",
+    "version": 19
+   },
+   "118": {
+    "valueSha256": "d1d01cc5f204f2be8d9d66658ce8bce912cfbb17452a7336a8095d8361ce77b8",
+    "version": 20
+   },
+   "121": {
+    "valueSha256": "2ad8b8d118dd82a2ca4d351d5b6d5d19c7aaf6541951044ca869d1c71979dbdb",
+    "version": 21
+   },
+   "124": {
+    "valueSha256": "166686ee9321c1ba406c5e5aa92eb0a3a8139a3a540d435ffda8e73ba2da5a1d",
+    "version": 22
+   },
+   "127": {
+    "valueSha256": "f75db5fc953517b258ba4baed0804683c30cb4f8fb2a75438585452a0a375a19",
+    "version": 23
+   },
+   "130": {
+    "valueSha256": "f8c5b2e8c3ec80d954cd9d36c46a364d62d23b6d73f7e982682a8b9fb930342d",
+    "version": 24
+   },
+   "133": {
+    "valueSha256": "476878972544e181d23def9ad414730509a3c3aaac152dcb912eecdb8c49224f",
+    "version": 25
+   }
+  },
+  "/registry/leases/kube-system/kube-controller-manager": {
+   "105": {
+    "valueSha256": "c81276245b0997e35838aababd3de17681e69264b5544c863b5ce94a41a9a4a8",
+    "version": 8
+   }
+  }
+ },
+ "live": [
+  {
+   "createRevision": 31,
+   "key": "/registry/cert-manager.io/certificates/shop/web-tls",
+   "lease": "",
+   "modRevision": 31,
+   "valueBytes": 681,
+   "valueSha256": "6f0f64922845a16a53717abfd47ad7de99731f8e12353d2a028e07b348c024ef",
+   "version": 1
+  },
+  {
+   "createRevision": 26,
+   "key": "/registry/configmaps/kube-system/coredns",
+   "lease": "",
+   "modRevision": 26,
+   "valueBytes": 511,
+   "valueSha256": "fc4c14f7401c8a29ee7b89456fa162d5eb4fdd23d9be0f9dba2a9a147c91343e",
+   "version": 1
+  },
+  {
+   "createRevision": 25,
+   "key": "/registry/configmaps/monitoring/prometheus-rules",
+   "lease": "",
+   "modRevision": 136,
+   "valueBytes": 19919,
+   "valueSha256": "3add1dc60d94fe5ee0244f10634d304e31e2147c58e57c0802e2a674633e72c0",
+   "version": 2
+  },
+  {
+   "createRevision": 19,
+   "key": "/registry/deployments/shop/cart",
+   "lease": "",
+   "modRevision": 19,
+   "valueBytes": 1434,
+   "valueSha256": "8f167d4b66453ea34cef5cf069966ec384c006e62610a6d0c9faf2e96663e41c",
+   "version": 1
+  },
+  {
+   "createRevision": 10,
+   "key": "/registry/deployments/shop/web",
+   "lease": "",
+   "modRevision": 10,
+   "valueBytes": 1424,
+   "valueSha256": "e9f9b9b6c18223e4743853949533be71cc978dbfe564fa910b68c905e3804fc3",
+   "version": 1
+  },
+  {
+   "createRevision": 21,
+   "key": "/registry/endpointslices/shop/cart-abc12",
+   "lease": "",
+   "modRevision": 21,
+   "valueBytes": 552,
+   "valueSha256": "1dbc652eacff4e63940b0e76e375fb58f4599dea83c13956cab12009990884db",
+   "version": 1
+  },
+  {
+   "createRevision": 12,
+   "key": "/registry/endpointslices/shop/web-abc12",
+   "lease": "",
+   "modRevision": 12,
+   "valueBytes": 831,
+   "valueSha256": "a957bed7372c43cf0875de64bba1eb6c1f0ca5300c66c502700848d8cada7627",
+   "version": 1
+  },
+  {
+   "createRevision": 40,
+   "key": "/registry/events/default/echo-0.99820e780f85",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 41,
+   "valueBytes": 468,
+   "valueSha256": "85cf8253141eb98133bc4dea8777950b4e38ba28f01f1d32007824ad30e5a918",
+   "version": 2
+  },
+  {
+   "createRevision": 46,
+   "key": "/registry/events/default/echo-1.a47a6f72056",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 47,
+   "valueBytes": 467,
+   "valueSha256": "e55a837ec1f4c494acac53aa269bfee4ddeabb6a68cd78dcfac3994a580d00af",
+   "version": 2
+  },
+  {
+   "createRevision": 42,
+   "key": "/registry/events/default/echo-2.ed6828a493d9",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 43,
+   "valueBytes": 468,
+   "valueSha256": "3be89c2b858113ea55bd4d81c6261e98599b0bd010d85acfa9a590afd94c5361",
+   "version": 2
+  },
+  {
+   "createRevision": 52,
+   "key": "/registry/events/shop/cart-0.58bbbc4e6190",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 52,
+   "valueBytes": 459,
+   "valueSha256": "4ab0d6d7151a791ae2b6f31c96ef01521219df94305943969e61ccf5339581a9",
+   "version": 1
+  },
+  {
+   "createRevision": 44,
+   "key": "/registry/events/shop/cart-0.cd78ce4882f3",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 45,
+   "valueBytes": 459,
+   "valueSha256": "c031d536ebcb1c8827457948ca525a7bf86947cbb0d358d60d8738f7d63bd73d",
+   "version": 2
+  },
+  {
+   "createRevision": 48,
+   "key": "/registry/events/shop/cart-2.dbec1ce04e20",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 50,
+   "valueBytes": 459,
+   "valueSha256": "9a2e027edcb8481ed936f6d867df1c70ec89054cb95e7835c80ee8152988f1b0",
+   "version": 3
+  },
+  {
+   "createRevision": 51,
+   "key": "/registry/events/shop/web-0.eb409e6ce4b5",
+   "lease": "506da10fd3f73c21",
+   "modRevision": 51,
+   "valueBytes": 456,
+   "valueSha256": "d7664b8adf1fc62450fae7236a6e62d9d632bf83b193748d0a99bd463742b10b",
+   "version": 1
+  },
+  {
+   "createRevision": 53,
+   "key": "/registry/leases/kube-node-lease/node-1",
+   "lease": "",
+   "modRevision": 133,
+   "valueBytes": 298,
+   "valueSha256": "476878972544e181d23def9ad414730509a3c3aaac152dcb912eecdb8c49224f",
+   "version": 25
+  },
+  {
+   "createRevision": 54,
+   "key": "/registry/leases/kube-node-lease/node-2",
+   "lease": "",
+   "modRevision": 134,
+   "valueBytes": 297,
+   "valueSha256": "1872e316c9da55a4dedf10e58545d17745a2b70ad8ce4c5b6c2a9593f1ebe693",
+   "version": 25
+  },
+  {
+   "createRevision": 55,
+   "key": "/registry/leases/kube-node-lease/node-3",
+   "lease": "",
+   "modRevision": 135,
+   "valueBytes": 298,
+   "valueSha256": "301d117ea840abd77f205a371e156e19730ace00b288134e3b2f593c3d1d19a6",
+   "version": 25
+  },
+  {
+   "createRevision": 56,
+   "key": "/registry/leases/kube-system/kube-controller-manager",
+   "lease": "",
+   "modRevision": 105,
+   "valueBytes": 330,
+   "valueSha256": "c81276245b0997e35838aababd3de17681e69264b5544c863b5ce94a41a9a4a8",
+   "version": 8
+  },
+  {
+   "createRevision": 7,
+   "key": "/registry/minions/node-1",
+   "lease": "",
+   "modRevision": 7,
+   "valueBytes": 2652,
+   "valueSha256": "f7fa851e0a73441df9aa6056a5c58e8b1eb48e200a66b6e4fd44db8dc6a23628",
+   "version": 1
+  },
+  {
+   "createRevision": 8,
+   "key": "/registry/minions/node-2",
+   "lease": "",
+   "modRevision": 8,
+   "valueBytes": 2653,
+   "valueSha256": "bbd4041184a66fdef97262ad662acc8cc1227b0401251d1005641af2041c2d30",
+   "version": 1
+  },
+  {
+   "createRevision": 9,
+   "key": "/registry/minions/node-3",
+   "lease": "",
+   "modRevision": 9,
+   "valueBytes": 2652,
+   "valueSha256": "da15b9c7b08d42e1e7a916331ca1841ff31b398be673cb5e83df9f4034b13a06",
+   "version": 1
+  },
+  {
+   "createRevision": 2,
+   "key": "/registry/namespaces/default",
+   "lease": "",
+   "modRevision": 2,
+   "valueBytes": 161,
+   "valueSha256": "b7fac36b4a72df48b9ed7e21d47714fd52e5526272fb04cfe6113ff5701bdc0d",
+   "version": 1
+  },
+  {
+   "createRevision": 4,
+   "key": "/registry/namespaces/kube-node-lease",
+   "lease": "",
+   "modRevision": 4,
+   "valueBytes": 177,
+   "valueSha256": "edaadccdba0590680ce88f225e4d7db32f1a00a7090fbdb70b717cd540eda88f",
+   "version": 1
+  },
+  {
+   "createRevision": 3,
+   "key": "/registry/namespaces/kube-system",
+   "lease": "",
+   "modRevision": 3,
+   "valueBytes": 169,
+   "valueSha256": "e4cc8943aa69a22fa523688a0b439c921e3fe22fdbb3e966aad3283a6dfc1df5",
+   "version": 1
+  },
+  {
+   "createRevision": 6,
+   "key": "/registry/namespaces/monitoring",
+   "lease": "",
+   "modRevision": 6,
+   "valueBytes": 167,
+   "valueSha256": "311c28b0da3b621cda20126c28ba30644703a0bc4b3cbaebf136f2dbc831e78f",
+   "version": 1
+  },
+  {
+   "createRevision": 5,
+   "key": "/registry/namespaces/shop",
+   "lease": "",
+   "modRevision": 5,
+   "valueBytes": 154,
+   "valueSha256": "9dc0937474dd110d8739fa7cca1a7df0dfc2ad531c54a059b840e9be1d87dde4",
+   "version": 1
+  },
+  {
+   "createRevision": 22,
+   "key": "/registry/pods/shop/cart-0",
+   "lease": "",
+   "modRevision": 22,
+   "valueBytes": 2516,
+   "valueSha256": "67750bf72f5e9deaa031028255f79648d64225ca74e9497ced45928b300ba3c6",
+   "version": 1
+  },
+  {
+   "createRevision": 23,
+   "key": "/registry/pods/shop/cart-1",
+   "lease": "",
+   "modRevision": 23,
+   "valueBytes": 2515,
+   "valueSha256": "3d2e205d8fb7289097d88a5697c66f6026d3a24bcd04628d1f44c6a04d4ca3da",
+   "version": 1
+  },
+  {
+   "createRevision": 24,
+   "key": "/registry/pods/shop/cart-2",
+   "lease": "",
+   "modRevision": 24,
+   "valueBytes": 2516,
+   "valueSha256": "49ac9b596823c00c74f70ea31453fe291bd71db66cf079f1ecceb3d1d1e39301",
+   "version": 1
+  },
+  {
+   "createRevision": 13,
+   "key": "/registry/pods/shop/web-0",
+   "lease": "",
+   "modRevision": 13,
+   "valueBytes": 2505,
+   "valueSha256": "78128d602ccc5549929217ec77a76f1c37612155a6f048a45e9937815672854e",
+   "version": 1
+  },
+  {
+   "createRevision": 15,
+   "key": "/registry/pods/shop/web-2",
+   "lease": "",
+   "modRevision": 143,
+   "valueBytes": 2506,
+   "valueSha256": "4fe946a29692a36330af4eeebd0bcfe4ec58d4e3afa37559804f5bc49aaaf6bd",
+   "version": 2
+  },
+  {
+   "createRevision": 16,
+   "key": "/registry/pods/shop/web-3",
+   "lease": "",
+   "modRevision": 16,
+   "valueBytes": 2506,
+   "valueSha256": "ea54b9e33a0e1e128ec7baa310e152e169aad4bea0b59e7223a04f214593053c",
+   "version": 1
+  },
+  {
+   "createRevision": 17,
+   "key": "/registry/pods/shop/web-4",
+   "lease": "",
+   "modRevision": 17,
+   "valueBytes": 2506,
+   "valueSha256": "bf7541a76c8247dda8e19a6a0e299fa54dc86793667bcb40c8dda9d92184d36b",
+   "version": 1
+  },
+  {
+   "createRevision": 18,
+   "key": "/registry/pods/shop/web-5",
+   "lease": "",
+   "modRevision": 18,
+   "valueBytes": 2507,
+   "valueSha256": "304b1bfb7f115c5772280dd8c5a1b14daf8aedc2daf3231e9c5dd6bcf5547e62",
+   "version": 1
+  },
+  {
+   "createRevision": 30,
+   "key": "/registry/secrets/kube-system/bootstrap-token-x7k2p",
+   "lease": "",
+   "modRevision": 30,
+   "valueBytes": 346,
+   "valueSha256": "4c98bbab733ad64539a8a724e8d3281e3f8c73636616e40db164204598afd303",
+   "version": 1
+  },
+  {
+   "createRevision": 29,
+   "key": "/registry/secrets/monitoring/grafana-admin",
+   "lease": "",
+   "modRevision": 29,
+   "valueBytes": 329,
+   "valueSha256": "705799e4b86edd8078130649b4a0bc4d7596cef9041a7f4e1d23df966f92c95b",
+   "version": 1
+  },
+  {
+   "createRevision": 27,
+   "key": "/registry/secrets/shop/db-credentials",
+   "lease": "",
+   "modRevision": 27,
+   "valueBytes": 325,
+   "valueSha256": "ebace77e33961248e1d5d50485407cd2c80f46acf814d25f55e57c1e079f4484",
+   "version": 1
+  },
+  {
+   "createRevision": 28,
+   "key": "/registry/secrets/shop/stripe-api",
+   "lease": "",
+   "modRevision": 28,
+   "valueBytes": 317,
+   "valueSha256": "5698931999ba50ceb7a84b5c7426463221b607c03ef3615043d3623af262e01c",
+   "version": 1
+  },
+  {
+   "createRevision": 20,
+   "key": "/registry/services/specs/shop/cart",
+   "lease": "",
+   "modRevision": 20,
+   "valueBytes": 247,
+   "valueSha256": "60185afb74801524afb3ca88374c000cbb227c35986c161269a82aaa66baf639",
+   "version": 1
+  },
+  {
+   "createRevision": 11,
+   "key": "/registry/services/specs/shop/web",
+   "lease": "",
+   "modRevision": 11,
+   "valueBytes": 244,
+   "valueSha256": "7504acd73bcf29a7a9c8a3169488b7b50a531a6777cae3050ae9f8fb8d13acbe",
+   "version": 1
+  }
+ ],
+ "members": [
+  {
+   "clientURLs": [
+    "http://127.0.0.1:23870"
+   ],
+   "name": "small",
+   "peerURLs": [
+    "http://127.0.0.1:24870"
+   ]
+  }
+ ],
+ "notes": {
+  "compactedAt": 105,
+  "eventLease": "506da10fd3f73c21"
+ },
+ "snapshotStatus": {
+  "hash": 4155158406,
+  "revision": 143,
+  "totalKey": 91,
+  "totalSize": 225280
+ }
+}
