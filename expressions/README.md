@@ -36,7 +36,7 @@ Expressions also hold some surprises the tester makes visible:
 3. **Add items**: for a Query or Scan, the items in the table, one per line or as a list; for the other operations, the item as it is now, or nothing for an item that doesn't exist yet.
 4. **Read the answer.** A refused request shows DynamoDB's message, what it means and the spot in the expression. An accepted one shows how DynamoDB groups the conditions, what each placeholder stands for, and the result: the items returned, each with the parts of the filter that held or didn't, or the item before and after an update.
 
-**Put #placeholders on reserved words** rewrites every reserved word in the expressions as a placeholder and adds it to `ExpressionAttributeNames`.
+**Put #placeholders on names that need them** rewrites every reserved word in the expressions as a placeholder and adds it to `ExpressionAttributeNames`. It does the same for a name DynamoDB can't read as one name, such as `first-name` or `_id`: one written without spaces that has a dash or a letter outside A to Z, or starts with `_`, `$` or `@`. In the values of an update's `SET`, `a-b` means a minus b, so it stays as it is there. A name with a dot or a space reads as a path or as two names, so add its placeholder yourself.
 
 ## Use it from the command line
 
@@ -52,20 +52,21 @@ node expressions/cli.js --escape 'status = :s AND size(data) > :n'
 | `--request FILE` | The parameters of a Query, Scan, GetItem, PutItem, UpdateItem or DeleteItem call, typed or plain |
 | `--key-condition`, `--filter`, `--condition`, `--update`, `--projection` | The expressions, one by one |
 | `--names JSON\|@FILE`, `--values JSON\|@FILE` | `ExpressionAttributeNames` and `ExpressionAttributeValues` |
-| `--operation NAME` | The operation, when the expressions don't make it clear |
-| `--items FILE` | Items to query or scan: a JSON list, JSON Lines, the output of `aws dynamodb scan`, or an export to S3 (`-` reads stdin) |
-| `--item FILE` | The item an update, condition or projection works on |
+| `--operation NAME` | The operation, when the request doesn't make it clear. Any case works, and so does `get-item`. |
+| `--items FILE` | Items to query or scan: a JSON list, JSON Lines, the output of `aws dynamodb scan` or `query`, or an export to S3 (`-` reads stdin) |
+| `--item FILE` | The item an update, condition or projection works on, or the output of `aws dynamodb get-item` |
 | `--key NAME:TYPE[,NAME:TYPE]` | The partition key and sort key, such as `pk:S,sk:N` |
 | `--typed`, `--plain` | Read values and items as typed or plain JSON instead of deciding by looking |
-| `--reverse` | Query results in descending order, as `ScanIndexForward: false` |
-| `--escape EXPR` | Rewrite reserved words as placeholders and print the names to add |
+| `--reverse` | Query results in descending order, as `ScanIndexForward: false`. Without a sort key in `--key`, items keep the order they're given in. |
+| `--escape EXPR` | Put placeholders on the names that need them and print the names to add |
 | `--json` | Print JSON |
 
-Exit status: 0 when DynamoDB would accept the request, 1 when it would refuse it or the condition fails, 2 for a problem with the input. A CI job can check every expression a codebase sends before it ships.
+Exit status: 0 when DynamoDB would accept the request, 1 when it would refuse it or the condition fails, 2 for a problem with the input or an expression nested too deep for the tester. A CI job can check every expression a codebase sends before it ships.
 
 ## Use it in your own code
 
 ```js
+const fs = require('fs');
 const X = require('./expressions/expressions.js');
 const req = X.readRequest(fs.readFileSync('request.json', 'utf8'));
 req.item = X.readItem(X.parseJson('{"pk": {"S": "o#1"}, "qty": {"N": "1"}}'));
@@ -76,7 +77,11 @@ X.explain(r.error); // what the error means, in plain words
 r.after;            // the item after an update, as a Map of attribute to value
 ```
 
-`X.check(req)` only checks the request, without running it. `X.escapeNames(expression)` adds placeholders for reserved words. In a page, load `expressions.js` with a script tag and use `window.KVExpressions`.
+`readRequest` also reads the request's `Key` into `req.key` and its `Item` into `req.newItem`. With no `req.item`, an update starts a new item from that key, the way DynamoDB does, and a PutItem gives its item back in `r.after`. A request you build yourself can carry `Key` and `Item` as JSON instead, and `run()` reads them. For a Query or Scan, put the items in `req.items`; `r.items` says which come back, and `r.order` is set when a sort key in `req.keySchema` puts them in order. `X.unwrapItems(list, operation)` takes items out of what `aws dynamodb scan`, `query` and `get-item` print.
+
+`r.error.type` is the exception DynamoDB answers with. It's `TesterLimit` when an expression nests parentheses more than 400 deep, too deep for the tester to read; that message is the tester's own. Input the tester can't read at all, such as JSON that doesn't parse, throws an `X.InputError`. So does a `Key` with a value that isn't valid, and an operation name the tester doesn't know.
+
+`X.check(req)` only checks the request, without running it. `X.escapeNames(expression)` adds placeholders for the names that need them. In a page, load `expressions.js` with a script tag and use `window.KVExpressions`.
 
 ## How it was tested
 
@@ -101,6 +106,7 @@ node --test expressions/test/expressions.test.js
 - **DynamoDB Local is the reference, not the service.** AWS documents some differences between the two. One the tests show: DynamoDB Local keeps numbers inside lists and maps as they were written, while the tester trims every number's leading and trailing zeros, as AWS documents for the service.
 - **What the tester doesn't check.** Item size (400 KB), throughput, indexes beyond the key schema you give, `Limit`, pagination, PartiQL and transactions are outside it. A Query runs on the items you give, so it shows which items match, not which ones a real table holds.
 - **Placeholders after a dot.** DynamoDB's grammar accepts a `:value` after a dot in a path, such as `m.:v`, and DynamoDB Local then fails with an internal error. The tester reports that error.
+- **Parentheses more than 400 deep.** The tester stops reading there and says so, with a message of its own. DynamoDB refuses such an expression too: AWS documents a limit of 300 operators and functions in one expression, and that many levels need more. The tests don't record which message DynamoDB gives.
 
 ## License
 

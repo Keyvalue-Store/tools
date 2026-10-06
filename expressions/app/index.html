@@ -94,7 +94,7 @@
     </div>
 
     <div class="row">
-      <button type="button" class="btn" id="escape">Put #placeholders on reserved words</button>
+      <button type="button" class="btn" id="escape">Put #placeholders on names that need them</button>
       <span id="escape-note" class="hint" aria-live="polite"></span>
     </div>
 
@@ -121,7 +121,7 @@
       </div>
       <div class="field">
         <label for="pk-type">Type</label>
-        <select id="pk-type"><option>S</option><option>N</option><option>B</option></select>
+        <select id="pk-type" aria-label="Partition key type"><option>S</option><option>N</option><option>B</option></select>
       </div>
       <div class="field">
         <label for="sk-name">Sort key <span class="hint">(if any)</span></label>
@@ -129,7 +129,7 @@
       </div>
       <div class="field">
         <label for="sk-type">Type</label>
-        <select id="sk-type"><option>S</option><option>N</option><option>B</option></select>
+        <select id="sk-type" aria-label="Sort key type"><option>S</option><option>N</option><option>B</option></select>
       </div>
       <label class="check" data-ops="Query"><input type="checkbox" id="reverse"> Descending (ScanIndexForward false)</label>
     </div>
@@ -142,7 +142,8 @@
 
   <section class="section" aria-labelledby="h-out">
     <h2 id="h-out">What DynamoDB does</h2>
-    <div id="result" class="result" aria-live="polite"></div>
+    <p id="result-status" class="sr-only" role="status"></p>
+    <div id="result" class="result"></div>
   </section>
 </main>
 

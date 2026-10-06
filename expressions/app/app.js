@@ -29,8 +29,10 @@
     warn: '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2l9 16H1z" fill="currentColor" opacity=".15"/><path d="M10 8v4.5M10 15.2v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     info: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="currentColor" opacity=".15"/><path d="M10 9v5M10 6v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
   };
+  // The result redraws as people type, so it isn't a live region. A short
+  // line in #result-status tells screen readers the verdict instead.
   function verdict(kind, title, body) {
-    const box = el('div', { class: 'verdict ' + kind, role: kind === 'bad' ? 'alert' : 'status' });
+    const box = el('div', { class: 'verdict ' + kind });
     box.innerHTML = ICONS[kind];
     const p = el('div');
     p.append(el('p', null, [el('strong', { text: title })]));
@@ -64,8 +66,8 @@
     const many = op === 'Query' || op === 'Scan';
     $('items-label').textContent = many ? 'Items in the table' : 'The item as it is now';
     $('items-hint').textContent = many
-      ? 'A JSON list of items, or one item per line. Typed ({"S": "x"}) or plain JSON. Output of aws dynamodb scan, or an export to S3, works too.'
-      : 'One item, typed or plain JSON. ' + (op === 'GetItem' ? '' : 'Leave it empty for an item that doesn\'t exist yet.');
+      ? 'A JSON list of items, or one item per line. Typed ({"S": "x"}) or plain JSON. Output of aws dynamodb scan or query, or an export to S3, works too.'
+      : 'One item, typed or plain JSON, or the output of aws dynamodb get-item. ' + (op === 'GetItem' ? '' : 'Leave it empty for an item that doesn\'t exist yet.');
   }
 
   // ---- reading the form ----
@@ -86,9 +88,8 @@
     let list;
     try { list = X.parseJsonItems(t); }
     catch (e) { throw new X.InputError('Items: ' + e.message); }
-    // aws dynamodb scan output, and exports to S3, wrap the items.
-    if (list.length === 1 && list[0] instanceof Map && Array.isArray(list[0].get('Items'))) list = list[0].get('Items');
-    list = list.map((x) => (x instanceof Map && x.size === 1 && x.get('Item') instanceof Map) ? x.get('Item') : x);
+    // The output of aws dynamodb scan, query and get-item, and exports to S3, wrap the items.
+    list = X.unwrapItems(list, op, keySchema());
     const items = list.map((x, i) => {
       try { return X.readItem(x); }
       catch (e) { throw new X.InputError('Item ' + (i + 1) + ': ' + e.message); }
@@ -160,22 +161,29 @@
   }
   function pretty(item) { return compact(X.itemToTyped(item)); }
 
+  // Draws the answer, and returns one short line that sums it up.
   function render(req, res) {
     const out = $('result');
     out.textContent = '';
     const ex = res.expressions || {};
     if (res.error && res.error.type !== 'ConditionalCheckFailedException') {
-      out.append(verdict('bad', 'DynamoDB would refuse this ' + res.operation, [el('code', { text: res.error.type + ': ' + res.error.message }), X.explain(res.error)]));
+      // TesterLimit is the tester's own answer, not DynamoDB's.
+      const limit = res.error.type === X.TESTER_LIMIT;
+      const title = (limit ? 'The tester can\'t check this ' : 'DynamoDB would refuse this ') + res.operation;
+      out.append(verdict(limit ? 'warn' : 'bad', title, [limit ? res.error.message : el('code', { text: res.error.type + ': ' + res.error.message }), X.explain(res.error)]));
       const field = res.error.expression;
       if (field && req[field] !== undefined) {
         out.append(el('p', { class: 'small muted', text: field + (res.error.start !== undefined ? ', with the problem marked:' : ':') }));
         out.append(marked(req[field], res.error.start, res.error.end));
       }
-      return;
+      return title + '.';
     }
+    let summary;
     if (res.error) {
+      summary = 'The condition is false for the item.';
       out.append(verdict('warn', 'The condition is false for the item', ['DynamoDB refuses the write with ' + res.error.type + ': ' + res.error.message + '. Nothing changes.']));
     } else {
+      summary = 'DynamoDB accepts this ' + res.operation + '.';
       out.append(verdict('ok', 'DynamoDB accepts this ' + res.operation, res.operation === 'UpdateItem' && !req.item ? 'There is no item yet, so DynamoDB creates one.' : null));
     }
 
@@ -200,9 +208,13 @@
       const total = (req.items || []).length;
       const hit = res.items.filter((x) => x.match);
       out.append(el('h3', { text: 'Items returned' }));
-      if (!total) { out.append(el('p', { class: 'muted', text: 'Add items to the table above to see which ones come back.' })); return; }
-      let line = plural(hit.length, 'item', 'items') + ' of ' + total + ' returned';
-      if (res.operation === 'Query') line += ', in ' + (req.ScanIndexForward === false ? 'descending' : 'ascending') + ' sort key order. ' + plural((res.notMatchingKey || []).length, 'item doesn\'t', 'items don\'t') + ' match the key condition';
+      if (!total) { out.append(el('p', { class: 'muted', text: 'Add items to the table above to see which ones come back.' })); return summary; }
+      const count = plural(hit.length, 'item', 'items') + ' of ' + total + ' returned';
+      let line = count;
+      // A Query returns items in sort key order, which needs the sort key.
+      if (res.order) line += ', in ' + res.order + ' sort key order';
+      else if (res.operation === 'Query') line += ', in the order given, since the key schema has no sort key';
+      if (res.operation === 'Query') line += '. ' + plural((res.notMatchingKey || []).length, 'item doesn\'t', 'items don\'t') + ' match the key condition';
       out.append(el('p', { text: line + '.' }));
       for (const x of res.items) {
         const d = el('details', { class: 'item' });
@@ -211,7 +223,7 @@
         else d.append(el('pre', { class: 'out', text: pretty(x.projected || x.item) }));
         out.append(d);
       }
-      return;
+      return summary + ' ' + count + '.';
     }
     if (res.operation === 'UpdateItem' && res.after) {
       const two = el('div', { class: 'two-col' });
@@ -220,12 +232,19 @@
       out.append(two);
       if (res.changed && res.changed.length) out.append(el('p', { text: 'Changed: ' + res.changed.map((c) => c.name + ' (' + c.change + ')').join(', ') + '.' }));
       else out.append(el('p', { text: 'Nothing changed.' }));
-      return;
+      return summary;
     }
     if (res.operation === 'GetItem') {
       out.append(el('h3', { text: 'Returned' }));
       out.append(el('pre', { class: 'out', text: req.item ? pretty(res.after || new Map()) : '(add the item above)' }));
     }
+    return summary;
+  }
+
+  // Tells screen readers the verdict, only when it changes.
+  function announce(line) {
+    const status = $('result-status');
+    if (status.textContent !== line) status.textContent = line;
   }
 
   function run() {
@@ -235,17 +254,20 @@
     catch (e) {
       out.textContent = '';
       out.append(verdict('warn', 'The tester can\'t read this yet', e.message));
+      announce('The tester can\'t read this yet.');
       return;
     }
     if (!EXPR_FIELDS.some((f) => req[f] !== undefined)) {
       out.textContent = '';
       out.append(verdict('info', 'Write an expression above', 'Or pick one of the examples.'));
+      announce('Write an expression above.');
       return;
     }
-    try { render(req, X.run(req)); }
+    try { announce(render(req, X.run(req))); }
     catch (e) {
       out.textContent = '';
       out.append(verdict('warn', 'The tester can\'t read this yet', e.message));
+      announce('The tester can\'t read this yet.');
     }
   }
 
@@ -257,6 +279,7 @@
     $('values').value = fields.values ? compact(fields.values) : '';
     $('items').value = items || '';
     if (key) { $('pk-name').value = key[0]; $('pk-type').value = key[1]; $('sk-name').value = key[2] || ''; $('sk-type').value = key[3] || 'S'; }
+    $('reverse').checked = false;
     pastedKey = null;
     showFields();
     run();
@@ -298,22 +321,24 @@
       added += r.added.length;
     }
     if (current.size) $('names').value = compact(Object.fromEntries(current));
-    $('escape-note').textContent = added ? plural(added, 'placeholder', 'placeholders') + ' added.' : 'No reserved words to replace.';
+    $('escape-note').textContent = added ? plural(added, 'placeholder', 'placeholders') + ' added.' : 'No names need a placeholder.';
     run();
   });
 
   $('fill').addEventListener('click', () => {
+    // readRequest reads and checks all of it, the Key too, before the form
+    // changes, so a problem leaves the form as it was.
     let req;
     try { req = X.readRequest($('pasted').value); }
-    catch (e) { $('fill-note').textContent = e.message; return; }
+    catch (e) { $('fill-note').textContent = 'Nothing filled in. ' + e.message; return; }
     const op = req.operation;
     $('op').value = op;
     for (const f of EXPR_FIELDS) $(f).value = req[f] !== undefined ? req[f] : '';
     $('names').value = req.ExpressionAttributeNames ? jsonText(req.ExpressionAttributeNames) : '';
     $('values').value = req.ExpressionAttributeValues ? jsonText(req.ExpressionAttributeValues) : '';
-    if (req.ScanIndexForward === false) $('reverse').checked = true;
+    $('reverse').checked = req.ScanIndexForward === false;
     if (op === 'PutItem' && req.Item) $('items').value = '';
-    pastedKey = req.Key ? X.readItem(req.Key) : null;
+    pastedKey = req.key || null;
     $('fill-note').textContent = 'Filled in a ' + op + (req.TableName ? ' on ' + req.TableName : '') + '. Add the item' + (op === 'Query' || op === 'Scan' ? 's' : '') + ' below.';
     showFields();
     run();

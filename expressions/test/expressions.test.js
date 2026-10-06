@@ -191,3 +191,216 @@ test('plain values are read the way the document clients write them', () => {
   assert.equal(res.error, null);
   assert.deepEqual(res.items.map((x) => x.match), [true, false]);
 });
+
+// ---- The command line, the README's samples, and how requests are read ----
+
+const { spawnSync } = require('node:child_process');
+const os = require('node:os');
+const CLI = path.join(__dirname, '..', 'cli.js');
+// Runs the command line; returns its exit status and what it printed.
+function cli(args, input) {
+  const r = spawnSync(process.execPath, [CLI].concat(args), { input: input, encoding: 'utf8' });
+  return { status: r.status, out: r.stdout, err: r.stderr };
+}
+const parsed = (x) => E.parseJson(JSON.stringify(x));
+// Parsed JSON back to JSON text.
+const text = (v) => JSON.stringify(v, (k, x) => x instanceof Map ? Object.fromEntries(x) : x instanceof E.JsonNumber ? Number(x.text) : x);
+const unwrap = (list, op, schema) => E.unwrapItems(list.map(parsed), op, schema).map(text);
+const PK = { partition: { name: 'pk', type: 'S' } };
+
+test('the output of aws dynamodb scan, query and get-item is unwrapped, and only that', () => {
+  const page = { Items: [{ pk: { S: 'a' } }, { pk: { S: 'b' } }], Count: 2, ScannedCount: 2 };
+  assert.equal(unwrap([page], 'Scan').length, 2);
+  assert.equal(unwrap([page], 'Query', PK).length, 2);
+  // The SDK's output, with $metadata, and several pages one after another.
+  assert.equal(unwrap([Object.assign({ $metadata: { httpStatusCode: 200 } }, page), page], 'Scan').length, 4);
+  // An export to S3: {"Item": {...}} on each line.
+  assert.deepEqual(unwrap([{ Item: { pk: { S: 'a' } } }, { Item: { pk: { S: 'b' } } }], 'Scan'), ['{"pk":{"S":"a"}}', '{"pk":{"S":"b"}}']);
+  // Items, Count and the rest only wrap items in a Query or Scan.
+  assert.deepEqual(unwrap([page], 'UpdateItem'), [JSON.stringify(page)]);
+  // An item with an attribute named Items is an item.
+  const order = { pk: 'o#1', sk: 'order', Items: [{ sku: 'a', qty: 1 }] };
+  assert.deepEqual(unwrap([order], 'UpdateItem', PK), [JSON.stringify(order)]);
+  assert.deepEqual(unwrap([order], 'Scan'), [JSON.stringify(order)]);
+  assert.deepEqual(unwrap([{ Items: [{ sku: 'a' }], Count: 1 }], 'Scan', { partition: { name: 'Items', type: 'S' } }), ['{"Items":[{"sku":"a"}],"Count":1}']);
+  // get-item output for the item operations, with or without ConsumedCapacity.
+  assert.deepEqual(unwrap([{ Item: { pk: { S: 'a' } }, ConsumedCapacity: { CapacityUnits: 0.5 } }], 'UpdateItem'), ['{"pk":{"S":"a"}}']);
+  assert.deepEqual(unwrap([{ Item: { pk: 'a', qty: 1 } }], 'GetItem', PK), ['{"pk":"a","qty":1}']);
+  // An item whose only attribute is a map named Item stays as it is, typed or plain.
+  assert.equal(unwrap([{ Item: { sku: 'a', qty: 1 } }], 'UpdateItem', PK)[0], '{"Item":{"sku":"a","qty":1}}');
+  assert.equal(unwrap([{ Item: { M: { sku: { S: 'a' } } } }], 'UpdateItem')[0], '{"Item":{"M":{"sku":{"S":"a"}}}}');
+  // So does one whose key is named Item.
+  assert.equal(unwrap([{ Item: { pk: { S: 'a' } } }], 'UpdateItem', { partition: { name: 'Item', type: 'S' } })[0], '{"Item":{"pk":{"S":"a"}}}');
+
+  // The command line reads scan output too.
+  const scan = JSON.stringify({ Items: [{ pk: { S: 'a' }, st: { S: 'new' } }, { pk: { S: 'b' }, st: { S: 'old' } }], Count: 2, ScannedCount: 2 });
+  const r = cli(['--filter', 'st = :s', '--values', '{":s":"new"}', '--items', '-'], scan);
+  assert.equal(r.status, 0);
+  assert.match(r.out, /^1 of 2 items returned:$/m);
+});
+
+test('parentheses nested too deep for the tester give an error result, not a crash', () => {
+  const values = { ':v': { N: '1' } };
+  const deep = E.check({ operation: 'Scan', FilterExpression: '('.repeat(1300) + 'a = ', ExpressionAttributeValues: values, typed: true });
+  assert.equal(deep.error.type, 'TesterLimit');
+  assert.equal(deep.error.code, 'too-deep');
+  assert.equal(deep.error.expression, 'FilterExpression');
+  assert.deepEqual([deep.error.start, deep.error.end], [E.MAX_DEPTH, E.MAX_DEPTH + 1]);
+  assert.match(E.explain(deep.error), /limit of the tester/);
+  const key = E.run({ operation: 'Query', KeyConditionExpression: '('.repeat(2000) + 'pk = :v' + ')'.repeat(2000), ExpressionAttributeValues: { ':v': { S: 'a' } }, typed: true, items: [] });
+  assert.equal(key.error.type, 'TesterLimit');
+  assert.equal(key.error.expression, 'KeyConditionExpression');
+  assert.equal(E.check({ operation: 'Scan', FilterExpression: '('.repeat(4090) + 'a=', ExpressionAttributeValues: values, typed: true }).error.type, 'TesterLimit');
+  // Up to the limit, DynamoDB's own answers, as before.
+  const most = E.check({ operation: 'Scan', FilterExpression: '('.repeat(E.MAX_DEPTH) + 'a = :v', ExpressionAttributeValues: values, typed: true });
+  assert.equal(most.error.message, 'Invalid FilterExpression: Syntax error; token: "<EOF>", near: ":v"');
+  const not = E.check({ operation: 'Scan', FilterExpression: 'NOT('.repeat(E.MAX_DEPTH) + 'a = :v' + ')'.repeat(E.MAX_DEPTH), ExpressionAttributeValues: values, typed: true });
+  assert.equal(not.error, null);
+  // The command line says it's the tester's limit, and exits with 2.
+  const r = cli(['--filter', '('.repeat(500) + 'a = :v', '--values', '{":v": 1}']);
+  assert.equal(r.status, 2);
+  assert.match(r.out, /^The tester can't check this Scan:/);
+});
+
+test('key rule errors say which expression they are in, and where', () => {
+  const values = { ':p': { S: 'a' }, ':s': { S: 'b' } };
+  const schema = { partition: { name: 'pk', type: 'S' }, sort: { name: 'sk', type: 'S' } };
+  const key = (expr, extra) => E.check(Object.assign({ operation: 'Query', KeyConditionExpression: expr, ExpressionAttributeValues: values, typed: true, keySchema: schema }, extra)).error;
+  let e = key('pk = :p OR sk = :s');
+  assert.deepEqual([e.message, e.expression, e.start, e.end], ['Invalid operator used in KeyConditionExpression: OR', 'KeyConditionExpression', 8, 10]);
+  e = key('pk = :p AND sk = :s AND sk = :s');
+  assert.deepEqual([e.code, e.expression, e.start, e.end], ['key-twice', 'KeyConditionExpression', 24, 31]);
+  e = key('pk = :p AND v = :s');
+  assert.deepEqual([e.code, e.expression, e.start, e.end], ['key-missing', 'KeyConditionExpression', 12, 18]);
+  e = key('pk = :s AND sk = :p', { ExpressionAttributeValues: { ':p': { S: 'a' }, ':s': { N: '1' } } });
+  assert.deepEqual([e.code, e.expression, e.start, e.end], ['key-type', 'KeyConditionExpression', 5, 7]);
+  e = key('pk = :p', { FilterExpression: 'sk = :s' });
+  assert.deepEqual([e.code, e.expression, e.start, e.end], ['filter-key', 'FilterExpression', 0, 2]);
+  e = E.check({ operation: 'Scan', FilterExpression: 'pk.x = :p', ExpressionAttributeValues: { ':p': { S: 'a' } }, typed: true, keySchema: schema }).error;
+  assert.deepEqual([e.code, e.expression, e.start, e.end], ['key-scalar', 'FilterExpression', 0, 4]);
+  e = E.run({ operation: 'UpdateItem', UpdateExpression: 'SET a = :p, pk = :s', ExpressionAttributeValues: values, typed: true, keySchema: schema, item: null }).error;
+  assert.deepEqual([e.code, e.expression, e.start, e.end], ['key-update', 'UpdateExpression', 12, 14]);
+  // The command line's JSON names the expression.
+  const r = cli(['--key-condition', 'pk = :p OR sk = :s', '--values', '{":p":"a",":s":"b"}', '--key', 'pk:S,sk:S', '--json']);
+  assert.equal(JSON.parse(r.out).error.expression, 'KeyConditionExpression');
+});
+
+test('the operation is told from Key, Item and the other fields, and names are read in any case', () => {
+  const read = (x) => E.readRequest(JSON.stringify(Object.assign({ TableName: 'T' }, x))).operation;
+  assert.equal(read({ Key: { pk: { S: 'a' } }, ConditionExpression: 'attribute_exists(pk)' }), 'DeleteItem');
+  assert.equal(read({ Key: { pk: { S: 'a' } }, ReturnValues: 'ALL_OLD' }), 'DeleteItem');
+  assert.equal(read({ Key: { pk: { S: 'a' } }, ProjectionExpression: 'a' }), 'GetItem');
+  assert.equal(read({ ProjectionExpression: 'a, b' }), 'Scan');
+  assert.equal(read({ Item: { pk: { S: 'a' } }, ConditionExpression: 'attribute_not_exists(pk)' }), 'PutItem');
+  assert.equal(read({ Key: { pk: { S: 'a' } }, UpdateExpression: 'SET a = :v' }), 'UpdateItem');
+  assert.equal(read({ KeyConditionExpression: 'pk = :p' }), 'Query');
+  assert.equal(E.guessOperation({ ProjectionExpression: 'a', item: null }), 'GetItem');
+  assert.equal(E.guessOperation({ ProjectionExpression: 'a', items: [] }), 'Scan');
+  assert.equal(E.operationName('scan'), 'Scan');
+  assert.equal(E.operationName('get-item'), 'GetItem');
+  assert.equal(E.operationName('UPDATE_ITEM'), 'UpdateItem');
+  assert.throws(() => E.operationName('Scna'), E.InputError);
+  assert.equal(E.check({ operation: 'deleteitem', ConditionExpression: 'a = :v', ExpressionAttributeValues: { ':v': 1 } }).operation, 'DeleteItem');
+  assert.throws(() => E.check({ operation: 'Select', FilterExpression: 'a = :v' }), /Unknown operation "Select"/);
+  // The command line: a projection with --items is a Scan, and a name it doesn't know is an error.
+  let r = cli(['--projection', 'x', '--items', '-'], '[{"pk": "a", "x": 1}, {"pk": "b", "x": 2}]');
+  assert.match(r.out, /^DynamoDB accepts this Scan\.\n2 of 2 items returned:/);
+  r = cli(['--operation', 'scan', '--filter', 'a = :v', '--values', '{":v": 1}']);
+  assert.match(r.out, /^DynamoDB accepts this Scan\./);
+  r = cli(['--operation', 'Scna', '--filter', 'a = :v', '--values', '{":v": 1}']);
+  assert.equal(r.status, 2);
+  assert.match(r.err, /Unknown operation "Scna"/);
+});
+
+test('a query is in sort key order only when the sort key is known', () => {
+  const items = [{ pk: 'a', sk: 3 }, { pk: 'a', sk: 1 }, { pk: 'a', sk: 2 }];
+  const query = (keySchema) => E.run({ operation: 'Query', KeyConditionExpression: 'pk = :p', ExpressionAttributeValues: { ':p': 'a' }, ScanIndexForward: false,
+    keySchema: keySchema, items: items.map((x) => E.readItem(parsed(x))) });
+  let res = query(PK);
+  assert.equal(res.order, undefined);
+  assert.deepEqual(res.items.map((x) => x.index), [0, 1, 2]);
+  res = query({ partition: { name: 'pk', type: 'S' }, sort: { name: 'sk', type: 'N' } });
+  assert.equal(res.order, 'descending');
+  assert.deepEqual(res.items.map((x) => x.index), [0, 2, 1]);
+  const r = cli(['--key-condition', 'pk = :p', '--values', '{":p":"a"}', '--items', '-', '--reverse'], JSON.stringify(items));
+  assert.match(r.out, /3 of 3 items returned, in the order given, since --key names no sort key:\n {2}\{pk: "a", sk: 3\}\n {2}\{pk: "a", sk: 1\}/);
+  const sorted = cli(['--key-condition', 'pk = :p', '--values', '{":p":"a"}', '--items', '-', '--reverse', '--key', 'pk:S,sk:N'], JSON.stringify(items));
+  assert.match(sorted.out, /3 of 3 items returned, in descending sort key order:\n {2}\{pk: "a", sk: 3\}\n {2}\{pk: "a", sk: 2\}/);
+});
+
+test('names DynamoDB can\'t read as one name get one placeholder each', () => {
+  let r = E.escapeNames('first-name = :v AND _id = :i AND @timestamp > :t AND größe > :g');
+  assert.equal(r.expression, '#first_name = :v AND #_id = :i AND #_timestamp > :t AND #gr__e > :g');
+  assert.deepEqual(r.names, { '#first_name': 'first-name', '#_id': '_id', '#_timestamp': '@timestamp', '#gr__e': 'größe' });
+  // In a path, inside a function, and in the paths of an update.
+  assert.equal(E.escapeNames('a.b-c = :v AND attribute_exists(e-mail)').expression, 'a.#b_c = :v AND attribute_exists(#e_mail)');
+  r = E.escapeNames('SET first-name = :v, total = price-tax REMOVE e-mail ADD visit-count :one');
+  assert.equal(r.expression, 'SET #first_name = :v, #total = price-tax REMOVE #e_mail ADD #visit_count :one');
+  // In a SET value a dash is a minus: only the reserved words change.
+  assert.equal(E.escapeNames('SET a = first-name').expression, 'SET a = #first-#name');
+  assert.equal(E.escapeNames('SET a = if_not_exists(first-name, :z)').expression, 'SET a = if_not_exists(#first_name, :z)');
+  // Spaces, placeholders, numbers and operators that aren't DynamoDB's stay as written.
+  for (const same of ['price - discount > :v', 'n != :v', 'a!=:v', 'x = 5', 'l[01] = :v', '#a-b = :v']) assert.equal(E.escapeNames(same).expression, same);
+  // The rewritten expression reads, and the placeholders stand for the names.
+  const filter = E.escapeNames('first-name = :v AND _id = :i');
+  const res = E.run({ operation: 'Scan', FilterExpression: filter.expression, ExpressionAttributeNames: filter.names, ExpressionAttributeValues: { ':v': 'Ana', ':i': 7 },
+    items: [E.readItem(parsed({ 'first-name': 'Ana', _id: 7 })), E.readItem(parsed({ 'first-name': 'Bo', _id: 7 }))] });
+  assert.equal(res.error, null);
+  assert.deepEqual(res.items.map((x) => x.match), [true, false]);
+});
+
+test('the Key and Item of a request are read, so a new item starts with its key', () => {
+  const text = JSON.stringify({ TableName: 'T', Key: { pk: { S: 'o#1' } }, UpdateExpression: 'SET a = :v', ExpressionAttributeValues: { ':v': { S: 'x' } } });
+  const req = E.readRequest(text);
+  assert.equal(req.key.get('pk').v, 'o#1');
+  const res = E.run(Object.assign(req, { item: null, keySchema: PK }));
+  assert.deepEqual([...res.after.keys()], ['pk', 'a']);
+  // A request built by hand, with Key as JSON.
+  const byHand = E.run({ Key: { pk: { S: 'o#2' } }, UpdateExpression: 'SET a = :v', ExpressionAttributeValues: { ':v': { S: 'x' } }, item: null });
+  assert.equal(byHand.after.get('pk').v, 'o#2');
+  // A PutItem gives its item back.
+  const put = E.run(E.readRequest(JSON.stringify({ TableName: 'T', Item: { pk: { S: 'o#3' }, qty: { N: '2' } } })));
+  assert.equal(put.operation, 'PutItem');
+  assert.equal(put.after.get('qty').t, 'N');
+  // A Key that isn't valid is an input problem, named as the Key.
+  assert.throws(() => E.readRequest(JSON.stringify({ TableName: 'T', Key: { pk: { N: 'abc' } }, UpdateExpression: 'SET a = :v' })),
+    { name: 'InputError', message: 'Key attribute pk: A value provided cannot be converted into a number' });
+});
+
+test('the samples in the README run as written', { skip: process.platform === 'win32' && 'needs a POSIX shell' }, () => {
+  const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+  const blocks = (lang) => [...readme.matchAll(new RegExp('```' + lang + '\\n([\\s\\S]*?)```', 'g'))].map((m) => m[1]);
+  // A folder with the files the samples name, and the tool where the samples look for it.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'expressions-readme-'));
+  try {
+    fs.symlinkSync(path.join(__dirname, '..'), path.join(dir, 'expressions'), 'dir');
+    const write = (name, x) => fs.writeFileSync(path.join(dir, name), JSON.stringify(x));
+    // The code sample: an update of the item it gives.
+    write('request.json', { TableName: 'Orders', Key: { pk: { S: 'o#1' } }, UpdateExpression: 'SET qty = qty + :one', ExpressionAttributeValues: { ':one': { N: '1' } } });
+    const js = blocks('js');
+    assert.equal(js.length, 1);
+    // From a file: node -e would lend it fs and the other modules.
+    fs.writeFileSync(path.join(dir, 'sample.js'), js[0] + '\nif (r.error || X.numberText(r.after.get("qty").v) !== "2") throw new Error("unexpected result");\n');
+    const run = spawnSync(process.execPath, ['sample.js'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(run.status, 0, run.stderr);
+    // The command lines: a query over items, an update, a scan's output and escaping.
+    write('request.json', { TableName: 'Orders', KeyConditionExpression: 'pk = :pk AND sk > :n', ExpressionAttributeValues: { ':pk': { S: 'c#9' }, ':n': { N: '1' } } });
+    write('items.json', [{ pk: { S: 'c#9' }, sk: { N: '2' } }, { pk: { S: 'c#9' }, sk: { N: '1' } }]);
+    write('item.json', { pk: { S: 'user#42' }, visits: { N: '7' } });
+    write('scan-output.json', { Items: [{ pk: { S: 'a' }, status: { S: 'new' } }], Count: 1, ScannedCount: 1 });
+    const lines = blocks('sh').join('\n').split('\n').filter((l) => l.startsWith('node expressions/cli.js'));
+    assert.equal(lines.length, 4);
+    for (const line of lines) {
+      const sh = spawnSync('sh', ['-c', line], { cwd: dir, encoding: 'utf8' });
+      // 0 or 1 is DynamoDB's answer; 2 would be a problem with the sample itself.
+      assert.ok(sh.status === 0 || sh.status === 1, line + '\n' + sh.stdout + sh.stderr);
+      assert.match(sh.stdout, /^(DynamoDB|#)/, line);
+    }
+    // The test command names a file that is there.
+    const tests = blocks('sh').join('\n').split('\n').filter((l) => l.startsWith('node --test'));
+    assert.equal(tests.length, 1);
+    assert.ok(fs.existsSync(path.join(dir, tests[0].slice('node --test '.length))), tests[0]);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

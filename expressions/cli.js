@@ -23,20 +23,24 @@ Usage:
   --projection EXPR      ProjectionExpression
   --names JSON|@FILE     ExpressionAttributeNames
   --values JSON|@FILE    ExpressionAttributeValues
-  --operation NAME       Query, Scan, GetItem, PutItem, UpdateItem or DeleteItem, when the expressions
-                         don't make it clear
+  --operation NAME       Query, Scan, GetItem, PutItem, UpdateItem or DeleteItem, when the request doesn't
+                         make it clear. Any case works, and so does get-item.
 
-  --items FILE           Items to query or scan: a JSON list, JSON Lines, or a DynamoDB export ("-" reads stdin)
-  --item FILE            The item an update, condition or projection works on (leave out for a new item)
+  --items FILE           Items to query or scan: a JSON list, JSON Lines, the output of aws dynamodb scan
+                         or query, or an export to S3 ("-" reads stdin)
+  --item FILE            The item an update, condition or projection works on, or the output of
+                         aws dynamodb get-item (leave out for a new item)
   --key NAME:TYPE[,NAME:TYPE]
                          The table's (or index's) partition key and sort key, such as pk:S,sk:N
   --typed / --plain      Read values and items as typed JSON or as plain JSON (default: decide by looking)
-  --reverse              Return query results in descending sort key order (ScanIndexForward false)
-  --escape EXPR          Rewrite reserved words in EXPR as #placeholders and print the names to add
+  --reverse              Return query results in descending sort key order (ScanIndexForward false).
+                         Needs the sort key in --key.
+  --escape EXPR          Put #placeholders on the names in EXPR that need them, such as reserved words
+                         and first-name, and print the names to add
   --json                 Print JSON
 
 Exit status: 0 when DynamoDB would accept the request, 1 when it would refuse it or a condition fails,
-2 for a problem with the input.`;
+2 for a problem with the input, or for an expression too deep for the tester to read.`;
 
 function readArg(v) {
   if (v === undefined) return undefined;
@@ -54,9 +58,6 @@ function parseKey(text) {
   };
   return { partition: parts[0] ? one(parts[0]) : null, sort: parts[1] ? one(parts[1]) : null };
 }
-
-// DynamoDB's export to S3 writes {"Item": {...}} on each line.
-function unwrapExport(list) { return list.map((x) => (x instanceof Map && x.size === 1 && x.has('Item') && x.get('Item') instanceof Map) ? x.get('Item') : x); }
 
 function show(av) { return E.toPlainText(av); }
 function itemText(item) { return '{' + [...item].map(([k, v]) => k + ': ' + show(v)).join(', ') + '}'; }
@@ -94,42 +95,49 @@ function main(argv) {
     else {
       console.log(r.expression);
       console.log(JSON.stringify(r.names));
-      if (!r.added.length) console.log('No reserved words to replace.');
+      if (!r.added.length) console.log('No names need a placeholder.');
     }
     return 0;
   }
 
-  const req = opt.request ? E.readRequest(readFile(opt.request)) : {};
-  for (const k of ['KeyConditionExpression', 'FilterExpression', 'ConditionExpression', 'UpdateExpression', 'ProjectionExpression']) if (opt[k] !== undefined) req[k] = opt[k];
+  const EXPRS = ['KeyConditionExpression', 'FilterExpression', 'ConditionExpression', 'UpdateExpression', 'ProjectionExpression'];
+  const req = opt.request ? E.readRequest(readFile(opt.request), opt.typed) : {};
+  for (const k of EXPRS) if (opt[k] !== undefined) req[k] = opt[k];
   if (opt.names !== undefined) req.ExpressionAttributeNames = E.parseJson(readArg(opt.names));
   if (opt.values !== undefined) req.ExpressionAttributeValues = E.parseJson(readArg(opt.values));
-  if (opt.operation) req.operation = opt.operation;
-  else if (!opt.request) req.operation = undefined;
   if (opt.reverse) req.ScanIndexForward = false;
   if (opt.typed !== undefined) req.typed = opt.typed;
   if (opt.key) req.keySchema = parseKey(opt.key);
-  if (!E.OPERATIONS[req.operation]) {
-    const guess = E.check(Object.assign({}, req, { operation: undefined })).operation;
-    req.operation = guess;
-  }
-  if (!['KeyConditionExpression', 'FilterExpression', 'ConditionExpression', 'UpdateExpression', 'ProjectionExpression'].some((k) => req[k] !== undefined)) {
+  if (!EXPRS.some((k) => req[k] !== undefined)) {
     console.log(HELP);
     return 2;
   }
-  if (opt.items) req.items = unwrapExport(E.parseJsonItems(readFile(opt.items))).map((x) => E.readItem(x, opt.typed));
-  if (opt.item) req.item = E.readItem(E.parseJson(readFile(opt.item)), opt.typed);
-  else if (req.Item instanceof Map && req.operation === 'PutItem') req.newItem = E.readItem(req.Item, opt.typed);
-  if (req.Key instanceof Map) req.key = E.readItem(req.Key, opt.typed);
+  const items = opt.items ? E.parseJsonItems(readFile(opt.items)) : undefined;
+  const item = opt.item ? E.parseJson(readFile(opt.item)) : undefined;
+  // The operation as given, or else as the request and the items given suggest.
+  req.operation = opt.operation !== undefined ? E.operationName(opt.operation)
+    : E.guessOperation(Object.assign({}, req, { items: items, item: item }));
+  // The output of aws dynamodb scan, query and get-item, and exports to S3, wrap the items.
+  if (items) req.items = E.unwrapItems(items, req.operation, req.keySchema).map((x) => E.readItem(x, opt.typed));
+  if (item !== undefined) req.item = E.readItem(E.unwrapItems([item], req.operation, req.keySchema)[0], opt.typed);
 
   const res = E.run(req);
+  const limit = res.error && res.error.type === E.TESTER_LIMIT;
   if (opt.json) {
-    const out = { operation: res.operation, accepted: !res.error || res.error.type === 'ConditionalCheckFailedException' };
+    const out = { operation: res.operation, accepted: limit ? null : !res.error || res.error.type === 'ConditionalCheckFailedException' };
     if (res.error) out.error = { type: res.error.type, message: res.error.message, help: E.explain(res.error), expression: res.error.expression, start: res.error.start, end: res.error.end };
     if (res.items) out.items = res.items.filter((x) => x.match).map((x) => E.itemToTyped(x.projected || x.item));
+    if (res.order) out.order = res.order;
     if (res.after) out.item = E.itemToTyped(res.after);
     if (res.changed) out.changed = res.changed.map((c) => ({ attribute: c.name, change: c.change }));
     console.log(JSON.stringify(out, null, 2));
   } else {
+    if (limit) {
+      console.log('The tester can\'t check this ' + res.operation + ':');
+      console.log('  ' + res.error.message);
+      console.log('\n' + E.explain(res.error));
+      return 2;
+    }
     if (res.error && res.error.type !== 'ConditionalCheckFailedException') {
       console.log('DynamoDB would refuse this ' + res.operation + ':');
       console.log('  ' + res.error.type + ': ' + res.error.message);
@@ -147,7 +155,11 @@ function main(argv) {
       const total = (req.items || []).length;
       if (!total) console.log('Give --items to see which items it returns.');
       else {
-        console.log(hit.length + ' of ' + total + ' items returned' + (res.operation === 'Query' ? ', in sort key order' + (req.ScanIndexForward === false ? ', descending' : '') : '') + ':');
+        // A Query returns items in sort key order, which needs the sort key.
+        let order = '';
+        if (res.order) order = ', in ' + res.order + ' sort key order';
+        else if (res.operation === 'Query') order = ', in the order given, since --key names no sort key';
+        console.log(hit.length + ' of ' + total + ' items returned' + order + ':');
         for (const x of hit) console.log('  ' + itemText(x.projected || x.item));
       }
     } else if (res.operation === 'UpdateItem' && res.after) {
@@ -159,7 +171,7 @@ function main(argv) {
       console.log('  ' + itemText(res.after || new Map()));
     } else if (res.conditionHolds !== undefined) console.log('The condition holds for the item.');
   }
-  return res.error ? 1 : 0;
+  return limit ? 2 : res.error ? 1 : 0;
 }
 
 try { process.exitCode = main(process.argv.slice(2)); }

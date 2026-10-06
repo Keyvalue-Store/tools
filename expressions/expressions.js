@@ -75,8 +75,9 @@
 
   // What DynamoDB answers instead of running a request. type is the
   // exception name (ValidationException, ConditionalCheckFailedException),
-  // message its text, code a short name for the kind of problem, and where
-  // the expression and the place in it, when the problem has one.
+  // or TesterLimit for a request the tester can't read to the end; message
+  // its text, code a short name for the kind of problem, and where the
+  // expression and the place in it, when the problem has one.
   class DynamoError extends Error {
     constructor(type, message, info) {
       super(message);
@@ -87,6 +88,9 @@
     }
   }
   function invalid(message, info) { return new DynamoError('ValidationException', message, info); }
+  // The type of an error that is the tester's own, where a request goes past
+  // what the tester can read. DynamoDB never answers with it.
+  const TESTER_LIMIT = 'TesterLimit';
 
   // A problem with the input that DynamoDB itself would not get as far as
   // checking, such as JSON that does not parse. Not a DynamoDB answer.
@@ -642,10 +646,27 @@
     constructor(node) { super('The expression has redundant parentheses;'); this.node = node; }
   }
 
+  // How deep parentheses may nest before the tester stops reading, so that
+  // reading never runs out of stack. Each level past the first needs an
+  // operator or a function, or the parentheses are redundant, and AWS
+  // allows 300 operators and functions in one expression, so DynamoDB takes
+  // nothing nested this deep.
+  const MAX_DEPTH = 400;
+  class TooDeep extends Error {
+    constructor(tok) {
+      super('Parentheses nested more than ' + MAX_DEPTH + ' deep. The tester stops reading there.');
+      this.start = tok.start;
+      this.end = tok.end;
+    }
+  }
+
   function Parser(text) {
     this.text = text;
     this.toks = tokenize(text);
     this.i = 0;
+    this.depth = 0;
+    // operand() failures by where they started; see operand().
+    this.failed = new Map();
   }
   Parser.prototype = {
     peek(k) { return this.toks[Math.min(this.i + (k || 0), this.toks.length - 1)]; },
@@ -654,14 +675,26 @@
     fail(at) { throw new SyntaxProblem(this.toks, at === undefined ? this.i : at, this.text); },
     expect(t) { if (!this.is(t)) this.fail(); return this.next(); },
     end() { if (!this.is('EOF')) this.fail(); },
+    // An opening parenthesis, one level deeper, and the one that closes it.
+    open() {
+      const tok = this.expect('(');
+      if (++this.depth > MAX_DEPTH) throw new TooDeep(tok);
+      return tok;
+    },
+    close() {
+      const tok = this.expect(')');
+      this.depth--;
+      return tok;
+    },
 
     // Tries the alternatives in order; keeps the first that reads, or throws
     // the error of the one that read furthest, as DynamoDB's parser does.
     choose(alts) {
-      const at = this.i;
+      const at = this.i, depth = this.depth;
       let best = null;
       for (const alt of alts) {
         this.i = at;
+        this.depth = depth;
         try { return alt.call(this); }
         catch (e) {
           if (!(e instanceof SyntaxProblem)) throw e;
@@ -669,6 +702,7 @@
         }
       }
       this.i = at;
+      this.depth = depth;
       throw best;
     },
 
@@ -703,9 +737,9 @@
       if (this.is('(')) {
         return this.choose([
           function () {
-            const open = this.next();
+            const open = this.open();
             const inner = this.condition();
-            const close = this.expect(')');
+            const close = this.close();
             return this.paren(open, inner, close, true);
           },
           function () { return this.comparison(); }
@@ -732,22 +766,36 @@
       }
       if (tok.t === 'IN') {
         this.next();
-        this.expect('(');
+        this.open();
         const list = [this.operand()];
         while (this.is(',')) { this.next(); list.push(this.operand()); }
-        const close = this.expect(')');
+        const close = this.close();
         return { k: 'in', a: a, list: list, tok: tok, start: a.start, end: close.end };
       }
       if (a.k === 'call') { a.asCondition = true; return a; }
       this.fail();
     },
+    // An operand reads the same way wherever it is asked for, so when one
+    // fails at a token, the failure is kept and thrown again at once the
+    // next time. Without this, every unclosed "(" read all the ones after it
+    // again as operands, and n of them took n² steps.
     operand() {
+      const key = this.i + ' ' + this.depth;
+      const known = this.failed.get(key);
+      if (known) throw known;
+      try { return this.readOperand(); }
+      catch (e) {
+        if (e instanceof SyntaxProblem) this.failed.set(key, e);
+        throw e;
+      }
+    },
+    readOperand() {
       const tok = this.peek();
       if (tok.t === 'value') { this.next(); return { k: 'value', name: tok.text, tok: tok, start: tok.start, end: tok.end }; }
       if (tok.t === '(') {
-        const open = this.next();
+        const open = this.open();
         const inner = this.operand();
-        const close = this.expect(')');
+        const close = this.close();
         return this.paren(open, inner, close, false);
       }
       if (tok.t === 'id' && this.peek(1).t === '(') return this.call();
@@ -763,10 +811,10 @@
     },
     call() {
       const nameTok = this.next();
-      this.expect('(');
+      this.open();
       const args = [this.operand()];
       while (this.is(',')) { this.next(); args.push(this.operand()); }
-      const close = this.expect(')');
+      const close = this.close();
       return { k: 'call', name: nameTok.text, args: args, tok: nameTok, start: nameTok.start, end: close.end };
     },
     // A document path: a name, then .name or [index] steps.
@@ -1225,15 +1273,16 @@
     return { map: ordered, typed: isTyped };
   }
 
-  // Reads one item, typed or plain.
-  function readItem(json, typed) {
-    if (!(json instanceof Map)) throw new InputError('An item must be a JSON object');
+  // Reads one item, typed or plain. what names it in errors: Item or Key.
+  function readItem(json, typed, what) {
+    what = what || 'Item';
+    if (!(json instanceof Map)) throw new InputError((what === 'Item' ? 'An item' : 'A ' + what.toLowerCase()) + ' must be a JSON object');
     const isTyped = typed === undefined ? looksTyped(json) : typed;
     const item = new Map();
     for (const [k, v] of json) {
       try { item.set(k, isTyped ? fromTyped(v) : fromPlain(v)); }
       catch (e) {
-        if (e instanceof ValueProblem || e instanceof InputError) throw new InputError('Item attribute ' + k + ': ' + e.message);
+        if (e instanceof ValueProblem || e instanceof InputError) throw new InputError(what + ' attribute ' + k + ': ' + e.message);
         throw e;
       }
     }
@@ -1250,8 +1299,9 @@
   //   by parseJson, or plain objects), typed (true/false/undefined),
   //   keySchema: { partition: {name, type}, sort: {name, type} } }
   function check(req) {
-    const out = { operation: req.operation || guessOperation(req), expressions: {}, error: null };
-    const kinds = OPERATIONS[out.operation] || ['key', 'filter', 'condition', 'update', 'projection'];
+    const given = req.operation !== undefined && req.operation !== null && req.operation !== '';
+    const out = { operation: given ? operationName(req.operation) : guessOperation(req), expressions: {}, error: null };
+    const kinds = OPERATIONS[out.operation];
     try {
       const names = readNames(toJson(req.ExpressionAttributeNames));
       // GetItem takes no values; DynamoDB ignores any that are sent.
@@ -1273,6 +1323,11 @@
         catch (e) {
           if (e instanceof SyntaxProblem) throw invalid('Invalid ' + label + ': ' + e.message, { code: 'syntax', expression: label, start: e.start, end: e.end });
           if (e instanceof RedundantParens) throw invalid('Invalid ' + label + ': ' + e.message, { code: 'redundant-parentheses', expression: label, start: e.node.start, end: e.node.end });
+          // Not an answer of DynamoDB's: the tester's own limit.
+          if (e instanceof TooDeep) {
+            throw new DynamoError(TESTER_LIMIT, label + ' has parentheses nested more than ' + MAX_DEPTH + ' deep. The tester stops reading there, so it can\'t tell what DynamoDB answers.',
+              { code: 'too-deep', expression: label, start: e.start, end: e.end });
+          }
           throw e;
         }
         checkExpression(ast, kind, ctx);
@@ -1287,7 +1342,7 @@
           const e = out.expressions[kind];
           if (!e || kind === 'key') continue;
           // An update's are checked when it runs, after its condition.
-          if (kind !== 'update') checkKeyPaths(e.ast, ctx, req.keySchema);
+          if (kind !== 'update') checkKeyPaths(e.ast, ctx, req.keySchema, EXPRESSIONS[kind]);
         }
       }
       if (out.expressions.key) checkKeyCondition(out.expressions.key.ast, ctx, req.keySchema, out);
@@ -1297,7 +1352,7 @@
         walk(out.expressions.filter.ast, (n) => {
           if (n.k !== 'path') return;
           const name = pathKey(n, ctx.names)[0];
-          if (keys.includes(name)) throw invalid('Filter Expression can only contain non-primary key attributes: Primary key attribute: ' + name, Object.assign({ code: 'filter-key' }, at(n)));
+          if (keys.includes(name)) throw invalid('Filter Expression can only contain non-primary key attributes: Primary key attribute: ' + name, Object.assign({ code: 'filter-key', expression: EXPRESSIONS.filter }, at(n)));
         });
       }
 
@@ -1308,13 +1363,31 @@
     return out;
   }
 
+  // The operation a request is for, when it doesn't say: from its
+  // expressions, from whether it names an item by its Key or carries a whole
+  // Item, and from whether it comes with items (a Query or Scan) or one item.
   function guessOperation(req) {
-    if (req.UpdateExpression !== undefined) return 'UpdateItem';
-    if (req.KeyConditionExpression !== undefined) return 'Query';
-    if (req.FilterExpression !== undefined) return 'Scan';
-    if (req.ConditionExpression !== undefined) return 'PutItem';
-    if (req.ProjectionExpression !== undefined) return 'GetItem';
+    const has = (k) => req[k] !== undefined && req[k] !== null;
+    if (has('UpdateExpression')) return 'UpdateItem';
+    if (has('KeyConditionExpression')) return 'Query';
+    if (has('Item') || has('newItem')) return 'PutItem';
+    // GetItem and DeleteItem both name the item by its key; only a write
+    // takes a condition, or asks for ReturnValues.
+    if (has('Key') || has('key')) return has('ConditionExpression') || has('ReturnValues') ? 'DeleteItem' : 'GetItem';
+    if (has('FilterExpression') || Array.isArray(req.items)) return 'Scan';
+    if (has('ConditionExpression')) return 'PutItem';
+    // A projection alone: a GetItem when there is one item, else a Scan.
+    if (has('ProjectionExpression') && req.item !== undefined) return 'GetItem';
     return 'Scan';
+  }
+
+  // An operation's name as DynamoDB spells it, from any case, or as the AWS
+  // command line writes it (get-item).
+  function operationName(name) {
+    const want = String(name).toLowerCase().replace(/[-_\s]/g, '');
+    const found = Object.keys(OPERATIONS).find((op) => op.toLowerCase() === want);
+    if (!found) throw new InputError('Unknown operation "' + name + '". Use Query, Scan, GetItem, PutItem, UpdateItem or DeleteItem.');
+    return found;
   }
 
   // Plain JavaScript objects to the JSON form the readers take.
@@ -1333,15 +1406,17 @@
   // must: equality on the partition key, at most one condition on the sort
   // key, AND only.
   function checkKeyCondition(ast, ctx, schema, out) {
+    // Every problem here is in the key condition; node is the spot, if any.
+    const err = (message, code, node) => invalid(message, Object.assign({ code: code, expression: EXPRESSIONS.key }, at(node)));
     const parts = [];
     const visit = (n) => {
       n = n.k === 'paren' ? n.inner : n;
       if (n.k === 'and') { visit(n.a); visit(n.b); return; }
-      if (n.k === 'or') throw invalid('Invalid operator used in KeyConditionExpression: OR', Object.assign({ code: 'key-operator' }, at(n.tok)));
-      if (n.k === 'not') throw invalid('Invalid operator used in KeyConditionExpression: NOT', Object.assign({ code: 'key-operator' }, at(n.tok)));
-      if (n.k === 'in') throw invalid('Invalid operator used in KeyConditionExpression: IN', Object.assign({ code: 'key-operator' }, at(n.tok)));
-      if (n.k === 'cmp' && n.op === '<>') throw invalid('Invalid operator used in KeyConditionExpression: <>', Object.assign({ code: 'key-operator' }, at(n.tok)));
-      if (n.k === 'call' && n.name !== 'begins_with') throw invalid('Invalid operator used in KeyConditionExpression: ' + n.name, Object.assign({ code: 'key-operator' }, at(n.tok)));
+      if (n.k === 'or') throw err('Invalid operator used in KeyConditionExpression: OR', 'key-operator', n.tok);
+      if (n.k === 'not') throw err('Invalid operator used in KeyConditionExpression: NOT', 'key-operator', n.tok);
+      if (n.k === 'in') throw err('Invalid operator used in KeyConditionExpression: IN', 'key-operator', n.tok);
+      if (n.k === 'cmp' && n.op === '<>') throw err('Invalid operator used in KeyConditionExpression: <>', 'key-operator', n.tok);
+      if (n.k === 'call' && n.name !== 'begins_with') throw err('Invalid operator used in KeyConditionExpression: ' + n.name, 'key-operator', n.tok);
       parts.push(n);
     };
     visit(ast);
@@ -1349,7 +1424,7 @@
     for (const p of parts) {
       let path, op, vals;
       const operands = p.k === 'cmp' ? [p.a, p.b] : p.k === 'between' ? [p.a, p.lo, p.hi] : p.args;
-      if (operands.some((o) => { const u = unwrap(o); return u.k === 'call'; })) throw invalid('KeyConditionExpressions cannot contain nested operations', Object.assign({ code: 'key-nested' }, at(p)));
+      if (operands.some((o) => { const u = unwrap(o); return u.k === 'call'; })) throw err('KeyConditionExpressions cannot contain nested operations', 'key-nested', p);
       if (p.k === 'cmp') {
         const a = unwrap(p.a), b = unwrap(p.b);
         if (a.k === 'path') { path = a; vals = [b]; op = p.op; }
@@ -1363,39 +1438,45 @@
     const keyName = (p) => p.k === 'path' ? pathKey(p, ctx.names)[0] : null;
     const counts = new Map();
     for (const c of conds) {
-      if (c.path.k !== 'path') throw invalid('Query condition missed key schema element', { code: 'key-missing' });
+      if (c.path.k !== 'path') throw err('Query condition missed key schema element', 'key-missing', c.node);
       const name = keyName(c.path);
       if (c.path.parts.length > 1 && (name === schema.partition.name || (schema.sort && name === schema.sort.name))) {
-        throw invalid("Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: " + name, Object.assign({ code: 'key-scalar' }, at(c.path)));
+        throw err("Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: " + name, 'key-scalar', c.path);
       }
       counts.set(name, (counts.get(name) || 0) + 1);
     }
-    for (const n of counts.values()) if (n > 1) throw invalid('KeyConditionExpressions must only contain one condition per key', { code: 'key-twice' });
+    if ([...counts.values()].some((n) => n > 1)) {
+      // The spot: the first condition on a key that already has one.
+      const again = conds.find((c, i) => conds.slice(0, i).some((d) => keyName(d.path) === keyName(c.path)));
+      throw err('KeyConditionExpressions must only contain one condition per key', 'key-twice', again.node);
+    }
     const pk = conds.find((c) => keyName(c.path) === schema.partition.name);
     const sk = schema.sort && schema.sort.name ? conds.find((c) => keyName(c.path) === schema.sort.name) : null;
-    if (!pk || conds.some((c) => c !== pk && c !== sk)) throw invalid('Query condition missed key schema element', { code: 'key-missing' });
-    if (pk.op !== '=') throw invalid('Query key condition not supported', Object.assign({ code: 'key-partition-op' }, at(pk.node)));
+    const other = conds.find((c) => c !== pk && c !== sk);
+    if (!pk || other) throw err('Query condition missed key schema element', 'key-missing', other && other.node);
+    if (pk.op !== '=') throw err('Query key condition not supported', 'key-partition-op', pk.node);
     for (const c of [pk, sk]) {
       if (!c) continue;
       const type = c === pk ? schema.partition.type : schema.sort.type;
       for (const v of c.vals) {
         const av = v.k === 'value' ? ctx.values.get(v.name) : null;
         if (!av) continue;
-        if (av.t !== type) throw invalid('One or more parameter values were invalid: Condition parameter type does not match schema type', { code: 'key-type' });
-        if (av.t === 'S' && av.v === '') throw invalid('One or more parameter values are not valid. The AttributeValue for a key attribute cannot contain an empty string value. Key: ' + keyName(c.path), { code: 'key-empty' });
+        if (av.t !== type) throw err('One or more parameter values were invalid: Condition parameter type does not match schema type', 'key-type', v);
+        if (av.t === 'S' && av.v === '') throw err('One or more parameter values are not valid. The AttributeValue for a key attribute cannot contain an empty string value. Key: ' + keyName(c.path), 'key-empty', v);
       }
     }
     out.partition = pk; out.sort = sk || null;
   }
 
   // Key attributes hold plain values, so no expression may look inside them.
-  function checkKeyPaths(ast, ctx, schema) {
+  // label: the expression the ast belongs to, such as FilterExpression.
+  function checkKeyPaths(ast, ctx, schema, label) {
     const keys = [schema.partition && schema.partition.name, schema.sort && schema.sort.name].filter(Boolean);
     walk(ast, (n) => {
       if (n.k !== 'path' || n.parts.length < 2) return;
       const name = pathKey(n, ctx.names)[0];
       if (keys.includes(name)) {
-        throw invalid("Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: " + name, Object.assign({ code: 'key-scalar' }, at(n)));
+        throw invalid("Key attributes must be scalars; list random access '[]' and map lookup '.' are not allowed: Key: " + name, Object.assign({ code: 'key-scalar', expression: label }, at(n)));
       }
     });
   }
@@ -1407,7 +1488,7 @@
       for (const a of c.actions) {
         const name = pathKey(a.path, ctx.names)[0];
         if (keys.includes(name)) {
-          throw invalid('One or more parameter values were invalid: Cannot update attribute ' + name + '. This attribute is part of the key', Object.assign({ code: 'key-update' }, at(a.path)));
+          throw invalid('One or more parameter values were invalid: Cannot update attribute ' + name + '. This attribute is part of the key', Object.assign({ code: 'key-update', expression: EXPRESSIONS.update }, at(a.path)));
         }
       }
     }
@@ -1736,6 +1817,9 @@
   // Runs a request against sample items and returns what DynamoDB would do.
   // req as for check(), plus items (Maps from readItem) for Query and Scan,
   // and item (the current item, or null for none) for the item operations.
+  // key, the key of an item that doesn't exist yet, and newItem, the item a
+  // PutItem writes, are Maps too; readRequest fills them in from the
+  // request's Key and Item, and when only Key or Item is there, run() reads it.
   function run(req) {
     const result = check(req);
     if (result.error) return result;
@@ -1748,6 +1832,7 @@
         if (op === 'Query' && ex.key) {
           const kt = new Map();
           items = items.filter((x) => holds(ex.key.ast, x.item, ctx, kt));
+          // Without a sort key the items have no order, and stay as given.
           if (req.keySchema && req.keySchema.sort && req.keySchema.sort.name) {
             const sk = req.keySchema.sort.name;
             items.sort((x, y) => {
@@ -1756,6 +1841,7 @@
               return order(a, b) || 0;
             });
             if (req.ScanIndexForward === false) items.reverse();
+            result.order = req.ScanIndexForward === false ? 'descending' : 'ascending';
           }
         }
         result.items = items.map((x) => {
@@ -1785,18 +1871,20 @@
       }
       if (op === 'UpdateItem' && ex.update) {
         if (req.keySchema) {
-          for (const c of ex.update.ast.clauses) for (const a of c.actions) if (a.value) checkKeyPaths(a.value, ctx, req.keySchema);
+          for (const c of ex.update.ast.clauses) for (const a of c.actions) if (a.value) checkKeyPaths(a.value, ctx, req.keySchema, EXPRESSIONS.update);
           checkKeyUpdate(ex.update.ast, ctx, req.keySchema);
         }
         const base = current ? current : new Map();
         const start = new Map(base);
-        if (!current && req.key) for (const [k, v] of req.key) start.set(k, v);
+        // An item that doesn't exist yet starts with its key.
+        const key = req.key || (req.Key ? readItem(toJson(req.Key), req.typed, 'Key') : null);
+        if (!current && key) for (const [k, v] of key) start.set(k, v);
         result.before = current;
         result.after = applyUpdate(ex.update.ast, start, ctx);
         result.changed = changedAttributes(current || new Map(), result.after);
       } else if (op === 'PutItem') {
         result.before = current;
-        result.after = req.newItem || null;
+        result.after = req.newItem || (req.Item ? readItem(toJson(req.Item), req.typed, 'Item') : null);
       } else if (op === 'DeleteItem') {
         result.before = current;
         result.after = null;
@@ -1822,8 +1910,10 @@
 
   // Reads the JSON a program sends: the input of an SDK call or of the AWS
   // command line's --cli-input-json, typed or plain. Returns the fields the
-  // tester uses.
-  function readRequest(text) {
+  // tester uses, with the request's Key read into key and its Item into
+  // newItem, ready for run(). typed: true, false or undefined to decide by
+  // looking, for the whole request.
+  function readRequest(text, typed) {
     const json = parseJson(text);
     if (!(json instanceof Map)) throw new InputError('Expected a JSON object: the parameters of a Query, Scan, GetItem, PutItem, UpdateItem or DeleteItem call');
     const get = (k) => { for (const [key, v] of json) if (key.toLowerCase() === k.toLowerCase()) return v; return undefined; };
@@ -1837,46 +1927,113 @@
     }
     if (get('ExpressionAttributeNames') !== undefined) req.ExpressionAttributeNames = get('ExpressionAttributeNames');
     if (get('ExpressionAttributeValues') !== undefined) req.ExpressionAttributeValues = get('ExpressionAttributeValues');
-    if (get('Key') instanceof Map) req.Key = get('Key');
-    if (get('Item') instanceof Map) req.Item = get('Item');
+    if (get('Key') instanceof Map) { req.Key = get('Key'); req.key = readItem(req.Key, typed, 'Key'); }
+    if (get('Item') instanceof Map) { req.Item = get('Item'); req.newItem = readItem(req.Item, typed, 'Item'); }
     if (typeof get('ScanIndexForward') === 'boolean') req.ScanIndexForward = get('ScanIndexForward');
+    if (typeof get('ReturnValues') === 'string') req.ReturnValues = get('ReturnValues');
     if (typeof get('TableName') === 'string') req.TableName = get('TableName');
     if (typeof get('IndexName') === 'string') req.IndexName = get('IndexName');
+    if (typed !== undefined) req.typed = typed;
     req.operation = guessOperation(req);
-    if (req.operation === 'PutItem' && req.ConditionExpression === undefined && req.Item) req.operation = 'PutItem';
     return req;
+  }
+
+  // ---- Items as DynamoDB prints and exports them ----
+
+  // What the AWS command line prints for a scan or query, and the SDKs
+  // return, wraps the items: {"Items": [...], "Count": 2, ...}. get-item
+  // wraps its item as {"Item": {...}}, and an export to S3 writes one
+  // {"Item": {...}} per line. This takes the items out of the wrappers in a
+  // list of parsed JSON values, and leaves alone values that are items
+  // themselves, such as an item with an attribute named Items or Item.
+  // operation: the wrappers of a Query or Scan, or of the item operations.
+  // keySchema, if known, tells them apart better: an item has its key.
+  const PAGE_FIELDS = ['Items', 'Count', 'ScannedCount', 'LastEvaluatedKey', 'ConsumedCapacity', '$metadata'];
+  const GET_FIELDS = ['Item', 'ConsumedCapacity', '$metadata'];
+  function unwrapItems(list, operation, keySchema) {
+    const many = operation === 'Query' || operation === 'Scan';
+    const pk = keySchema && keySchema.partition && keySchema.partition.name;
+    const only = (m, fields) => [...m.keys()].every((k) => fields.includes(k));
+    // {"Item": {...}}: the item inside is typed JSON, as the command line and
+    // exports write it, or holds the key the wrapper lacks.
+    const wraps = (m) => {
+      const inner = m.get('Item');
+      if (!(inner instanceof Map) || inner.size === 0) return false;
+      return (pk ? inner.has(pk) : false) || looksTyped(inner);
+    };
+    return list.flatMap((x) => {
+      if (!(x instanceof Map) || (pk && x.has(pk))) return [x];
+      if (many && Array.isArray(x.get('Items')) && only(x, PAGE_FIELDS)) return x.get('Items');
+      if (x.has('Item') && only(x, many ? ['Item'] : GET_FIELDS) && wraps(x)) return [x.get('Item')];
+      return [x];
+    });
   }
 
   // ---- Placeholders for reserved and awkward names ----
 
-  // Rewrites the names in an expression that need a placeholder (reserved
-  // words, and names DynamoDB can't read as written) as #placeholders, and
-  // returns the new expression with the ExpressionAttributeNames to add.
-  // Names already written as placeholders are left alone.
+  // Rewrites the names in an expression that need a placeholder as
+  // #placeholders, and returns the new expression with the
+  // ExpressionAttributeNames to add. A name needs one when it is a reserved
+  // word, or when DynamoDB can't read it as one name: written without spaces,
+  // it has a dash, starts with _, $ or @, or has letters outside A to Z, such
+  // as first-name, _id or größe. In the values of an update's SET a dash is
+  // a minus, so there a-b stays a minus b. Names written as placeholders are
+  // left alone, and so are names with a dot or a space, which DynamoDB reads
+  // as a path or as two names.
+  const UPDATE_KEYWORDS = new Set(['SET', 'REMOVE', 'ADD', 'DELETE']);
+  const WORD_TOKENS = new Set(['id', 'int', 'bad'].concat([...KEYWORDS]));
+  const AWKWARD_NAME = /^[\p{L}_$@][\p{L}\p{M}\p{N}_$@-]*$/u;
   function escapeNames(text, existing) {
     const names = new Map(existing instanceof Map ? existing : Object.entries(existing || {}));
     const toks = tokenize(text);
-    let out = '';
-    let last = 0;
     const used = new Map([...names].map(([k, v]) => [v, k]));
     const added = [];
-    for (let i = 0; i < toks.length; i++) {
-      const t = toks[i];
-      if (t.t !== 'id') continue;
-      const isCall = toks[i + 1] && toks[i + 1].t === '(' && ALL_FUNCTIONS[t.text];
-      if (isCall || !isReserved(t.text)) continue;
-      let ph = used.get(t.text);
+    const placeholder = (name) => {
+      let ph = used.get(name);
       if (!ph) {
-        let base = '#' + t.text.replace(/[^A-Za-z0-9_]/g, '_');
+        let base = '#' + name.replace(/[^A-Za-z0-9_]/g, '_').slice(0, 64);
+        if (!/[A-Za-z0-9]/.test(base)) base = '#attr';
         ph = base;
         let n = 2;
         while (names.has(ph)) ph = base + n++;
-        names.set(ph, t.text);
-        used.set(t.text, ph);
+        names.set(ph, name);
+        used.set(name, ph);
         added.push(ph);
       }
-      out += text.slice(last, t.start) + ph;
-      last = t.end;
+      return ph;
+    };
+    let out = '';
+    let last = 0;
+    const replace = (from, to, name) => { out += text.slice(last, from.start) + placeholder(name); last = to.end; };
+    const glued = (a, b) => b !== undefined && a.end === b.start;
+    const isWord = (t) => t !== undefined && WORD_TOKENS.has(t.t);
+    // An update starts with SET, REMOVE, ADD or DELETE, apart from the rest.
+    const update = UPDATE_KEYWORDS.has(toks[0].t) && !(glued(toks[0], toks[1]) && (isWord(toks[1]) || toks[1].t === '-'));
+    let clause = null, inValue = false, depth = 0;
+    for (let i = 0; i < toks.length;) {
+      const t = toks[i];
+      if (!isWord(t)) {
+        if (t.t === '(' || t.t === '[') depth++;
+        else if (t.t === ')' || t.t === ']') depth--;
+        else if (update && depth === 0 && t.t === '=' && clause === 'SET') inValue = true;
+        else if (update && depth === 0 && t.t === ',') inValue = false;
+        i++;
+        continue;
+      }
+      // The words written with nothing between them, and the dashes joining
+      // them, except where a dash is a minus.
+      const minus = update && clause === 'SET' && inValue && depth === 0;
+      let j = i + 1;
+      while (glued(toks[j - 1], toks[j]) && (isWord(toks[j]) || (toks[j].t === '-' && !minus && glued(toks[j], toks[j + 1]) && isWord(toks[j + 1])))) j++;
+      const end = toks[j - 1];
+      const name = text.slice(t.start, end.end);
+      const call = toks[j].t === '(';
+      if (j === i + 1 && t.t !== 'bad') {
+        if (update && depth === 0 && UPDATE_KEYWORDS.has(t.t)) { clause = t.t; inValue = false; }
+        else if (t.t === 'id' && !(call && ALL_FUNCTIONS[t.text]) && isReserved(t.text)) replace(t, t, t.text);
+      } else if (AWKWARD_NAME.test(name) && !call) replace(t, end, name);
+      else for (const w of toks.slice(i, j)) if (w.t === 'id' && isReserved(w.text)) replace(w, w, w.text);
+      i = j;
     }
     out += text.slice(last);
     const obj = {};
@@ -1932,16 +2089,19 @@
     'number-overflow': 'The result is larger than DynamoDB numbers allow.',
     'number-underflow': 'The result is closer to zero than DynamoDB numbers allow.',
     'value-in-path': 'A :value can\'t be part of a document path. DynamoDB Local fails on this with an internal error; write the name, or a #placeholder.',
-    'condition-failed': 'The condition was false for the item, so DynamoDB made no change.'
+    'condition-failed': 'The condition was false for the item, so DynamoDB made no change.',
+    'too-deep': 'This is a limit of the tester, and the message is its own. AWS documents a limit of 300 operators and functions in one expression, and parentheses this deep need more, so DynamoDB refuses the expression too. The tester can\'t say which message it gives.'
   };
   function explain(err) { return err && HELP[err.code] || ''; }
 
   return {
     // reading input
-    parseJson: parseJson, parseJsonItems: parseJsonItems, readRequest: readRequest,
+    parseJson: parseJson, parseJsonItems: parseJsonItems, readRequest: readRequest, unwrapItems: unwrapItems,
     readItem: readItem, readNames: readNames, readValues: readValues, looksTyped: looksTyped,
+    guessOperation: guessOperation, operationName: operationName,
     // expressions
     tokenize: tokenize, parse: parse, check: check, run: run, escapeNames: escapeNames, explain: explain,
+    MAX_DEPTH: MAX_DEPTH, TESTER_LIMIT: TESTER_LIMIT,
     // values
     fromTyped: fromTyped, fromPlain: fromPlain, toTyped: toTyped, itemToTyped: itemToTyped, toPlainText: toPlainText,
     parseNumber: parseNumber, numberText: numberText, addNumbers: addNumbers, compareNumbers: compareNumbers,
