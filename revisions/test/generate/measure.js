@@ -50,12 +50,12 @@ for (const [name, f, etcd] of [['etcd-3.6.15-cluster', 'etcd-3.6.15-cluster.db',
     snapshot: name, etcd: etcd,
     statusHash: { etcd: exp.snapshotStatus.hash, viewer: snap.status.hash },
     totalSize: { etcd: exp.snapshotStatus.totalSize, viewer: snap.status.totalSize },
-    totalKey: { etcd: exp.snapshotStatus.totalKey, viewer: etcd === '3.6' ? snap.liveKeys : snap.status.totalKey },
+    totalKey: { etcd: exp.snapshotStatus.totalKey, viewer: snap.status.totalKey },
     revision: { etcd: exp.snapshotStatus.revision, viewer: snap.revision },
     liveKeys: { etcd: exp.live.length, matched: liveOk },
     oldRevisions: { etcd: hist, matched: histOk },
     pages: { bbolt: { free: b.pages.free || 0, inUse: (b.pages.branch || 0) + (b.pages.leaf || 0) + (b.pages.meta || 0) + (b.pages.freelist || 0), keyValuePairs: b.keyValuePairs },
-      viewer: { free: snap.pagesFree, inUse: snap.pagesInUse, keyValuePairs: snap.status.totalKey } }
+      viewer: { free: snap.pagesFree, inUse: snap.pagesInUse, keyValuePairs: snap.records } }
   });
 }
 

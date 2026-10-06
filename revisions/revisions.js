@@ -22,8 +22,10 @@
   const strict = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true });
   const encoder = new TextEncoder();
 
+  // code, when there is one, says what kind of problem it is: 'gzip' for a
+  // file that needs unpacking first.
   class SnapshotError extends Error {
-    constructor(message) { super(message); this.name = 'SnapshotError'; }
+    constructor(message, code) { super(message); this.name = 'SnapshotError'; if (code) this.code = code; }
   }
 
   // ---- little helpers ----
@@ -143,6 +145,9 @@
   // that etcdctl snapshot save appends.
   function openFile(bytes) {
     if (!(bytes instanceof Uint8Array)) bytes = new Uint8Array(bytes);
+    if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+      throw new SnapshotError('This file is gzipped. Unpack it first, for example with "gunzip backup.db.gz", then open the unpacked file.', 'gzip');
+    }
     if (bytes.length < 1024) throw new SnapshotError('The file is too small to be an etcd snapshot.');
     const m0 = readMeta(bytes, 0);
     if (!m0) throw new SnapshotError('This is not an etcd snapshot: it has no bbolt meta page at the start. etcd writes snapshots with "etcdctl snapshot save"; a member keeps its data in member/snap/db.');
@@ -164,51 +169,65 @@
       hash.check = (computed) => { hash.computed = computed || hex(sha256(body)); hash.ok = hash.computed === hash.stored; return hash.ok; };
       hash.body = body;
     }
-    return { bytes: extra === 32 ? bytes.subarray(0, bytes.length - 32) : bytes, fileBytes: bytes.length, pageSize: pageSize, meta: meta, metas: [m0, m1], hash: hash, extra: extra };
+    const data = extra === 32 ? bytes.subarray(0, bytes.length - 32) : bytes;
+    return { bytes: data, pages: Math.floor(data.length / pageSize), fileBytes: bytes.length, pageSize: pageSize, meta: meta, metas: [m0, m1], hash: hash, extra: extra };
   }
 
-  // Reads a page header. Pages can run over several page lengths (overflow).
+  // Reads a page header. A page can run on over the pages after it
+  // (overflow); all of them must lie in the file and below the high water
+  // mark, the first page the database doesn't use.
   function page(db, id) {
-    const off = id * db.pageSize;
-    if (off + PAGE_HEADER > db.bytes.length) throw new SnapshotError('Page ' + id + ' lies past the end of the file, so the file is cut short or damaged.');
-    const b = db.bytes;
-    return { id: id, off: off, flags: u16(b, off + 8), count: u16(b, off + 10), overflow: u32(b, off + 12) };
+    if (id >= db.pages) throw new SnapshotError('Page ' + id + ' lies past the end of the file, so the file is cut short or damaged.');
+    const b = db.bytes, off = id * db.pageSize;
+    const overflow = u32(b, off + 12);
+    if (id + overflow >= db.pages) throw new SnapshotError('Page ' + id + ' runs on past the end of the file, so the file is cut short or damaged.');
+    if (id + overflow >= db.meta.pgid) throw new SnapshotError('Page ' + id + (id >= db.meta.pgid ? ' lies' : ' runs on') + ' past the pages the database says it uses, so the file is damaged.');
+    return { id: id, off: off, end: off + (overflow + 1) * db.pageSize, flags: u16(b, off + 8), count: u16(b, off + 10), overflow: overflow };
   }
+  const where = (p) => (p.id === 'inline' ? 'A bucket kept inside its parent' : 'Page ' + p.id);
 
   // Walks a B+tree, in key order, calling fn(key, value, flags) for every
-  // leaf element. pages collects the ids of the pages it touched.
-  function walkTree(db, rootId, fn, pages, depth) {
-    if ((depth || 0) > 64) throw new SnapshotError('A tree in the file loops back on itself.');
+  // leaf element. pages collects the ids of the pages it touched, across
+  // walks. seen holds the pages this walk has reached: in a sound file each
+  // page has one place in one tree, so a page reached twice means a damaged
+  // or crafted file, which could otherwise loop or branch without end.
+  function walkTree(db, rootId, fn, pages, seen, depth) {
+    if (depth > 64) throw new SnapshotError('A tree in the file loops back on itself.');
     const p = page(db, rootId);
-    if (pages) for (let i = 0; i <= p.overflow; i++) pages.add(rootId + i);
-    walkPage(db, p, db.bytes, fn, pages, depth || 0);
+    for (let i = 0; i <= p.overflow; i++) {
+      if (seen.has(rootId + i)) throw new SnapshotError('Page ' + (rootId + i) + ' turns up twice in one tree, so the file is damaged.');
+      seen.add(rootId + i);
+      if (pages) pages.add(rootId + i);
+    }
+    walkPage(db, p, db.bytes, fn, pages, seen, depth);
   }
-  function walkPage(db, p, b, fn, pages, depth) {
+  function walkPage(db, p, b, fn, pages, seen, depth) {
     const base = p.off + PAGE_HEADER;
+    if (base + p.count * ELEMENT > p.end) throw new SnapshotError(where(p) + ' lists more records than fit in it, so the file is damaged.');
     if (p.flags & BRANCH) {
       for (let i = 0; i < p.count; i++) {
         const e = base + i * ELEMENT;
-        walkTree(db, u64(b, e + 8), fn, pages, depth + 1);
+        walkTree(db, u64(b, e + 8), fn, pages, seen, depth + 1);
       }
     } else if (p.flags & LEAF) {
       for (let i = 0; i < p.count; i++) {
         const e = base + i * ELEMENT;
         const flags = u32(b, e), pos = u32(b, e + 4), ksize = u32(b, e + 8), vsize = u32(b, e + 12);
         const k = e + pos;
-        if (k + ksize + vsize > b.length) throw new SnapshotError('A record on page ' + p.id + ' runs past the end of the file.');
+        if (k + ksize + vsize > p.end) throw new SnapshotError(where(p) + ' has a record that runs past its end, so the file is damaged.');
         fn(b.subarray(k, k + ksize), b.subarray(k + ksize, k + ksize + vsize), flags);
       }
-    } else throw new SnapshotError('Page ' + p.id + ' should be part of a tree but is marked ' + p.flags + '.');
+    } else throw new SnapshotError(where(p) + ' should be part of a tree but is marked ' + p.flags + '.');
   }
 
   // A bucket is a named tree. Small buckets are stored inline, inside the
   // parent's value, as a page of their own after a 16-byte header.
   function walkBucket(db, value, fn, pages) {
     const rootId = u64(value, 0);
-    if (rootId !== 0) return walkTree(db, rootId, fn, pages);
+    if (rootId !== 0) return walkTree(db, rootId, fn, pages, new Set(), 0);
     const inline = value.subarray(16);
-    const p = { id: 'inline', off: 0, flags: u16(inline, 8), count: u16(inline, 10), overflow: 0 };
-    walkPage(db, p, inline, fn, pages, 0);
+    const p = { id: 'inline', off: 0, end: inline.length, flags: u16(inline, 8), count: u16(inline, 10), overflow: 0 };
+    walkPage(db, p, inline, fn, pages, new Set(), 0);
   }
 
   // The top-level buckets and the pages in use.
@@ -217,7 +236,7 @@
     const pages = new Set([0, 1]);
     walkTree(db, db.meta.root, (k, v, flags) => {
       if (flags & BUCKET_LEAF) out.set(decoder.decode(k), v);
-    }, pages);
+    }, pages, new Set(), 0);
     return { map: out, pages: pages };
   }
 
@@ -226,13 +245,13 @@
   // uses is free.
   function freelist(db) {
     const id = db.meta.freelist;
-    if (id === 0 || id >= db.meta.pgid || id * db.pageSize >= db.bytes.length) return null;
+    if (id === 0 || id >= db.meta.pgid || id >= db.pages) return null;
     const p = page(db, id);
     if (!(p.flags & FREELIST)) return null;
     let count = p.count, start = p.off + PAGE_HEADER;
     if (count === 0xffff) { count = u64(db.bytes, start); start += 8; }
     const ids = [];
-    for (let i = 0; i < count && start + 8 * i + 8 <= db.bytes.length; i++) ids.push(u64(db.bytes, start + 8 * i));
+    for (let i = 0; i < count && start + 8 * i + 8 <= p.end; i++) ids.push(u64(db.bytes, start + 8 * i));
     return { page: id, overflow: p.overflow, ids: ids };
   }
 
@@ -1198,15 +1217,15 @@
     const pages = top.pages;
     const bucket = (name, fn) => { const v = top.map.get(name); if (v) walkBucket(db, v, fn, pages); };
 
-    // What "etcdutl snapshot status" prints: a CRC-32C over every bucket's
-    // name and every key and value in it, in order, the count of records,
-    // and the size up to the high water mark.
+    // For "etcdutl snapshot status", below: a CRC-32C over every bucket's
+    // name and every key and value in it, in order. records counts every
+    // record in every bucket, as "bbolt stats" counts key/value pairs.
     let crc = 0, records = 0;
     for (const [name, v] of top.map) {
       crc = crc32c(crc, encoder.encode(name));
       walkBucket(db, v, (k, val) => { records++; crc = crc32c(crc, k); crc = crc32c(crc, val); }, pages);
     }
-    out.status = { hash: crc, totalKey: records, totalSize: db.meta.pgid * db.pageSize };
+    out.records = records;
 
     // etcd's bookkeeping.
     const meta = new Map();
@@ -1294,12 +1313,8 @@
       entry.bytes = entry.live ? last.recordBytes : 0;
       entry.modRevision = last.main;
       entry.lease = entry.live ? last.lease : '';
-      if (!entry.live) continue;
-      live++;
-      liveBytes += last.recordBytes;
-      const d = describeValue(last.value);
-      entry.what = d;
-      if (entry.lease && out.leases.has(entry.lease)) out.leases.get(entry.lease).keys++;
+      // A resource counts its deleted keys' old revisions too, so one whose
+      // keys are all deleted, such as expired events, still shows.
       const reg = registryPath(entry.key);
       if (reg) {
         let r = resources.get(reg.resource);
@@ -1307,8 +1322,16 @@
           r = { resource: reg.resource, prefix: entry.key.slice(0, entry.key.length - reg.rest.join('/').length), keys: 0, bytes: 0, historyBytes: 0, revisions: 0 };
           resources.set(reg.resource, r);
         }
-        r.keys++; r.bytes += last.recordBytes;
+        r.historyBytes += entry.historyBytes;
+        r.revisions += entry.revisions;
+        if (entry.live) { r.keys++; r.bytes += last.recordBytes; }
       }
+      if (!entry.live) continue;
+      live++;
+      liveBytes += last.recordBytes;
+      const d = describeValue(last.value);
+      entry.what = d;
+      if (entry.lease && out.leases.has(entry.lease)) out.leases.get(entry.lease).keys++;
       if (d.kind) {
         const name = (d.apiVersion ? d.apiVersion + ' ' : '') + d.kind;
         let r = kinds.get(name);
@@ -1323,15 +1346,20 @@
         else secrets.plain++;
       }
     }
-    for (const entry of keys.values()) {
-      const reg = registryPath(entry.key);
-      if (!reg || !resources.has(reg.resource)) continue;
-      const r = resources.get(reg.resource);
-      r.historyBytes += entry.historyBytes;
-      r.revisions += entry.revisions;
-    }
     out.keys = keys;
     out.liveKeys = live;
+
+    // What "etcdutl snapshot status" prints, as the etcdutl of the version
+    // that wrote the file prints it: the hash, the revision, the size up to
+    // the high water mark and a count of keys. etcd 3.6 counts the keys that
+    // exist now, 3.4 and 3.5 every record in the file, old revisions and
+    // etcd's bookkeeping included. 3.6 also prints the storage version, which
+    // older versions don't keep.
+    const version = /^(\d+)\.(\d+)/.exec(out.storageVersion || out.clusterVersion || '');
+    const countsLive = Boolean(version) && (Number(version[1]) > 3 || (Number(version[1]) === 3 && Number(version[2]) >= 6));
+    out.status = { hash: crc, revision: maxRev, totalKey: countsLive ? live : records, totalSize: db.meta.pgid * db.pageSize };
+    if (out.storageVersion) out.status.version = out.storageVersion;
+
     out.liveBytes = liveBytes;
     out.historyBytes = recordBytes - liveBytes;
     out.kinds = [...kinds.values()].sort((a, b) => b.bytes - a.bytes);
@@ -1551,9 +1579,21 @@
     return (n >= 100 ? n.toFixed(0) : n >= 10 ? n.toFixed(1) : n.toFixed(2)).replace(/\.0+$/, '') + ' ' + u[i];
   }
 
+  // A size as people type it, in bytes: 8GiB, 8Gi, 8GB, 8G, 8589934592.
+  // KiB to TiB count in 1024s; kB to TB, and K to T, in 1000s. NaN when it
+  // isn't a size. The command line's --quota and the page both use it.
+  function parseSize(s) {
+    const m = /^(\d+(?:\.\d+)?)\s*([kmgt]i?b?|b)?$/i.exec(String(s).trim());
+    if (!m) return NaN;
+    const unit = (m[2] || '').toLowerCase().replace(/b$/, '');
+    const pow = { '': 0, k: 1, ki: 1, m: 2, mi: 2, g: 3, gi: 3, t: 4, ti: 4 }[unit];
+    const base = unit.length === 2 || unit === '' ? 1024 : 1000;
+    return Math.round(Number(m[1]) * base ** pow);
+  }
+
   return {
     read: read, openFile: openFile, prefixes: prefixes, topKeys: topKeys, history: history, valueText: valueText,
-    diffLines: diffLines, findings: findings, report: report, describeValue: describeValue, registryPath: registryPath, human: human,
+    diffLines: diffLines, findings: findings, report: report, describeValue: describeValue, registryPath: registryPath, human: human, parseSize: parseSize,
     kubernetesObject: kubernetesObject, kubernetesSchema: kubernetesSchema, toYaml: toYaml, toJson: toJson, parseJson: parseJson, Num: Num,
     sha256: sha256, fields: fields, SnapshotError: SnapshotError, GiB: GiB, MiB: MiB
   };

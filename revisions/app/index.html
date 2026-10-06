@@ -32,6 +32,8 @@
   .pick-table td.key { min-width: 16ch; }
   @media (max-width: 640px) { .keys-table th:nth-child(4), .keys-table td:nth-child(4) { display: none; } }
   .row > .field.grow { flex: 1; min-width: 220px; }
+  .quota-other { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .quota-other input { width: 10em; }
   .chart svg.space { height: 34px; width: 100%; }
   .seg.values, .swatch.values { fill: var(--accent); background: var(--accent); }
   .seg.history, .swatch.history { fill: var(--brand); background: var(--brand); }
@@ -77,7 +79,7 @@
 
   <section class="section" aria-labelledby="h-open">
     <h2 id="h-open">Open a snapshot</h2>
-    <p class="lede">Load a snapshot made with <code>etcdctl snapshot save backup.db</code>, or a member's own database file, <code>member/snap/db</code> in its data folder, copied while etcd is stopped. Snapshots from etcd 3.5 and 3.6 work, and Kubernetes objects show as <code>kubectl get -o yaml</code> shows them.</p>
+    <p class="lede">Load a snapshot made with <code>etcdctl snapshot save backup.db</code>, or a member's own database file, <code>member/snap/db</code> in its data folder, copied while etcd is stopped. Snapshots from etcd 3.4, 3.5 and 3.6 work, and Kubernetes objects show as <code>kubectl get -o yaml</code> shows them.</p>
     <div class="drop" id="drop">
       <p><strong>Drop a snapshot here</strong>, or</p>
       <div class="row" style="justify-content:center">
@@ -117,8 +119,9 @@
       </div>
     </div>
     <div id="matches"></div>
-    <div id="detail" aria-live="polite"></div>
+    <div id="detail"></div>
   </section>
+  <div id="announce" class="sr-only" role="status"></div>
 </main>
 
 <footer class="wrap privacy">

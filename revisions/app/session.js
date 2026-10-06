@@ -10,7 +10,7 @@
   'use strict';
 
   function KVRevisionsSession(R) {
-    let snap = null, quota = 2 * R.GiB, name = '';
+    let snap = null, quota = 2 * R.GiB, name = '', opens = 0;
     const lastOf = (e) => e.history[e.history.length - 1];
     const kindOf = (e) => (e.what && e.what.kind ? (e.what.apiVersion ? e.what.apiVersion + ' ' : '') + e.what.kind : '');
     const row = (e) => ({ key: e.key, live: e.live, revisions: e.revisions, bytes: e.bytes, historyBytes: e.historyBytes, modRevision: e.modRevision,
@@ -25,8 +25,11 @@
       const other = Math.max(0, s.bytesInUse - s.liveBytes - s.historyBytes);
       r.space = { values: s.liveBytes, history: s.historyBytes, other: other, free: s.pagesFree * s.pageSize, database: s.status.totalSize };
       r.name = name;
-      r.leaseList = [...s.leases.values()].sort((a, b) => b.keys - a.keys).slice(0, 30);
-      r.leaseCount = s.leases.size;
+      // The 30 leases with the most keys, and the totals over all of them.
+      const leases = [...s.leases.values()].sort((a, b) => b.keys - a.keys);
+      r.leaseList = leases.slice(0, 30);
+      r.leaseCount = leases.length;
+      r.leaseKeys = leases.reduce((a, l) => a + l.keys, 0);
       r.kubernetesVersion = R.kubernetesSchema() ? R.kubernetesSchema().version : null;
       r.keyCount = s.keys.size;
       return r;
@@ -34,10 +37,14 @@
     return {
       // Opens a file. digest: a function that works out the SHA-256 of
       // the file's body as hex faster than JavaScript does, if there is one.
+      // While one file waits for its digest, another can be opened; the
+      // one opened last stays open, and the other returns null.
       async open(buffer, fileName, digest) {
+        const ticket = ++opens;
         snap = null;
         const s = R.read(new Uint8Array(buffer), { hash: false });
         if (s.hash) s.hash.check(digest ? await digest(s.hash.body) : undefined);
+        if (ticket !== opens) return null;
         snap = s;
         name = fileName;
         return overview();
@@ -64,7 +71,11 @@
         const offset = q.offset || 0;
         return { total: list.length, rows: list.slice(offset, offset + (q.limit || 50)).map(row) };
       },
-      prefixes(depth, under) { return R.prefixes(need(), depth, under).slice(0, 200); },
+      // The biggest 200 prefixes, and how many there are in all.
+      prefixes(depth, under) {
+        const all = R.prefixes(need(), depth, under);
+        return { total: all.length, rows: all.slice(0, 200) };
+      },
       // A key and every revision of it the file keeps.
       key(key) {
         const s = need();

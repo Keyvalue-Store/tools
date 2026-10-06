@@ -33,7 +33,7 @@ Kubernetes objects are stored as protobuf, which no person can read. The viewer 
 ## Use it in the browser
 
 1. **Open a file.** Drop a snapshot on the page or choose one. The file is read in your browser and never leaves it.
-2. **Set the quota** if your cluster runs with a `--quota-backend-bytes` other than the 2 GiB default.
+2. **Set the quota** if your cluster runs with a `--quota-backend-bytes` other than the 2 GiB default. Pick it from the list, or pick **Another size** and type it the way the command line's `--quota` takes it, such as `6GiB` or `8589934592`.
 3. **Read what to look at**, then the space by resource, kind and prefix. Pick a resource or a prefix to list its keys.
 4. **Pick a key** to see its revisions. Pick a revision to see its value, or the changes from the revision before it.
 
@@ -47,7 +47,10 @@ node revisions/cli.js backup.db --quota 8GiB --top 40
 node revisions/cli.js backup.db --history /registry/leases/kube-node-lease/node-1
 node revisions/cli.js backup.db --value /registry/pods/shop/web-0 --revision 2841
 node revisions/cli.js backup.db --keys > keys.csv
+zcat backup.db.gz | node revisions/cli.js -
 ```
+
+Give `-` as the file to read the snapshot from standard input. Other pipes work too, such as `/dev/stdin` or `<(zcat backup.db.gz)`. A gzipped file has to be unpacked first, with `gunzip` or on the way in as above.
 
 | Option | Meaning |
 |---|---|
@@ -59,7 +62,7 @@ node revisions/cli.js backup.db --keys > keys.csv
 | `--top N` | How many resources, prefixes and keys the summary lists (default 20) |
 | `--json` | Print JSON |
 
-Exit status: 0; 1 when an alarm is raised, the database is at 95% of its quota or more, the hash at the end doesn't match, or the key isn't there; 2 when the file can't be read. A backup job can check each snapshot it saves.
+Exit status: 0; 1 when an alarm is raised, the database is at 95% of its quota or more, the hash at the end doesn't match, or the key isn't there; 2 when the file can't be read. That goes for every option, so `--keys > keys.csv` exits with 1 on a full database too, and says why on stderr. A backup job can check each snapshot it saves.
 
 To get a file: `etcdctl snapshot save backup.db` on a machine that can reach etcd. On a kubeadm control plane node that is
 
@@ -73,14 +76,18 @@ A snapshot holds every Secret in the cluster that isn't encrypted at rest, so ke
 ## Use it in your own code
 
 ```js
+const fs = require('fs');
 const R = require('./revisions/revisions.js');
 const snap = R.read(new Uint8Array(fs.readFileSync('backup.db')));
 R.findings(snap, 8 * R.GiB); // [{ level, code, title, text }], worst first
-R.report(snap);             // everything above, as plain data
-R.history(snap, '/registry/pods/shop/web-0'); // [{ revision, version, deleted, value, ... }]
-R.valueText(value);         // a value as text: a Kubernetes object as kubectl shows it
-R.kubernetesObject(value);  // { apiVersion, kind, object }, the object as JSON data
+R.report(snap);              // everything above, as plain data
+const revisions = R.history(snap, '/registry/pods/shop/web-0'); // [{ revision, version, deleted, value, ... }], oldest first
+const value = revisions[revisions.length - 1].value;
+R.valueText(value);          // a value as text: a Kubernetes object as kubectl shows it
+R.kubernetesObject(value);   // { apiVersion, kind, object }, the object as JSON data
 ```
+
+`R.history` returns null when the file has no such key.
 
 In a page, load `kubernetes.js` and then `revisions.js` with script tags and use `window.KVRevisions`.
 
@@ -88,9 +95,9 @@ In a page, load `kubernetes.js` and then `revisions.js` with script tags and use
 
 The viewer was checked against real etcd servers, etcd's own tools and Kubernetes' own code. `test/generate/make-snapshots.py` runs etcd 3.6.15, 3.5.34 and 3.4.45 and fills each the way a Kubernetes cluster does: Pods, Nodes, Deployments, Services, leases renewed every ten seconds, events on an hour's lease, Secrets in the clear and encrypted at rest, custom resources. The objects are encoded by Kubernetes 1.37.1's own Go packages, exactly as kube-apiserver stores them. Then it compacts, writes more history, deletes some keys and saves snapshots.
 
-- **etcd's figures.** For each snapshot, the viewer gives the same hash, size, revision and key count that `etcdutl snapshot status` prints (`etcdctl` for 3.4), and the same free pages and page counts as bbolt's own command line.
+- **etcd's figures.** For each snapshot, the viewer gives the same hash, size, revision and key count that `etcdutl snapshot status` prints (`etcdctl` for 3.4), and the same free pages and page counts as bbolt's own command line. The key count changed in etcd 3.6, which counts the keys that exist now. 3.4 and 3.5 count every record in the file, old revisions and etcd's own bookkeeping included. The viewer counts the way the version that wrote the file does, going by the storage or cluster version the file records.
 - **Keys and revisions.** Every live key matches what `etcdctl get` returns: value, create and mod revision, version and lease. Every older revision etcd could still serve for three busy keys is in the history with the same value.
-- **Special cases.** A database that filled its 1 MiB quota and raised NOSPACE, a member's own database file with no hash at the end, authentication switched on, a changed byte and a cut file.
+- **Special cases.** A database that filled its 1 MiB quota and raised NOSPACE, a member's own database file with no hash at the end, authentication switched on, a changed byte and a cut file. Damaged and crafted files, such as noise in place of the pages or a tree that points at one page twice, are refused straight away.
 - **Kubernetes objects.** All 141 objects in the snapshot, 27 kinds, decode to the same JSON that Kubernetes' Go packages make of the same bytes. 139 print as YAML byte for byte as kubectl prints them. kubectl itself cannot print the other two.
 - **YAML.** 240 more objects full of awkward strings, with quotes, line breaks, long lines, odd characters and keys that look like numbers, all print exactly as kubectl prints them.
 - **Size.** A 198 MiB snapshot with 250,000 revisions opens in about two seconds on the command line and three in the browser.

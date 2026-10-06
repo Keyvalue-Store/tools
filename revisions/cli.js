@@ -22,7 +22,8 @@ Usage:
                                                      shows it (--revision N for an older one)
 
 Make a snapshot with "etcdctl snapshot save backup.db". A member keeps its database in member/snap/db
-under its data folder; copy it while etcd is stopped.
+under its data folder; copy it while etcd is stopped. Give - as the file to read standard input, so
+a gzipped snapshot can be read without unpacking it to disk: zcat backup.db.gz | node revisions/cli.js -
 
 Options:
   --quota SIZE    The cluster's --quota-backend-bytes, such as 8GiB (default 2GiB)
@@ -33,38 +34,51 @@ Options:
   --json          Print JSON
 
 Exit status: 0; 1 when an alarm is raised, the database is near its quota or the hash doesn't
-match, or the key isn't there; 2 when the file can't be read.`;
+match, whatever it was asked to print, or when the key isn't there; 2 when the file can't be read.`;
 
 const fmt = (n) => Number(n).toLocaleString('en-US');
 const plural = (n, one, many) => fmt(n) + ' ' + (n === 1 ? one : many);
 // Spreadsheets run a cell that starts with = + - or @ as a formula, so such a key gets a ' in front.
 function csv(s) { s = String(s); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 
-// Sizes as people type them: 8GiB, 8G, 8589934592.
-function parseSize(s) {
-  const m = /^(\d+(?:\.\d+)?)\s*([kmgt]i?b?|b)?$/i.exec(String(s).trim());
-  if (!m) return NaN;
-  const unit = (m[2] || '').toLowerCase().replace(/b$/, '');
-  const pow = { '': 0, k: 1, ki: 1, m: 2, mi: 2, g: 3, gi: 3, t: 4, ti: 4 }[unit];
-  const base = unit.length === 2 || unit === '' ? 1024 : 1000;
-  return Math.round(Number(m[1]) * base ** pow);
-}
-
 // Reads the whole file: bbolt pages point at each other, so the reader
-// needs all of it. Read in pieces, so files over 2 GiB work too.
+// needs all of it. A file on disk is read in pieces, so files over 2 GiB
+// work too. A pipe, or standard input (-), has no size to go by, so it is
+// read until it ends.
 function readAll(path) {
-  const fd = fs.openSync(path, 'r');
+  const stdin = path === '-';
+  if (stdin && require('tty').isatty(0)) throw new UsageError('- reads the snapshot from standard input. Pipe one in, such as: cat backup.db | node revisions/cli.js -');
+  const fd = stdin ? 0 : fs.openSync(path, 'r');
   try {
-    const size = fs.fstatSync(fd).size;
-    const out = new Uint8Array(size);
-    const CHUNK = 64 * 1024 * 1024;
-    for (let at = 0; at < size;) {
-      const n = fs.readSync(fd, out, at, Math.min(CHUNK, size - at), at);
-      if (n <= 0) break;
-      at += n;
+    const st = fs.fstatSync(fd);
+    if (st.isDirectory()) throw Object.assign(new Error('EISDIR'), { code: 'EISDIR' });
+    if (st.isFile()) {
+      const size = st.size;
+      const out = new Uint8Array(size);
+      const CHUNK = 64 * 1024 * 1024;
+      let at = 0;
+      while (at < size) {
+        const n = fs.readSync(fd, out, at, Math.min(CHUNK, size - at), at);
+        if (n <= 0) break;
+        at += n;
+      }
+      return at < size ? out.subarray(0, at) : out;
     }
-    return out;
-  } finally { fs.closeSync(fd); }
+    let buf = new Uint8Array(1024 * 1024), len = 0;
+    for (;;) {
+      if (len === buf.length) { const more = new Uint8Array(buf.length * 2); more.set(buf); buf = more; }
+      let n;
+      try { n = fs.readSync(fd, buf, len, buf.length - len, null); } catch (e) {
+        // A pipe set not to block says EAGAIN while it waits for more.
+        if (e.code === 'EAGAIN') { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10); continue; }
+        if (e.code === 'EOF') break;
+        throw e;
+      }
+      if (n === 0) break;
+      len += n;
+    }
+    return buf.subarray(0, len);
+  } finally { if (!stdin) fs.closeSync(fd); }
 }
 
 function open(path) {
@@ -95,7 +109,7 @@ function summary(snap, path, opt) {
   const out = [];
   const say = (s) => out.push(s);
   const etcd = snap.storageVersion ? 'etcd ' + snap.storageVersion.replace(/\.0$/, '') : snap.clusterVersion ? 'etcd ' + snap.clusterVersion.replace(/\.0$/, '') : 'etcd';
-  say(`${path}: ${snap.hash ? 'a snapshot' : 'a member\'s database file'}, ${R.human(snap.fileBytes)}, written by ${etcd}`);
+  say(`${path === '-' ? 'Standard input' : path}: ${snap.hash ? 'a snapshot' : 'a member\'s database file'}, ${R.human(snap.fileBytes)}, written by ${etcd}`);
   if (snap.hash) say(`SHA-256 at the end: ${snap.hash.ok ? 'matches' : 'DOES NOT MATCH; the file was changed or cut short'}`);
   say(`Revision ${fmt(snap.revision)}${snap.compactedAt ? ', compacted at ' + fmt(snap.compactedAt) : ', never compacted'}. ${plural(snap.liveKeys, 'key', 'keys')}, ${plural(snap.revisions, 'revision', 'revisions')} kept, ${plural(snap.tombstones, 'deletion', 'deletions')}.`);
   say(`Database ${R.human(r.size.database)}, ${(100 * r.size.quotaUsed).toFixed(r.size.quotaUsed < 0.01 ? 2 : 1)}% of a ${R.human(r.size.quota)} quota: ${R.human(r.size.inUse)} in use, ${R.human(r.size.free)} in free pages.`);
@@ -152,7 +166,7 @@ function main(argv) {
     else if (a === '--under') under = value();
     else if (a === '--top') opt.top = Number(value());
     else if (a === '--depth') opt.depth = Number(value());
-    else if (a === '--quota') opt.quota = parseSize(value());
+    else if (a === '--quota') opt.quota = R.parseSize(value());
     else if (a.startsWith('--')) throw new UsageError('Unknown option ' + a + '. Try --help.');
     else path = a;
   }
@@ -163,11 +177,18 @@ function main(argv) {
   if (revision !== null && !(Number.isInteger(revision) && revision > 0)) throw new UsageError('--revision needs a revision number.');
 
   const snap = open(path);
-  const bad = R.findings(snap, opt.quota).some((f) => f.level === 'bad');
+  // An alarm, a full database or a hash that doesn't match gives exit
+  // status 1 whatever is printed, so a script checking a backup can rely on
+  // it. The summary shows why; with the other options, stderr says.
+  const bad = R.findings(snap, opt.quota).filter((f) => f.level === 'bad');
+  const done = () => {
+    for (const f of bad) console.error('!! ' + f.title);
+    return bad.length ? 1 : 0;
+  };
 
   if (mode === 'summary') {
     console.log(json ? JSON.stringify(R.report(snap, opt), null, 2) : summary(snap, path, opt));
-    return bad ? 1 : 0;
+    return bad.length ? 1 : 0;
   }
   if (mode === 'keys') {
     const rows = [...snap.keys.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
@@ -176,25 +197,25 @@ function main(argv) {
       return { key: e.key, live: e.live, revisions: e.revisions, bytes: e.bytes, historyBytes: e.historyBytes, createRevision: last.createRevision, modRevision: e.modRevision,
         version: last.version, lease: e.lease || null, kind: e.what && e.what.kind ? (e.what.apiVersion ? e.what.apiVersion + ' ' : '') + e.what.kind : null };
     });
-    if (json) { console.log(JSON.stringify(all, null, 2)); return 0; }
+    if (json) { console.log(JSON.stringify(all, null, 2)); return done(); }
     const lines = ['key,live,revisions,bytes,history_bytes,create_revision,mod_revision,version,lease,kind'];
     for (const k of all) lines.push([csv(k.key), k.live, k.revisions, k.bytes, k.historyBytes, k.createRevision, k.modRevision, k.version, k.lease || '', csv(k.kind || '')].join(','));
     process.stdout.write(lines.join('\n') + '\n');
-    return 0;
+    return done();
   }
   if (mode === 'prefixes') {
     const list = R.prefixes(snap, opt.depth, under);
-    if (json) { console.log(JSON.stringify(list, null, 2)); return 0; }
+    if (json) { console.log(JSON.stringify(list, null, 2)); return done(); }
     console.log('prefix,keys,live_keys,bytes,history_bytes,revisions');
     for (const p of list) console.log([csv(p.prefix), p.keys, p.liveKeys, p.bytes, p.historyBytes, p.revisions].join(','));
-    return 0;
+    return done();
   }
   const h = R.history(snap, key);
-  if (!h) { console.error('The file has no key ' + JSON.stringify(key) + '.'); return 1; }
+  if (!h) { console.error('The file has no key ' + JSON.stringify(key) + '.'); done(); return 1; }
   if (mode === 'history') {
     if (json) {
       console.log(JSON.stringify(h.map((x) => ({ revision: x.revision, sub: x.sub, deleted: x.deleted, version: x.version, createRevision: x.createRevision, lease: x.lease || null, bytes: x.bytes })), null, 2));
-      return 0;
+      return done();
     }
     let prev = null;
     console.log(`${key}: ${plural(h.length, 'revision', 'revisions')} kept${snap.compactedAt ? '. The file was compacted at revision ' + fmt(snap.compactedAt) + ', which keeps the value each key had then and the ones after' : ''}`);
@@ -206,19 +227,20 @@ function main(argv) {
       for (const l of prev === null ? t.split('\n').map((s) => '  ' + s) : changes(prev, t)) console.log(l);
       prev = t;
     }
-    return 0;
+    return done();
   }
   // --value
   const pick = revision === null ? h[h.length - 1] : h.filter((x) => x.revision <= revision).pop();
   if (!pick || pick.deleted) {
     console.error(revision === null ? 'The key was deleted at revision ' + fmt(h[h.length - 1].revision) + '.' : 'The file keeps no value of this key at revision ' + fmt(revision) + '.');
+    done();
     return 1;
   }
   if (json) {
     const k = R.kubernetesObject(pick.value);
     process.stdout.write((k && k.known ? R.toJson(k.object, 2) : JSON.stringify(R.valueText(pick.value))) + '\n');
   } else process.stdout.write(R.valueText(pick.value).replace(/\n?$/, '\n'));
-  return 0;
+  return done();
 }
 
 class UsageError extends Error {}
@@ -229,7 +251,10 @@ try {
   process.exitCode = main(process.argv.slice(2));
 } catch (e) {
   if (e instanceof UsageError) console.error(e.message);
-  else if (e instanceof R.SnapshotError) console.error(e.message);
+  else if (e instanceof R.SnapshotError) {
+    console.error(e.message);
+    if (e.code === 'gzip') console.error('Or unpack it on the way in: zcat backup.db.gz | node revisions/cli.js -');
+  }
   else if (e.code === 'ENOENT') console.error('No such file: ' + e.path);
   else if (e.code === 'EISDIR') console.error('That is a folder, not a file.');
   else console.error('Could not read the file: ' + e.message);

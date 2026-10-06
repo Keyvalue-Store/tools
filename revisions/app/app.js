@@ -58,20 +58,30 @@
     tr.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onPick(); } });
     return tr;
   }
-  // A table that shows its first rows and a button for the rest.
-  function longTable(headers, rows, numeric, cls, first) {
+  // A table that shows its first rows and a button for the rest. total:
+  // how many rows there are in all, when rows holds only the first of them.
+  function longTable(headers, rows, numeric, cls, first, total) {
     const box = el('div');
     const draw = (all) => {
       box.textContent = '';
       box.append(table(headers, all ? rows : rows.slice(0, first), numeric, cls));
       if (!all && rows.length > first) {
-        const b = el('button', { type: 'button', class: 'linkish small', text: `Show all ${fmt(rows.length)}` });
+        const b = el('button', { type: 'button', class: 'linkish small', text: total > rows.length ? `Show ${fmt(rows.length)} of ${fmt(total)}` : `Show all ${fmt(rows.length)}` });
         b.addEventListener('click', () => draw(true));
         box.append(el('p', { class: 'small' }, [b]));
       }
     };
     draw(false);
     return box;
+  }
+  // One short line for screen readers, such as the revision just shown.
+  // Emptied first, so the same line twice is read twice.
+  let announcing;
+  function announce(text) {
+    const box = $('announce');
+    box.textContent = '';
+    clearTimeout(announcing);
+    announcing = setTimeout(() => { box.textContent = text; }, 60);
   }
   function download(name, text, type) {
     const url = URL.createObjectURL(new Blob([text], { type: type }));
@@ -84,50 +94,71 @@
 
   // ---- The session: in a worker, or in the page ----
 
-  let client = null;
   function localClient() {
     const s = window.KVRevisionsSession(R);
     const digest = window.crypto && window.crypto.subtle ? async (b) => hex(new Uint8Array(await window.crypto.subtle.digest('SHA-256', b))) : null;
     return { worker: false, call: (method, ...args) => Promise.resolve().then(() => (method === 'open' ? s.open(args[0], args[1], digest) : s[method](...args))) };
   }
-  function workerClient() {
+  // A worker that answers, or null. onStop runs if it stops later on.
+  function workerClient(onStop) {
     return new Promise((resolve) => {
       let w;
       try { w = new Worker('worker.js'); } catch (e) { resolve(null); return; }
       const pending = new Map();
-      let next = 1, ready = false;
+      let next = 1, ready = false, stopped = false;
+      const stop = (why) => {
+        stopped = true;
+        w.terminate();
+        for (const p of pending.values()) p.reject(new Error(why));
+        pending.clear();
+      };
       w.onmessage = (ev) => {
         const p = pending.get(ev.data.id);
         if (!p) return;
         pending.delete(ev.data.id);
         if (ev.data.error !== undefined) p.reject(new Error(ev.data.error)); else p.resolve(ev.data.value);
       };
+      // The worker catches its own errors, so an error here means it broke
+      // down, most likely out of memory, and can't be trusted again.
       w.onerror = (ev) => {
         if (ev && ev.preventDefault) ev.preventDefault();
-        for (const p of pending.values()) p.reject(new Error('The page\'s reader stopped, most likely for lack of memory.'));
-        pending.clear();
-        if (!ready) resolve(null);
+        stop('The page\'s reader stopped, most likely for lack of memory.');
+        if (ready) onStop(); else resolve(null);
       };
-      const call = (method, ...args) => new Promise((res, rej) => {
-        const id = next++;
-        pending.set(id, { resolve: res, reject: rej });
-        w.postMessage({ id: id, method: method, args: args }, method === 'open' ? [args[0]] : []);
-      });
-      const timer = setTimeout(() => resolve(null), 4000);
+      const call = (method, ...args) => {
+        if (stopped) return Promise.reject(new Error('The page\'s reader stopped. Open the file again.'));
+        return new Promise((res, rej) => {
+          const id = next++;
+          pending.set(id, { resolve: res, reject: rej });
+          w.postMessage({ id: id, method: method, args: args }, method === 'open' ? [args[0]] : []);
+        });
+      };
+      const timer = setTimeout(() => { stop('The page\'s reader did not start.'); resolve(null); }, 4000);
       call('ping').then(() => { ready = true; clearTimeout(timer); resolve({ worker: true, call: call }); }, () => { clearTimeout(timer); resolve(null); });
     });
   }
-  async function session() {
-    if (!client) client = (await workerClient()) || localClient();
+  // One session for the page, made on first use, so two files opened in
+  // quick succession share it. If its worker stops, the next use makes a
+  // new one.
+  let client = null;
+  function session() {
+    if (!client) {
+      const made = workerClient(() => { if (client === made) client = null; }).then((c) => c || localClient());
+      client = made;
+    }
     return client;
   }
 
   // ---- Opening a file ----
 
-  let overview = null, fileName = '';
-  async function openFile(buffer, name) {
+  // opening counts the files picked. Each takes a ticket when picked, before
+  // its bytes are read, so whatever happens to one picked before the latest
+  // is dropped, even when a small file picked second is read first.
+  let overview = null, opening = 0;
+  const ticketNow = () => ++opening;
+  async function openFile(buffer, name, ticket) {
+    if (ticket !== opening) return;
     overview = null;
-    fileName = name;
     $('result').textContent = '';
     $('browse').hidden = true;
     $('detail').textContent = '';
@@ -135,14 +166,20 @@
     status.textContent = '';
     status.append(el('p', { class: 'muted small', text: `Reading ${name}, ${size(buffer.byteLength)}…` }), el('div', { class: 'progress busy' }, [el('span')]));
     await new Promise((r) => setTimeout(r, 30));
+    if (ticket !== opening) return;
+    let o;
     try {
       const c = await session();
-      overview = await c.call('open', buffer, name);
+      if (ticket !== opening) return;
+      o = await c.call('open', buffer, name);
     } catch (err) {
+      if (ticket !== opening) return;
       status.textContent = '';
       $('result').append(verdict('bad', 'This file could not be read', [err && err.message ? err.message : String(err)]));
       return;
     }
+    if (ticket !== opening || !o) return;
+    overview = o;
     status.textContent = '';
     render();
     browseReset();
@@ -151,7 +188,8 @@
   // ---- The overview ----
 
   const QUOTAS = [[2, '2 GiB, the default'], [4, '4 GiB'], [8, '8 GiB, the most etcd suggests'], [16, '16 GiB'], [32, '32 GiB']];
-  let prefixUnder = '', prefixDepth = 3;
+  // quotaText: the size last typed for a quota not in the list, as typed.
+  let prefixUnder = '', prefixDepth = 3, quotaText = '';
 
   function render() {
     const o = overview;
@@ -169,29 +207,57 @@
 
     const facts = el('dl', { class: 'facts' });
     const fact = (k, v) => { facts.append(el('dt', { text: k }), el('dd', null, [v])); };
-    fact('File', `${fileName}: ${o.file.snapshot ? 'a snapshot' : 'a member\'s database file'}, ${size(o.file.bytes)}`);
+    fact('File', `${o.name}: ${o.file.snapshot ? 'a snapshot' : 'a member\'s database file'}, ${size(o.file.bytes)}`);
     fact('Written by', etcd + (o.etcd.storageVersion ? '' : ' (3.5 or older keeps no storage version)'));
     fact('SHA-256', o.file.sha256 ? (o.file.sha256.matches ? 'matches the one etcdctl wrote at the end' : 'DOES NOT MATCH the one etcdctl wrote at the end') : 'none: a member\'s own file has no hash at the end');
     fact('Compaction', o.etcd.compactedAt ? `compacted at revision ${o.etcd.compactedAt}; the oldest revision left is ${o.etcd.oldestRevision}` : 'never compacted');
     fact('Members', o.members.length ? o.members.map((m) => (m.name || m.id) + (m.learner ? ' (learner)' : '') + (m.peerURLs.length ? ' at ' + m.peerURLs.join(', ') : '')).join('; ') : 'none recorded');
     fact('Alarms', o.alarms.length ? o.alarms.map((a) => a.alarm + ' on member ' + a.member).join(', ') : 'none');
     fact('Authentication', o.auth.enabled ? `on: ${plural(o.auth.users.length, 'user', 'users')} (${o.auth.users.join(', ')}), ${plural(o.auth.roles.length, 'role', 'roles')}` : 'off');
-    fact('Leases', o.leaseCount ? plural(o.leaseCount, 'lease', 'leases') + ', with ' + plural(o.leaseList.reduce((a, l) => a + l.keys, 0), 'key', 'keys') + ' attached' : 'none');
+    fact('Leases', o.leaseCount ? plural(o.leaseCount, 'lease', 'leases') + ', with ' + plural(o.leaseKeys, 'key', 'keys') + ' attached' : 'none');
     fact('Pages', `${plural(o.pages.belowHighWater, 'page', 'pages')} of ${size(o.file.pageSize)}: ${fmt(o.pages.inUse)} in use, ${fmt(o.pages.free)} free`);
     if (o.kubernetes) fact('Kubernetes', `${plural(o.kubernetes.kinds.reduce((a, k) => a + k.objects, 0), 'object', 'objects')}, shown with the field names of Kubernetes ${o.kubernetesVersion || ''}`.trim());
     out.append(facts);
 
-    // The quota changes what counts as close to full.
+    // The quota changes what counts as close to full. Any size can be typed,
+    // as the command line's --quota takes it.
+    const listed = QUOTAS.find(([g]) => g * R.GiB === o.size.quota);
     const sel = el('select', { id: 'quota' });
     for (const [g, label] of QUOTAS) sel.append(el('option', { value: String(g), text: label }));
-    sel.value = String(Math.round(o.size.quota / R.GiB));
-    if (!sel.value) sel.value = '2';
-    sel.addEventListener('change', async () => {
-      overview = await (await session()).call('setQuota', Number(sel.value) * R.GiB);
+    sel.append(el('option', { value: 'other', text: 'Another size' }));
+    sel.value = listed ? String(listed[0]) : 'other';
+    const typed = el('input', { type: 'text', id: 'quota-size', class: 'mono', autocomplete: 'off', spellcheck: 'false', placeholder: '6GiB', 'aria-describedby': 'quota-hint' });
+    typed.value = listed ? '' : quotaText || String(o.size.quota);
+    const hint = el('span', { id: 'quota-hint', class: 'hint', text: 'Such as 6GiB or 8589934592' });
+    const set = el('button', { type: 'button', class: 'btn', text: 'Set' });
+    const other = el('span', { class: 'quota-other' }, [el('label', { for: 'quota-size', class: 'sr-only', text: 'Quota size' }), typed, set, hint]);
+    other.hidden = Boolean(listed);
+    const setQuota = async (bytes, focus) => {
+      overview = await (await session()).call('setQuota', bytes);
       render();
-      $('quota').focus();
+      $(focus).focus();
+    };
+    sel.addEventListener('change', () => {
+      if (sel.value !== 'other') { setQuota(Number(sel.value) * R.GiB, 'quota'); return; }
+      other.hidden = false;
+      typed.focus();
     });
-    out.append(el('div', { class: 'row' }, [el('label', { for: 'quota', text: 'The cluster\'s quota (--quota-backend-bytes)' }), sel]));
+    const apply = () => {
+      const bytes = R.parseSize(typed.value);
+      if (!(bytes > 0)) {
+        typed.setAttribute('aria-invalid', 'true');
+        hint.className = 'error small';
+        hint.textContent = 'Type a size, such as 6GiB or 8589934592';
+        announce(hint.textContent);
+        typed.focus();
+        return;
+      }
+      quotaText = typed.value.trim();
+      setQuota(bytes, QUOTAS.some(([g]) => g * R.GiB === bytes) ? 'quota' : 'quota-size');
+    };
+    set.addEventListener('click', apply);
+    typed.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); apply(); } });
+    out.append(el('div', { class: 'row' }, [el('label', { for: 'quota', text: 'The cluster\'s quota (--quota-backend-bytes)' }), sel, other]));
 
     out.append(el('h3', { text: 'What to look at' }));
     if (!o.findings.length) out.append(verdict('ok', 'Nothing stands out', 'No alarm, the database is far from its quota, and nothing takes an unusual share of it.'));
@@ -229,14 +295,17 @@
 
     if (o.leaseList.length) {
       out.append(el('h3', { text: 'Leases' }));
-      out.append(el('p', { class: 'muted small', text: 'Keys attached to a lease are deleted when it expires. kube-apiserver puts events on leases of an hour.' }));
+      out.append(el('p', { class: 'muted small', text: 'Keys attached to a lease are deleted when it expires. kube-apiserver puts events on leases of an hour. The leases with the most keys come first.' }));
       out.append(table(['Lease ID', 'TTL', 'Keys'], o.leaseList.map((l) => [el('span', { class: 'mono', text: l.id }), fmt(l.ttl) + ' s', fmt(l.keys)]), [1, 2]));
+      const rest = o.leaseCount - o.leaseList.length;
+      if (rest > 0) out.append(el('p', { class: 'muted small', text: `And ${plural(rest, 'more lease', 'more leases')}.` }));
     }
 
+    const base = o.name.replace(/\.[^.]*$/, '');
     const b1 = el('button', { type: 'button', class: 'btn primary', text: 'Download every key as CSV' });
-    b1.addEventListener('click', async () => download(fileName.replace(/\.[^.]*$/, '') + '-keys.csv', await (await session()).call('csv'), 'text/csv'));
+    b1.addEventListener('click', async () => download(base + '-keys.csv', await (await session()).call('csv'), 'text/csv'));
     const b2 = el('button', { type: 'button', class: 'btn', text: 'Download the report as JSON' });
-    b2.addEventListener('click', async () => download(fileName.replace(/\.[^.]*$/, '') + '-report.json', await (await session()).call('reportJson'), 'application/json'));
+    b2.addEventListener('click', async () => download(base + '-report.json', await (await session()).call('reportJson'), 'application/json'));
     out.append(el('div', { class: 'row' }, [b1, b2]));
   }
 
@@ -275,7 +344,7 @@
     const box = $('prefixes');
     if (!box) return;
     const depth = prefixUnder ? 1 : prefixDepth;
-    const list = await (await session()).call('prefixes', depth, prefixUnder);
+    const res = await (await session()).call('prefixes', depth, prefixUnder);
     box.textContent = '';
     const crumbs = el('div', { class: 'crumbs' });
     const go = (p) => { prefixUnder = p; drawPrefixes(); };
@@ -300,7 +369,7 @@
     }
     const controls = el('div', { class: 'row' }, [crumbs]);
     if (!prefixUnder) {
-      const sel = el('select', { id: 'depth', 'aria-label': 'Levels of a key that make its prefix' });
+      const sel = el('select', { id: 'depth' });
       for (let d = 1; d <= 5; d++) sel.append(el('option', { value: String(d), text: plural(d, 'level', 'levels') }));
       sel.value = String(prefixDepth);
       sel.addEventListener('change', () => { prefixDepth = Number(sel.value); drawPrefixes(); });
@@ -311,11 +380,12 @@
       controls.append(el('span', { class: 'spacer' }), b);
     }
     box.append(controls);
-    box.append(el('p', { class: 'muted small', text: prefixUnder ? 'One level further down. Pick a prefix to go deeper.' : 'Keys grouped by their first parts, split on "/". Pick a prefix to look inside it.' }));
-    const rows = list.map((p) => pickRow([p.prefix || '(keys with no "/")', fmt(p.liveKeys), size(p.bytes), size(p.historyBytes), fmt(p.revisions)], [1, 2, 3, 4], () => {
+    const capped = res.total > res.rows.length ? ` There are ${fmt(res.total)}; the list holds the ${fmt(res.rows.length)} biggest.` : '';
+    box.append(el('p', { class: 'muted small', text: (prefixUnder ? 'One level further down. Pick a prefix to go deeper.' : 'Keys grouped by their first parts, split on "/". Pick a prefix to look inside it.') + capped }));
+    const rows = res.rows.map((p) => pickRow([p.prefix || '(keys with no "/")', fmt(p.liveKeys), size(p.bytes), size(p.historyBytes), fmt(p.revisions)], [1, 2, 3, 4], () => {
       if (p.prefix && p.prefix !== prefixUnder) go(p.prefix); else browseTo(p.prefix);
     }, 0));
-    box.append(longTable(['Prefix', 'Keys', 'Now', 'Old revisions', 'Revisions'], rows, [1, 2, 3, 4], 'pick-table', 15));
+    box.append(longTable(['Prefix', 'Keys', 'Now', 'Old revisions', 'Revisions'], rows, [1, 2, 3, 4], 'pick-table', 15, res.total));
   }
 
   // ---- Browsing the keys ----
@@ -394,29 +464,42 @@
     if (scroll) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // The tab picked last, kept from one revision to the next. A revision
+  // with no earlier value to compare shows its value whatever was picked.
   let view = 'value';
   async function showValue(key, index, pane) {
+    const entry = current;
     const v = await (await session()).call('value', key, index);
+    // Another key was picked while this one loaded.
+    if (!pane.isConnected) return;
+    const h = entry.history[index];
     pane.textContent = '';
-    if (!v) { pane.append(el('p', { class: 'muted', text: 'The key was deleted at this revision; there is no value.' })); return; }
-    const h = current.history[index];
+    if (!v) {
+      pane.append(el('p', { class: 'muted', text: 'The key was deleted at this revision; there is no value.' }));
+      announce(`Revision ${h.revision}: the key was deleted.`);
+      return;
+    }
     const tabs = el('div', { class: 'tabs', role: 'tablist' });
     const body = el('div');
     const tab = (id, label) => {
-      const b = el('button', { type: 'button', role: 'tab', class: 'tab', 'aria-selected': String(view === id), text: label });
+      const b = el('button', { type: 'button', role: 'tab', class: 'tab', text: label });
       b.addEventListener('click', () => { view = id; draw(); });
       return b;
     };
+    const valueTab = tab('value', 'Value at revision ' + h.revision);
+    const changesTab = v.previous !== null ? tab('changes', 'Changes from revision ' + v.previous) : null;
+    tabs.append(valueTab);
+    if (changesTab) tabs.append(changesTab);
     function draw() {
-      tabs.textContent = '';
-      tabs.append(tab('value', 'Value at revision ' + h.revision));
-      if (v.changes || v.previous !== null) tabs.append(tab('changes', 'Changes from revision ' + v.previous));
+      const mode = view === 'changes' && changesTab ? 'changes' : 'value';
+      valueTab.setAttribute('aria-selected', String(mode === 'value'));
+      if (changesTab) changesTab.setAttribute('aria-selected', String(mode === 'changes'));
       body.textContent = '';
-      const mode = view === 'changes' && v.previous !== null ? 'changes' : 'value';
       if (mode === 'value') body.append(el('pre', { class: 'out value-text', text: v.text }));
       else body.append(diffView(v.changes));
     }
     draw();
+    announce(`Revision ${h.revision} of ${key}, version ${h.version}.`);
     let note = '';
     if (v.kubernetes && v.kubernetes.known) note = v.kubernetes.format === 'json' ? 'A custom resource, stored as JSON, shown as kubectl get -o yaml shows it.' : 'Stored as protobuf, shown as kubectl get -o yaml shows it.';
     else if (v.kubernetes) note = `${v.kubernetes.apiVersion} ${v.kubernetes.kind} isn't a kind this page knows, so its fields show as protobuf field numbers.`;
@@ -448,21 +531,41 @@
 
   function readPicked(f) {
     if (!f) return;
-    f.arrayBuffer().then((buf) => openFile(buf, f.name), (err) => {
+    const ticket = ticketNow();
+    f.arrayBuffer().then((buf) => openFile(buf, f.name, ticket), (err) => {
+      if (ticket !== opening) return;
       $('result').textContent = '';
       $('result').append(verdict('bad', 'The browser could not read this file', [err && err.message ? err.message : String(err), 'Files of several gigabytes can be too big for a browser tab; the command line reads them.']));
     });
   }
+  // Emptied after each pick, so picking the same file again opens it again.
   $('file').addEventListener('change', (ev) => { readPicked(ev.target.files[0]); ev.target.value = ''; });
+
+  // A file dropped anywhere on the page opens, so a drop that misses the
+  // box doesn't make the browser leave the page for the file. Drags of
+  // text, within the page, are left alone. The box lights up while a file
+  // is over it; entering and leaving its children fire events too, so they
+  // are counted.
   const drop = $('drop');
-  drop.addEventListener('dragover', (ev) => { ev.preventDefault(); drop.classList.add('over'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-  drop.addEventListener('drop', (ev) => { ev.preventDefault(); drop.classList.remove('over'); readPicked(ev.dataTransfer.files[0]); });
+  const carriesFiles = (ev) => Boolean(ev.dataTransfer) && Array.from(ev.dataTransfer.types || []).includes('Files');
+  let over = 0;
+  drop.addEventListener('dragenter', (ev) => { if (carriesFiles(ev)) { over++; drop.classList.add('over'); } });
+  drop.addEventListener('dragleave', (ev) => { if (carriesFiles(ev) && --over <= 0) { over = 0; drop.classList.remove('over'); } });
+  window.addEventListener('dragover', (ev) => { if (carriesFiles(ev)) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'copy'; } });
+  window.addEventListener('drop', (ev) => {
+    if (!carriesFiles(ev)) return;
+    ev.preventDefault();
+    over = 0;
+    drop.classList.remove('over');
+    readPicked(ev.dataTransfer.files[0]);
+  });
 
   // The example is a gzipped snapshot in example.js, loaded only when asked for.
   $('example').addEventListener('click', () => {
+    const ticket = ticketNow();
     const go = async () => {
       if (typeof DecompressionStream === 'undefined') {
+        if (ticket !== opening) return;
         $('result').textContent = '';
         $('result').append(verdict('bad', 'This browser can\'t unpack the example', 'It needs DecompressionStream, which browsers have had since 2023. Your own snapshots open without it.'));
         return;
@@ -471,13 +574,17 @@
       const gz = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) gz[i] = bin.charCodeAt(i);
       const buf = await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
-      openFile(buf, 'example.db');
+      openFile(buf, 'example.db', ticket);
     };
     if (window.KV_EXAMPLE_ETCD) { go(); return; }
     const s = document.createElement('script');
     s.src = 'example.js';
     s.onload = go;
-    s.onerror = () => { $('result').textContent = ''; $('result').append(verdict('bad', 'The example could not be loaded', 'example.js is missing next to this page.')); };
+    s.onerror = () => {
+      if (ticket !== opening) return;
+      $('result').textContent = '';
+      $('result').append(verdict('bad', 'The example could not be loaded', 'example.js is missing next to this page.'));
+    };
     document.body.append(s);
   });
 
