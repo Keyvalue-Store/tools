@@ -1,0 +1,431 @@
+{
+  "recorded": "Each case wrote keys to the built server and read used_memory before and after; memory.js replayed the same cases.",
+  "versions": [
+    {
+      "version": "redis-6.2.24",
+      "usedMemoryAtStart": 936032,
+      "cases": 6267,
+      "kinds": {
+        "strings": 3892,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275705,
+      "bytesMeasured": 1059946472,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 142,
+        "meanZ": -0.145,
+        "within3sd": 0.993
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.145
+      }
+    },
+    {
+      "version": "redis-7.0.15",
+      "usedMemoryAtStart": 960016,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1060861328,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 142,
+        "meanZ": -0.035,
+        "within3sd": 1
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.035
+      }
+    },
+    {
+      "version": "redis-7.2.16",
+      "usedMemoryAtStart": 967696,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1055920208,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 367,
+        "meanZ": 0.006,
+        "within3sd": 1
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.079
+      }
+    },
+    {
+      "version": "redis-7.4.11",
+      "usedMemoryAtStart": 1050224,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1055509912,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 367,
+        "meanZ": -0.05,
+        "within3sd": 0.9864
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.134
+      }
+    },
+    {
+      "version": "redis-8.0.6",
+      "usedMemoryAtStart": 733880,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1055506096,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 367,
+        "meanZ": -0.201,
+        "within3sd": 1
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0.113
+      }
+    },
+    {
+      "version": "redis-8.10.2",
+      "usedMemoryAtStart": 970688,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1039569408,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 1188,
+        "meanZ": -0.022,
+        "within3sd": 0.9992
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.233
+      }
+    },
+    {
+      "version": "redis-8.2.10",
+      "usedMemoryAtStart": 735072,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1049483568,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 872,
+        "meanZ": -0.186,
+        "within3sd": 1
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.075
+      }
+    },
+    {
+      "version": "redis-8.4.7",
+      "usedMemoryAtStart": 924496,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1049496688,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 872,
+        "meanZ": -0.05,
+        "within3sd": 0.9966
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.032
+      }
+    },
+    {
+      "version": "redis-8.6.7",
+      "usedMemoryAtStart": 961400,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1039594872,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 1188,
+        "meanZ": 0.142,
+        "within3sd": 0.9983
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0
+      }
+    },
+    {
+      "version": "redis-8.8.3",
+      "usedMemoryAtStart": 951040,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1039589848,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 1188,
+        "meanZ": -0.001,
+        "within3sd": 0.9992
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0.031
+      }
+    },
+    {
+      "version": "valkey-7.2.14",
+      "usedMemoryAtStart": 982576,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1055937976,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 367,
+        "meanZ": 0.194,
+        "within3sd": 1
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0.092
+      }
+    },
+    {
+      "version": "valkey-8.0.11",
+      "usedMemoryAtStart": 972944,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1055276120,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 367,
+        "meanZ": -0.004,
+        "within3sd": 0.9973
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": -0.054
+      }
+    },
+    {
+      "version": "valkey-8.1.10",
+      "usedMemoryAtStart": 939600,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1040965040,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 939,
+        "meanZ": 0.095,
+        "within3sd": 0.9989
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0.074
+      }
+    },
+    {
+      "version": "valkey-9.0.6",
+      "usedMemoryAtStart": 938048,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1040940272,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 939,
+        "meanZ": -0.011,
+        "within3sd": 0.9989
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0.155
+      }
+    },
+    {
+      "version": "valkey-9.1.2",
+      "usedMemoryAtStart": 987120,
+      "cases": 6271,
+      "kinds": {
+        "strings": 3896,
+        "keys": 213,
+        "hashes": 843,
+        "sets": 418,
+        "zsets": 300,
+        "lists": 449,
+        "mixed": 57,
+        "settings": 95
+      },
+      "keys": 275709,
+      "bytesMeasured": 1038636216,
+      "rerun": 0,
+      "differences": 0,
+      "leftToChance": {
+        "cases": 939,
+        "meanZ": -0.012,
+        "within3sd": 0.9989
+      },
+      "skiplistCases": {
+        "cases": 142,
+        "meanZ": 0.086
+      }
+    }
+  ],
+  "total": {
+    "cases": 94061,
+    "keys": 4135631,
+    "bytesMeasured": 15737234024,
+    "differences": 0
+  }
+}

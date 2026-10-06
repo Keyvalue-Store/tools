@@ -24,3 +24,11 @@ with their arity, flags, key positions and ACL categories, and the messages
 the ACL code prints. They were read from the built servers and from their
 source code, Copyright Redis Ltd. and the Redis contributors, and Copyright
 the Valkey contributors. acl/acl.js follows how that code applies ACL rules.
+
+memory/memory.js follows how Redis and Valkey allocate memory for keys and
+values, as read from their source code, Copyright Redis Ltd. and the Redis
+contributors, and Copyright the Valkey contributors, and as measured on the
+built servers. It includes a JavaScript version of fpconv_dtoa (Grisu2), from
+the fpconv library those servers bundle: Copyright (c) 2021, Redis Labs;
+Copyright (c) 2013-2019, night-shift; Copyright (c) 2009, Florian Loitsch;
+licensed under the Boost Software License 1.0, whose text is in memory.js.
