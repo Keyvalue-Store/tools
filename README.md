@@ -27,9 +27,13 @@ Each folder's README is the tool's manual, with a plain-language explanation of 
 - **Your data stays with you.** The tools don't send anything anywhere, and each web page's security policy stops it from fetching or loading anything from another site: no fetch, no beacons, no scripts, styles or images from elsewhere.
 - **Checked against the real thing.** Each tool was checked against real servers or reference code: 15 versions of Redis and Valkey built from source, DynamoDB Local, etcd 3.4 to 3.6 with Kubernetes' own Go packages, the AWS SDK, the Python `mmh3` package, the code printed in the jump hash paper, SQLite's own key order, and values written by Python, PHP, Java and Ruby themselves. The tests replay the recorded answers, which are in each tool's `test/fixtures/`, and the full measurements are in `test/results/`.
 
+## Download
+
+Each release has every tool in one package, without the tests: [keyvaluestore-tools.tar.gz](https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.tar.gz) for Linux and macOS, or [keyvaluestore-tools.zip](https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.zip). Unpack it and run the tools with Node.js 20 or newer. Before a release goes out, the package is checked on Linux, macOS and Windows.
+
 ## Run them
 
-From a copy of this repository, with Node.js 20 or newer:
+From the package or a copy of this repository, with Node.js 20 or newer:
 
 ```sh
 node slots/cli.js --help
