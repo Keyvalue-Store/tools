@@ -1,6 +1,6 @@
 {
   "name": "keyvaluestore-tools",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Free tools for key-value stores such as Redis, Valkey and DynamoDB.",
   "homepage": "https://keyvaluestore.com/tools/",
