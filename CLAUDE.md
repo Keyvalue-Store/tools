@@ -2,9 +2,9 @@
 
 ## Where the next session starts
 
-KeyValueStore Tools 0.2.1 is in progress (YK said update, 2026-11-02): see the next section. 0.2.0 is released (softdev-plan item 33 done).
+KeyValueStore Tools 0.2.1 is released (newest Redis and Valkey patches, 2026-11-02); nothing is in progress. The monthly refresh workflow will flag the next patch drift; acting on it needs YK's go-ahead.
 
-## In progress: KeyValueStore Tools 0.2.1
+## Done: KeyValueStore Tools 0.2.1
 
 What and why: the first refresh run found the newest Valkey patches behave differently from the tracked versions in the ACL Builder's area (7.2.15 drops sanitize-payload from ACL LIST; 8.0.12 and later no longer crash on ACL LOAD of an unclosed selector; one GETKEYS change), so the tools are wrong for anyone on the newest patches. YK approved moving the tracked versions to the newest patches.
 
@@ -18,7 +18,7 @@ Steps:
 2. [x] Re-extracted and re-recorded on all 15: memory 97,211 cases, 0 differences (99.75 percent within 3 sd); config and ACL replay 0 differences. Fixes: fresh-server used_memory for 5 versions (measured old patch to new patch deltas); Valkey 9.1.3 passes hex floats to strtod (string2d 'ffclibc'); ACL features sanitize (Valkey 7.2.15 drops it) and parenCrash (unclosed selector no longer crashes Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7, 9.1.3 and later). 436 tests pass, smoke passes.
 3. [x] Docs in the repo (version lists; ACL, config and memory READMEs on the patch changes and on older patches). Site figures after the release.
 4. [x] Independent review, two rounds. Round 1, no blockers. Should-fix: an older patch (e.g. Valkey 8.0.11) was silently modelled as the newest of its line, where real 8.0.11 still crashes on an unclosed selector; fixed with the "Checking as X" note in the ACL and memory CLIs (config had it) and README lines (per-patch features left out: only recorded patches are known). Should-fix: hex percentiles that overflow or underflow were accepted, and 9.1.3's 5120-byte limit was missing; fixed, tests checked against real 9.1.3, 8.10.3 and 7.2.17. Nits fixed: string2d modes allow-listed, EMPTY comment, config README. Round 2, no blockers; one minor: parseHexFloat overflowed on mantissas over 256 hex digits; rebuilt with a BigInt mantissa, two cases added (real 9.1.3 agrees). 437 tests pass.
-5. [~] 0.2.1 released by the workflow (run 41394732491); tar.gz and zip match SHA256SUMS at the tag and latest; the downloaded package passed scripts/smoke.js. Evidence in test/results/release-0.2.1.md. Remaining: site, studio note, softdev-plan log row.
+5. [x] 0.2.1 released by the workflow (run 41394732491); tar.gz and zip match SHA256SUMS at the tag and latest; the downloaded package passed scripts/smoke.js. Evidence in test/results/release-0.2.1.md. keyvaluestore.com: Memory, Config and ACL pages, tools copied, post "KeyValueStore Tools 0.2.1 Moves to the Newest Redis and Valkey Patches" with keyvaluestore-tools-0-2-1.svg (rasterized and inspected), site commit b8d55ec; softdevstudio.com note dee3651; both Cloudflare Pages deploys succeeded (live pages not opened: page fetch unapproved). softdev-plan.md log row 57c897f.
 
 ## Done: KeyValueStore Tools 0.2
 
