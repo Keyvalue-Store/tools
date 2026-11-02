@@ -54,33 +54,33 @@ test('all 15 versions are recorded', () => {
 });
 
 test('versions are found by loose names', () => {
-  assert.equal(C.findVersion('valkey 9.1'), 'valkey-9.1.2');
-  assert.equal(C.findVersion('Redis 7.2.16'), 'redis-7.2.16');
-  assert.equal(C.findVersion('redis-8'), 'redis-8.10.2');
+  assert.equal(C.findVersion('valkey 9.1'), 'valkey-9.1.3');
+  assert.equal(C.findVersion('Redis 7.2.17'), 'redis-7.2.17');
+  assert.equal(C.findVersion('redis-8'), 'redis-8.10.3');
   assert.equal(C.findVersion('6.2'), 'redis-6.2.24');
   assert.equal(C.findVersion('valkey 5'), null);
   assert.equal(C.findVersion('nonsense'), null);
 });
 
 test('the error is the one the server prints, with the line', () => {
-  const r = C.check('maxmemory 100mb\nmaxmemory-policy allkeys-lru\nappendfsync sometimes\n', 'valkey-9.1.2');
+  const r = C.check('maxmemory 100mb\nmaxmemory-policy allkeys-lru\nappendfsync sometimes\n', 'valkey-9.1.3');
   assert.equal(r.ok, false);
   assert.equal(r.error.line, 3);
-  assert.equal(r.error.output, "\n*** FATAL CONFIG FILE ERROR (Version 9.1.2) ***\nReading the configuration file, at line 3\n>>> 'appendfsync sometimes'\nargument(s) must be one of the following: everysec, always, no\n");
+  assert.equal(r.error.output, "\n*** FATAL CONFIG FILE ERROR (Version 9.1.3) ***\nReading the configuration file, at line 3\n>>> 'appendfsync sometimes'\nargument(s) must be one of the following: everysec, always, no\n");
   const old = C.check('appendfsync sometimes\n', 'redis-6.2.24');
   assert.match(old.error.output, /\(Redis 6\.2\.24\)/);
   assert.match(old.error.output, /argument must be one of the following: everysec, always, no/);
 });
 
 test('every problem is listed, each as if the ones before were fixed', () => {
-  const r = C.check('port 70000\nhz 20\nmaxmemory lots\nhz 30\n', 'redis-8.10.2');
+  const r = C.check('port 70000\nhz 20\nmaxmemory lots\nhz 30\n', 'redis-8.10.3');
   assert.deepEqual(r.problems.map((p) => p.line), [1, 3]);
   assert.equal(r.values.get('hz'), '30');
   assert.deepEqual(r.setBy.get('hz'), [2, 4]);
 });
 
 test('values read as CONFIG GET shows them', () => {
-  const r = C.check('maxmemory 2gb\nmaxmemory-clients 10%\nsave 900 1\nsave 300 10\nnotify-keyspace-events KEA\nunixsocketperm 700\nslave-read-only no\n', 'valkey-8.1.10');
+  const r = C.check('maxmemory 2gb\nmaxmemory-clients 10%\nsave 900 1\nsave 300 10\nnotify-keyspace-events KEA\nunixsocketperm 700\nslave-read-only no\n', 'valkey-8.1.11');
   assert.equal(r.values.get('maxmemory'), '2147483648');
   assert.equal(r.values.get('maxmemory-clients'), '10%');
   assert.equal(r.values.get('save'), '900 1 300 10');
@@ -92,42 +92,42 @@ test('values read as CONFIG GET shows them', () => {
 
 test('bytes and text both work, and bytes stay bytes', () => {
   const bytes = Uint8Array.from(Buffer.from('syslog-ident "caf\\xc3\\xa9"\n', 'latin1'));
-  const r = C.check(bytes, 'redis-7.4.11');
+  const r = C.check(bytes, 'redis-7.4.12');
   assert.equal(C.fromBinary(r.values.get('syslog-ident')), 'café');
-  const t = C.check('syslog-ident café\n', 'redis-7.4.11');
+  const t = C.check('syslog-ident café\n', 'redis-7.4.12');
   assert.equal(t.values.get('syslog-ident'), r.values.get('syslog-ident'));
 });
 
 test('lines split the way each version splits them', () => {
   assert.deepEqual(C.splitArgs('a "b c" \'d\\\'e\' "\\x41\\n"'), ['a', 'b c', "d'e", 'A\n']);
   assert.equal(C.splitArgs('"abc"def'), null);
-  assert.equal(C.check('syslog-ident "abc"def\n', 'redis-8.10.2').ok, false);
-  assert.equal(C.check('syslog-ident "abc"def\n', 'valkey-9.1.2').values.get('syslog-ident'), 'abcdef');
+  assert.equal(C.check('syslog-ident "abc"def\n', 'redis-8.10.3').ok, false);
+  assert.equal(C.check('syslog-ident "abc"def\n', 'valkey-9.1.3').values.get('syslog-ident'), 'abcdef');
 });
 
 test('module settings and a server that stops while starting', () => {
-  const r = C.check('foo.bar 1\n', 'valkey-9.1.2');
+  const r = C.check('foo.bar 1\n', 'valkey-9.1.3');
   assert.equal(r.ok, false);
   assert.equal(r.error.startup, true);
   assert.deepEqual(r.error.log, ['Unused Module Configuration: foo.bar', 'Module Configuration detected without loadmodule directive or no ApplyConfig call: aborting']);
-  assert.equal(C.check('loadmodule /x.so\nfoo.bar 1\n', 'valkey-9.1.2').ok, true);
-  assert.equal(C.check('bogus 1\n', 'redis-8.10.2').error.startup, true);
-  assert.equal(C.check('bogus 1\n', 'redis-7.4.11').error.message, 'Bad directive or wrong number of arguments');
+  assert.equal(C.check('loadmodule /x.so\nfoo.bar 1\n', 'valkey-9.1.3').ok, true);
+  assert.equal(C.check('bogus 1\n', 'redis-8.10.3').error.startup, true);
+  assert.equal(C.check('bogus 1\n', 'redis-7.4.12').error.message, 'Bad directive or wrong number of arguments');
 });
 
 test('advice: the risky settings come first', () => {
-  const r = C.check('protected-mode no\nbind 0.0.0.0\nsave ""\nappendonly no\nenable-debug-command yes\nrename-command FLUSHALL ""\n', 'redis-7.2.16');
+  const r = C.check('protected-mode no\nbind 0.0.0.0\nsave ""\nappendonly no\nenable-debug-command yes\nrename-command FLUSHALL ""\n', 'redis-7.2.17');
   const codes = C.advise(r).map((f) => f.code);
   assert.equal(codes[0], 'open');
   assert.ok(codes.includes('no-persistence'));
   assert.ok(codes.includes('enable-debug-command'));
   assert.ok(codes.includes('renamed'));
-  const quiet = C.advise(C.check('requirepass ' + 'x'.repeat(40) + '\nmaxmemory 1gb\nmaxmemory-policy allkeys-lru\n', 'valkey-9.1.2'));
+  const quiet = C.advise(C.check('requirepass ' + 'x'.repeat(40) + '\nmaxmemory 1gb\nmaxmemory-policy allkeys-lru\n', 'valkey-9.1.3'));
   assert.ok(!quiet.some((f) => f.level === 'bad'));
 });
 
 test('the minimal file keeps what changes something, with current names', () => {
-  const r = C.check('# a comment\nslave-read-only no\nmaxmemory 0\nhz 10\nport 6380\nrename-command KEYS ""\n', 'redis-8.10.2');
+  const r = C.check('# a comment\nslave-read-only no\nmaxmemory 0\nhz 10\nport 6380\nrename-command KEYS ""\n', 'redis-8.10.3');
   assert.deepEqual(C.minimal(r), ['replica-read-only no', 'port 6380', 'rename-command KEYS ""']);
 });
 
@@ -139,14 +139,14 @@ test('CONFIG GET output: raw, numbered and quoted', () => {
   const m = C.parseConfigGet(numbered);
   assert.equal(m.get('save'), '');
   assert.equal(m.get('dir'), '/var/lib/redis');
-  const cmp = C.compareConfigGet(m, 'redis-7.2.16');
+  const cmp = C.compareConfigGet(m, 'redis-7.2.17');
   assert.equal(cmp.rows.find((x) => x.name === 'maxmemory').changed, true);
   assert.equal(cmp.rows.find((x) => x.name === 'save').changed, true);
 });
 
 test('CONFIG GET * output says which version it came from', () => {
-  // Some versions have exactly the same settings (Redis 7.2.16 and Valkey
-  // 7.2.14, say); then any of them is a right answer.
+  // Some versions have exactly the same settings (Redis 7.2.17 and Valkey
+  // 7.2.15, say); then any of them is a right answer.
   for (const [id, rec] of Object.entries(data.versions)) {
     const map = new Map(Object.entries(rec.baseline));
     const guess = C.guessVersion(map);
@@ -156,8 +156,8 @@ test('CONFIG GET * output says which version it came from', () => {
     const missing = cmp.rows.filter((x) => x.value === null && !x.hidden && x.name !== 'dir' && x.name !== 'unixsocket');
     assert.deepEqual(missing.map((x) => x.name), [], id + ' guessed as ' + guess);
   }
-  const v91 = new Map(Object.entries(data.versions['valkey-9.1.2'].baseline));
-  assert.equal(C.guessVersion(v91), 'valkey-9.1.2');
+  const v91 = new Map(Object.entries(data.versions['valkey-9.1.3'].baseline));
+  assert.equal(C.guessVersion(v91), 'valkey-9.1.3');
 });
 
 test('the command line', () => {
@@ -172,15 +172,15 @@ test('the command line', () => {
   assert.match(r.stdout, /the server starts/);
   r = run(bad, '--server', 'redis 8.10');
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /FATAL CONFIG FILE ERROR \(Redis 8\.10\.2\)/);
+  assert.match(r.stdout, /FATAL CONFIG FILE ERROR \(Redis 8\.10\.3\)/);
   r = run(bad);
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /Valkey 9\.1\.2 +stops at line 2/);
+  assert.match(r.stdout, /Valkey 9\.1\.3 +stops at line 2/);
   r = run(good, '--server', '8', '--json');
   assert.equal(JSON.parse(r.stdout).starts, true);
   r = run(good, '--server', 'valkey 9', '--minimal');
   assert.equal(r.status, 0);
-  assert.equal(r.stdout.trim(), '# The settings of ' + good + ' that differ from the defaults of Valkey 9.1.2.\nmaxmemory 1073741824\nmaxmemory-policy allkeys-lru');
+  assert.equal(r.stdout.trim(), '# The settings of ' + good + ' that differ from the defaults of Valkey 9.1.3.\nmaxmemory 1073741824\nmaxmemory-policy allkeys-lru');
   r = run(path.join(dir, 'missing.conf'));
   assert.equal(r.status, 2);
   r = run(good, '--server', 'redis 5');
@@ -200,9 +200,9 @@ test('the short file writes multi-value settings the way Redis 6.2 reads them', 
   // A save line with the pairs in one argument clears the defaults and adds nothing.
   assert.deepEqual(C.minimal(C.check('save "900 1 300 10"\n', 'redis-6.2.24')), ['save ""']);
   // From 7.0 one line takes several pairs, and a count that wrapped goes back as the number that wraps to it.
-  const r7 = C.check(file + 'save 60 2147483648\n', 'redis-7.4.11');
+  const r7 = C.check(file + 'save 60 2147483648\n', 'redis-7.4.12');
   assert.ok(C.minimal(r7).includes('save 900 1 300 10 60 2147483648'), C.minimal(r7).join('\n'));
-  assert.deepEqual(shortFileAgrees(r7, 'redis-7.4.11'), []);
+  assert.deepEqual(shortFileAgrees(r7, 'redis-7.4.12'), []);
 });
 
 test('the short file keeps every byte of a value, in every version', () => {
@@ -220,7 +220,7 @@ test('the short file keeps every byte of a value, in every version', () => {
 test('the short file keeps include, rename-command, user, loadmodule, dir and module lines in place', () => {
   const file = 'maxmemory 1gb\ninclude /etc/redis/base.conf\nmaxmemory 2gb\nhz 20\nloadmodule /opt/search.so\nsearch.timeout 500\n' +
     'rename-command KEYS ""\nuser alice on >pw ~* +@all\ndir /var/lib/redis\nport 7000\n';
-  assert.deepEqual(C.minimal(C.check(file, 'valkey-9.1.2')), ['include /etc/redis/base.conf', 'maxmemory 2147483648', 'hz 20',
+  assert.deepEqual(C.minimal(C.check(file, 'valkey-9.1.3')), ['include /etc/redis/base.conf', 'maxmemory 2147483648', 'hz 20',
     'loadmodule /opt/search.so', 'search.timeout 500', 'rename-command KEYS ""', 'user alice on >pw ~* +@all', 'dir /var/lib/redis', 'port 7000']);
   // Redis 6.2 reads dir and cluster-config-file outside its table.
   assert.deepEqual(C.minimal(C.check('dir /data\ncluster-config-file n.conf\n', 'redis-6.2.24')), ['dir /data', 'cluster-config-file n.conf']);
@@ -228,24 +228,24 @@ test('the short file keeps include, rename-command, user, loadmodule, dir and mo
 
 test('the short file keeps the lines the server stops at as comments', () => {
   const mistakes = '# Typed in a hurry\nmaxmemory 2 gb\nmaxmemory-policy lru\nsave 900\nappendfsync everysecond\ntimeout -5\nhz 1000\nrequirepass "secret\ntcp-backlog 511 # the default\n';
-  const lines = C.minimal(C.check(mistakes, 'redis-8.10.2'));
-  assert.deepEqual(lines.slice(0, 2), ['# Line 2 stops Redis 8.10.2: wrong number of arguments', '# maxmemory 2 gb']);
+  const lines = C.minimal(C.check(mistakes, 'redis-8.10.3'));
+  assert.deepEqual(lines.slice(0, 2), ['# Line 2 stops Redis 8.10.3: wrong number of arguments', '# maxmemory 2 gb']);
   assert.ok(lines.includes('hz 500'));
-  assert.ok(lines.includes('# Line 8 stops Redis 8.10.2: Unbalanced quotes in configuration line'));
+  assert.ok(lines.includes('# Line 8 stops Redis 8.10.3: Unbalanced quotes in configuration line'));
   assert.ok(lines.includes('# requirepass "secret'));
   assert.equal(lines.filter((l) => !l.startsWith('#')).length, 1);
   // Reasons it stops after the last line come first; odd bytes in a comment show as \xHH.
-  assert.deepEqual(C.minimal(C.check('foo.bar 1\nmaxmemory 1mb\n', 'valkey-9.1.2')), ['# Valkey 9.1.2 stops after reading the original file: no module takes foo.bar',
-    '# Line 1 stops Valkey 9.1.2: A module\'s setting, and no module is loaded.', '# foo.bar 1', 'maxmemory 1048576']);
-  assert.deepEqual(C.minimal(C.check(bytes('\xef\xbb\xbfmaxmemory 2gb\n'), 'redis-7.2.16')), ['# Line 1 stops Redis 7.2.16: Bad directive or wrong number of arguments', '# \\xef\\xbb\\xbfmaxmemory 2gb']);
+  assert.deepEqual(C.minimal(C.check('foo.bar 1\nmaxmemory 1mb\n', 'valkey-9.1.3')), ['# Valkey 9.1.3 stops after reading the original file: no module takes foo.bar',
+    '# Line 1 stops Valkey 9.1.3: A module\'s setting, and no module is loaded.', '# foo.bar 1', 'maxmemory 1048576']);
+  assert.deepEqual(C.minimal(C.check(bytes('\xef\xbb\xbfmaxmemory 2gb\n'), 'redis-7.2.17')), ['# Line 1 stops Redis 7.2.17: Bad directive or wrong number of arguments', '# \\xef\\xbb\\xbfmaxmemory 2gb']);
 });
 
 test('from 7.0, each save line after an include starts the list again', () => {
   const file = 'save 900 1\ninclude /etc/redis/other.conf\nsave 300 10\nsave 60 5\n';
-  assert.equal(C.check(file, 'redis-7.4.11').values.get('save'), '60 5');
-  assert.equal(C.check(file, 'valkey-9.1.2').values.get('save'), '60 5');
+  assert.equal(C.check(file, 'redis-7.4.12').values.get('save'), '60 5');
+  assert.equal(C.check(file, 'valkey-9.1.3').values.get('save'), '60 5');
   assert.equal(C.check(file, 'redis-6.2.24').values.get('save'), '900 1 300 10 60 5');
-  assert.deepEqual(C.minimal(C.check(file, 'redis-7.4.11')), ['include /etc/redis/other.conf', 'save 60 5']);
+  assert.deepEqual(C.minimal(C.check(file, 'redis-7.4.12')), ['include /etc/redis/other.conf', 'save 60 5']);
 });
 
 test('quote() and visible() work on bytes', () => {
@@ -273,13 +273,13 @@ test('quote() and visible() work on bytes', () => {
 
 test('a file that starts with a byte order mark', () => {
   const withBom = bytes('\xef\xbb\xbfmaxmemory 2gb\n');
-  const r = C.check(withBom, 'redis-7.2.16');
+  const r = C.check(withBom, 'redis-7.2.17');
   assert.equal(r.error.line, 1);
-  assert.equal(C.visible(r.error.output, '\n'), "\n*** FATAL CONFIG FILE ERROR (Redis 7.2.16) ***\nReading the configuration file, at line 1\n>>> '\\xef\\xbb\\xbfmaxmemory 2gb'\nBad directive or wrong number of arguments\n");
+  assert.equal(C.visible(r.error.output, '\n'), "\n*** FATAL CONFIG FILE ERROR (Redis 7.2.17) ***\nReading the configuration file, at line 1\n>>> '\\xef\\xbb\\xbfmaxmemory 2gb'\nBad directive or wrong number of arguments\n");
   // The page keeps the mark in the text, which gives the same answer as the bytes.
   const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(withBom);
-  assert.equal(C.check(text, 'redis-7.2.16').error.output, r.error.output);
-  assert.equal(C.check(text + '\n', 'redis-7.2.16').ok, false);
+  assert.equal(C.check(text, 'redis-7.2.17').error.output, r.error.output);
+  assert.equal(C.check(text + '\n', 'redis-7.2.17').ok, false);
 });
 
 // ---- large inputs ----
@@ -289,11 +289,11 @@ test('large inputs take time in proportion to their size', () => {
   // Each took from seconds to hours before.
   const nul = new Uint8Array(16 * 1024 * 1024).fill(65);
   for (let i = 0; i < nul.length; i += 1000) nul[i] = 0;
-  assert.ok(timed(() => C.check(nul, 'redis-8.10.2')) < 3000, 'NUL bytes and no line break');
+  assert.ok(timed(() => C.check(nul, 'redis-8.10.3')) < 3000, 'NUL bytes and no line break');
   const saves = Array.from({ length: 60000 }, (_, i) => 'save ' + (i + 1) + ' 1').join('\n');
-  assert.ok(timed(() => C.check(saves, 'redis-8.10.2')) < 5000, '60,000 save lines');
-  assert.ok(timed(() => C.check('maxmemory' + ' '.repeat(400000) + 'x\n', 'redis-8.10.2')) < 2000, 'spaces inside a line');
-  assert.ok(timed(() => C.check('latency-tracking-info-percentiles ' + '1'.repeat(200000) + 'x\n', 'redis-8.10.2')) < 2000, 'digits that are not a number');
+  assert.ok(timed(() => C.check(saves, 'redis-8.10.3')) < 5000, '60,000 save lines');
+  assert.ok(timed(() => C.check('maxmemory' + ' '.repeat(400000) + 'x\n', 'redis-8.10.3')) < 2000, 'spaces inside a line');
+  assert.ok(timed(() => C.check('latency-tracking-info-percentiles ' + '1'.repeat(200000) + 'x\n', 'redis-8.10.3')) < 2000, 'digits that are not a number');
   const lines = Array.from({ length: 200000 }, (_, i) => 'x' + i).join('\n');
   assert.equal(C.parseConfigGet(lines).size, 100000);
 });
@@ -309,11 +309,11 @@ test('CONFIG GET: the build comes from the names unless the options say', () => 
   assert.ok(!g.missing.some((x) => x.name.startsWith('tls-')));
   g = C.readConfigGet(raw(b62), 'redis-6.2.24', { tls: true });
   assert.ok(g.missing.some((x) => x.name === 'tls-port'));
-  const b810 = Object.assign({}, data.versions['redis-8.10.2'].baseline, { 'repl-compression': '0', 'repl-compression-max-latency': '100' });
-  g = C.readConfigGet(raw(b810), 'redis-8.10.2');
+  const b810 = Object.assign({}, data.versions['redis-8.10.3'].baseline, { 'repl-compression': '0', 'repl-compression-max-latency': '100' });
+  g = C.readConfigGet(raw(b810), 'redis-8.10.3');
   assert.equal(g.compression, true);
   assert.deepEqual(g.unknown, []);
-  g = C.readConfigGet(raw(b810), 'redis-8.10.2', { compression: false });
+  g = C.readConfigGet(raw(b810), 'redis-8.10.3', { compression: false });
   assert.deepEqual(g.unknown, ['repl-compression', 'repl-compression-max-latency']);
 });
 
@@ -326,7 +326,7 @@ test('CONFIG GET: too little of it, or something else', () => {
   assert.equal(C.readConfigGet('hello world\nthis is not\nconfig get\noutput at all\n', null).kind, 'other');
   assert.equal(C.readConfigGet('maxmemory 2gb\nappendonly yes\nsave 900 1\n', null).kind, 'config-file');
   assert.equal(C.readConfigGet('# nothing\n', null).kind, 'none');
-  assert.equal(C.readConfigGet(raw(data.versions['valkey-9.1.2'].baseline), null).kind, 'full');
+  assert.equal(C.readConfigGet(raw(data.versions['valkey-9.1.3'].baseline), null).kind, 'full');
 });
 
 // ---- files that aren't config files, and the report ----
@@ -365,7 +365,7 @@ test('the command line: short files, CONFIG GET and odd bytes', () => {
     '# Line 5 stops Redis 6.2.24: wrong number of arguments', '# maxmemory 2 gb']);
   r = run(file, '--server', '7.2', '--minimal', '--json');
   const short = JSON.parse(r.stdout);
-  assert.equal(short.version, 'redis-7.2.16');
+  assert.equal(short.version, 'redis-7.2.17');
   assert.equal(short.lines[2], 'syslog-ident "\\x1b]0;title\\x07"');
   // Nothing from the file reaches the terminal as a control byte.
   for (const args of [[file, '--server', '7.2'], [file], [file, '--server', '7.2', '--json']]) {

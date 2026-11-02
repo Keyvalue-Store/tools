@@ -32,7 +32,7 @@
   function versions() {
     return data().versions.map((v) => ({ id: v.id, server: v.server, version: v.version, label: v.label }));
   }
-  // 'valkey 9.1', 'Redis 7.2.16', 'redis-8.10.2', '8' → the newest matching
+  // 'valkey 9.1', 'Redis 7.2.17', 'redis-8.10.3', '8' → the newest matching
   // version. A patch release it doesn't know gets the newest of the same
   // minor version.
   function findVersion(spec) {
@@ -74,9 +74,9 @@
       // 6: one set of permissions per user; 70: selectors, ACL LIST works the
       // rules out from the command bitmap; 72: the rules are kept as written.
       fam: R && is(6, 2) ? 6 : R && is(7, 0) ? 70 : 72,
-      // skip-sanitize-payload and sanitize-payload are user flags (Valkey 8
-      // still accepts them and ignores them).
-      sanitize: !(V && ge(8, 0)),
+      // skip-sanitize-payload and sanitize-payload are user flags (Valkey 8,
+      // and Valkey 7.2 from 7.2.15, still accept them and ignore them).
+      sanitize: !(V && (ge(8, 0) || (is(7, 2) && (num[2] || 0) >= 15))),
       newUserSanitize: (R && ge(7, 2)) || (V && is(7, 2)),
       // Valkey 9.1: db=, alldbs and resetdbs.
       dbPerms: V && ge(9, 1),
@@ -91,12 +91,17 @@
       // SORT ... STORE skips the key after STORE when it looks for more options.
       sortSkip: R && !is(7, 0) && !is(8, 0),
       // GEORADIUS and XREAD report flags with their keys.
-      georadiusFlags: !(R && (is(7, 0) || is(8, 0))) && !(V && is(7, 2)),
+      georadiusFlags: !(R && (is(7, 0) || is(8, 0))) && !(V && is(7, 2) && (num[2] || 0) < 15),
       xreadFlags: R && !is(7, 0) && !is(8, 0) && !is(6, 2),
       xreadOptions: R && ge(8, 10) ? ['block', 'count', 'maxcount', 'maxsize', 'claim'] : R && ge(8, 4) ? ['block', 'count', 'claim'] : ['block', 'count'],
       setKeys: R && ge(8, 4) ? 2 : 1,
       // Redis 8.8 and later skip ACL file lines that start with #.
-      aclFileComments: R && ge(8, 8)
+      aclFileComments: R && ge(8, 8),
+      // An unclosed "(" after other rules on an ACL file line crashes the
+      // server, except in the Valkey patches of November 2026 (7.2.15,
+      // 8.0.12, 8.1.11, 9.0.7, 9.1.3), which report it like any other.
+      parenCrash: R || !((is(7, 2) && (num[2] || 0) >= 15) || (is(8, 0) && (num[2] || 0) >= 12) || (is(8, 1) && (num[2] || 0) >= 11) ||
+        (is(9, 0) && (num[2] || 0) >= 7) || (is(9, 1) && (num[2] || 0) >= 3) || ge(9, 2))
     };
   }
 
@@ -1168,7 +1173,7 @@
           errors += fname + ':' + linenum + ': Unmatched parenthesis in selector definition.';
           named(linenum, line);
           // The rules before the "(" were counted but the list is gone.
-          if (m.count) return { crash: 'unmatched parenthesis after other rules (a NULL pointer)' };
+          if (m.count && f.parenCrash) return { crash: 'unmatched parenthesis after other rules (a NULL pointer)' };
           continue;
         }
         let syntax = false;

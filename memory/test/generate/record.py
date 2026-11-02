@@ -25,9 +25,9 @@ BIN = os.environ.get('KV_BIN', '/opt/kv')
 OUT = os.environ.get('KV_OUT') or os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
 SCALE = float(os.environ.get('KV_SCALE', '1'))
 KINDS = os.environ.get('KV_KINDS', 'strings,keys,hashes,sets,zsets,lists,mixed,settings,streams,fieldttl').split(',')
-VERSIONS = ['redis-6.2.24', 'redis-7.0.15', 'redis-7.2.16', 'redis-7.4.11', 'redis-8.0.6', 'redis-8.2.10',
-            'redis-8.4.7', 'redis-8.6.7', 'redis-8.8.3', 'redis-8.10.2', 'valkey-7.2.14', 'valkey-8.0.11',
-            'valkey-8.1.10', 'valkey-9.0.6', 'valkey-9.1.2']
+VERSIONS = ['redis-6.2.24', 'redis-7.0.15', 'redis-7.2.17', 'redis-7.4.12', 'redis-8.0.6', 'redis-8.2.11',
+            'redis-8.4.8', 'redis-8.6.8', 'redis-8.8.4', 'redis-8.10.3', 'valkey-7.2.15', 'valkey-8.0.12',
+            'valkey-8.1.11', 'valkey-9.0.7', 'valkey-9.1.3']
 TTL = '1000000'
 STREAMS = 'streams' in KINDS
 

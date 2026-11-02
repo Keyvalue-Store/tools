@@ -2,7 +2,7 @@
 
 Describe your keys and pick a server version. The calculator works out how much memory the server uses for them, the way that version stores them, and gives the growth of `used_memory` that INFO memory would show. It names the encoding each kind of value gets, shows the hash tables behind the keys and the TTLs, says which limit to raise when a value is stored in its big form, works out what packing small strings into hashes would save, and compares every version side by side.
 
-It knows 15 versions: Redis 6.2.24, 7.0.15, 7.2.16, 7.4.11, 8.0.6, 8.2.10, 8.4.7, 8.6.7, 8.8.3 and 8.10.2, and Valkey 7.2.14, 8.0.11, 8.1.10, 9.0.6 and 9.1.2.
+It knows 15 versions: Redis 6.2.24, 7.0.15, 7.2.17, 7.4.12, 8.0.6, 8.2.11, 8.4.8, 8.6.8, 8.8.4 and 8.10.3, and Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7 and 9.1.3.
 
 Try it in your browser at https://keyvaluestore.com/tools/memory/, or open `memory/app/index.html` from a copy of this repository.
 
@@ -87,7 +87,7 @@ For fields and members, `int:N` means the numbers N, N+1, N+2 and so on. Counts 
 
 | Option | Meaning |
 |---|---|
-| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `valkey` (the newest Valkey), `8` (the newest 8.x of either), or a full version such as `8.4.7`. The default is the newest Redis |
+| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `valkey` (the newest Valkey), `8` (the newest 8.x of either), or a full version such as `8.4.8`. The default is the newest Redis |
 | `--compare` | Every version side by side |
 | `--pack N` | String keys packed into hashes of N fields. It raises `hash-max-listpack-entries` and `hash-max-listpack-value` as far as the hashes need to stay listpacks, and says so |
 | `--set NAME=VALUE` | A setting other than the default, such as `hash-max-listpack-entries=1024` or `maxmemory-policy=allkeys-lru` |
@@ -100,7 +100,7 @@ For fields and members, `int:N` means the numbers N, N+1, N+2 and so on. Counts 
 ```js
 const M = require('./memory/memory.js');
 const keys = M.parse('1m strings key=24 value=100 ttl=30%').groups;
-const r = M.estimate(keys, 'valkey-9.1.2');
+const r = M.estimate(keys, 'valkey-9.1.3');
 r.total;                 // expected growth of used_memory, in bytes
 r.sd;                    // how much of it chance decides (one standard deviation)
 r.groups[0].encoding;    // 'raw', 'embstr', 'int', 'listpack', 'hashtable' ...

@@ -14,9 +14,9 @@ Design decisions:
 - Version 0.2.1. Site: version numbers on the Memory, Config and ACL pages, a short post.
 
 Steps:
-1. [ ] Build the 12 newer patches; switch the version list and ids.
-2. [ ] Re-extract and re-record memory, config, ACL; fix differences.
-3. [ ] Docs and site figures for the new versions.
+1. [x] Built the 12 newer patches; version list and ids switched in build-servers.sh, memory, config and ACL (code, tests, READMEs).
+2. [x] Re-extracted and re-recorded on all 15: memory 97,211 cases, 0 differences (99.75 percent within 3 sd); config and ACL replay 0 differences. Fixes: fresh-server used_memory for 5 versions (measured old patch to new patch deltas); Valkey 9.1.3 passes hex floats to strtod (string2d 'ffclibc'); ACL features sanitize (Valkey 7.2.15 drops it) and parenCrash (unclosed selector no longer crashes Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7, 9.1.3 and later). 436 tests pass, smoke passes.
+3. [ ] Docs done in the repo (version lists, ACL README note); site figures after the release.
 4. [ ] Independent review (at most two rounds), fixes.
 5. [ ] 0.2.1 released by the workflow, package checked, site and studio note, softdev-plan log row.
 

@@ -11,8 +11,8 @@
 #
 #   KV_SRC=/opt/kvsrc KV_BIN=/opt/kv python3 config/test/generate/extract.py
 #
-# KV_SRC holds the source trees (redis-7.2.16/, valkey-9.1.2/, ...) and
-# KV_BIN the built servers (redis-7.2.16/redis-server, ...).
+# KV_SRC holds the source trees (redis-7.2.17/, valkey-9.1.3/, ...) and
+# KV_BIN the built servers (redis-7.2.17/redis-server, ...).
 
 import glob, gzip, json, os, re, socket, subprocess, sys, tempfile, time
 
@@ -326,9 +326,11 @@ def features(version):
         'memtoull': 'clamp' if 'Clamp to ULLONG_MAX' in memtoull else 'erange' if 'errno == ERANGE' in memtoull else 'wrap',
         'string2llMaxLen': 'LONG_STR_SIZE' in string2ll,
         # Valkey 8.1 and 9.0 call valkey_strtod, which is strtod unless built
-        # with USE_FAST_FLOAT=yes; 9.1's is the ffc parser, without hexadecimal.
+        # with USE_FAST_FLOAT=yes; 9.1's is the ffc parser, without hexadecimal,
+        # until 9.1.3 hands hexadecimal back to strtod ('ffclibc').
         'string2d': 'fast' if 'fast_float_strtod(s, slen' in string2d else 'fastfallback' if 'fast_float_strtod' in string2d else
-                    'ffc' if 'valkey_strtod' in string2d and 'ffc_from_chars' in read_if(os.path.join(srcdir, 'valkey_strtod.c')) else 'strtod',
+                    ('ffclibc' if 'valkey_strtod_use_libc' in read_if(os.path.join(srcdir, 'valkey_strtod.c')) else 'ffc')
+                    if 'valkey_strtod' in string2d and 'ffc_from_chars' in read_if(os.path.join(srcdir, 'valkey_strtod.c')) else 'strtod',
         'dbnumClusterFix': 'Changing databases number from' in loader,
         'ioThreadsClamp': 'IO_THREADS_MAX_NUM' in loader,
         'dirEmptyCheck': "dir can't be empty" in config,

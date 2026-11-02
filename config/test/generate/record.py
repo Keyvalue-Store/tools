@@ -8,7 +8,7 @@
 #
 #   KV_BIN=/opt/kv python3 config/test/generate/record.py [version ...]
 #
-# KV_BIN holds the built servers (redis-7.2.16/redis-server, ...).
+# KV_BIN holds the built servers (redis-7.2.17/redis-server, ...).
 # servers.json.gz, from extract.py, says which configs each version has.
 #
 # Most probes go in batches: a file with one line for each of many configs.

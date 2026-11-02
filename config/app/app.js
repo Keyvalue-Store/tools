@@ -104,7 +104,7 @@
   }
   fillVersions($('version'), false);
   fillVersions($('get-version'), true);
-  $('version').value = 'redis-8.10.2';
+  $('version').value = 'redis-8.10.3';
 
   const has = (id, kind) => C.getVersion(id).defs.some((c) => c.build === kind);
   // The build the boxes describe. It applies to every version in the table,
@@ -466,7 +466,7 @@
   }
   $('ex-typical').addEventListener('click', () => example('typical'));
   $('ex-mistakes').addEventListener('click', () => example('mistakes'));
-  $('ex-upgrade').addEventListener('click', () => example('upgrade', 'valkey-9.1.2'));
+  $('ex-upgrade').addEventListener('click', () => example('upgrade', 'valkey-9.1.3'));
 
   // ---- files ----
   // Each read gets a number, so a slow read can't overwrite a later one.

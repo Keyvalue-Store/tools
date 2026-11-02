@@ -66,7 +66,7 @@
   function versions() {
     return data().versions.map((v) => ({ id: v.id, server: v.server, version: v.version, label: v.label }));
   }
-  // 'valkey 9.1', 'Redis 7.2.16', 'redis-8.10.2', '8' → the newest matching
+  // 'valkey 9.1', 'Redis 7.2.17', 'redis-8.10.3', '8' → the newest matching
   // version. A patch release it doesn't know, such as 7.2.4, gets the newest
   // of the same minor version, whose config code is the same or close to it.
   function findVersion(spec) {
@@ -284,7 +284,8 @@
     const hex = /^[+-]?0[xX](?:[0-9a-fA-F]+(?:\.[0-9a-fA-F]*)?|\.[0-9a-fA-F]+)(?:[pP][+-]?\d+)?$/;
     let x;
     // Redis's fast parsers fall back to strtod for anything they don't take
-    // whole, hexadecimal included; Valkey's (ffc) has no fallback.
+    // whole, hexadecimal included; Valkey 9.1's (ffc) has no fallback until
+    // 9.1.3, which gives hexadecimal back to strtod (ffclibc).
     if (dec.test(s)) x = Number(s);
     else if (word.test(s)) x = /nan/i.test(s) ? NaN : (s[0] === '-' ? -Infinity : Infinity);
     else if (hex.test(s) && v.f.string2d !== 'ffc') x = parseHexFloat(s);

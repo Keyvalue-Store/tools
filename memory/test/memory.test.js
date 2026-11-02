@@ -47,13 +47,13 @@ for (const [id, rec] of Object.entries(data || {})) {
 }
 
 test('versions are found by loose names', () => {
-  assert.equal(M.findVersion('valkey 9.1'), 'valkey-9.1.2');
-  assert.equal(M.findVersion('Redis 7.2.16'), 'redis-7.2.16');
-  assert.equal(M.findVersion('redis-8'), 'redis-8.10.2');
+  assert.equal(M.findVersion('valkey 9.1'), 'valkey-9.1.3');
+  assert.equal(M.findVersion('Redis 7.2.17'), 'redis-7.2.17');
+  assert.equal(M.findVersion('redis-8'), 'redis-8.10.3');
   assert.equal(M.findVersion('6.2'), 'redis-6.2.24');
-  assert.equal(M.findVersion('redis'), 'redis-8.10.2');
-  assert.equal(M.findVersion('Valkey'), 'valkey-9.1.2');
-  assert.equal(M.findVersion('valkey 9.1.99'), 'valkey-9.1.2');
+  assert.equal(M.findVersion('redis'), 'redis-8.10.3');
+  assert.equal(M.findVersion('Valkey'), 'valkey-9.1.3');
+  assert.equal(M.findVersion('valkey 9.1.99'), 'valkey-9.1.3');
   assert.equal(M.findVersion('nonsense'), null);
   assert.equal(M.findVersion(''), null);
   assert.throws(() => M.estimate([], 'redis-5.0.0'), /Unknown version/);
@@ -70,39 +70,39 @@ test('a few figures worked out by hand', () => {
   // in one block with its object (16 + 3 + 10 + 1 = 30, so 32), and a
   // 4-slot table.
   const one = [{ type: 'string', count: 1, key: 11, value: { len: 10 } }];
-  assert.equal(M.estimate(one, 'redis-7.2.16').total, 24 + 16 + 32 + 32);
+  assert.equal(M.estimate(one, 'redis-7.2.17').total, 24 + 16 + 32 + 32);
   // Redis 8.10: object, key and value in one block: 16 + 1 + 13 + 14 = 44,
   // so 48; and the keys dict made for the first key (96).
-  assert.equal(M.estimate(one, 'redis-8.10.2').total, 48 + 32 + 96);
+  assert.equal(M.estimate(one, 'redis-8.10.3').total, 48 + 32 + 96);
   // A number from 0 to 9999 is shared up to Redis 8.0, unless an LRU, LFU
   // or LRM policy needs a clock in every object.
   const n = [{ type: 'string', count: 1, key: 11, value: { int: '42' } }];
-  assert.equal(M.estimate(n, 'redis-7.2.16').total, 24 + 16 + 32);
-  assert.equal(M.estimate(n, 'redis-7.2.16', { maxmemoryPolicy: 'allkeys-lru' }).total, 24 + 16 + 16 + 32);
-  assert.equal(M.estimate(n, 'redis-7.2.16', { maxmemoryPolicy: 'volatile-lrm' }).total, 24 + 16 + 16 + 32);
+  assert.equal(M.estimate(n, 'redis-7.2.17').total, 24 + 16 + 32);
+  assert.equal(M.estimate(n, 'redis-7.2.17', { maxmemoryPolicy: 'allkeys-lru' }).total, 24 + 16 + 16 + 32);
+  assert.equal(M.estimate(n, 'redis-7.2.17', { maxmemoryPolicy: 'volatile-lrm' }).total, 24 + 16 + 16 + 32);
   // HSET key f1 v1 in 7.2: a listpack of 7 + 4 + 4 bytes, so 16.
-  const h = M.estimate([{ type: 'hash', count: 1, key: 3, fields: 1, field: { len: 2 }, value: { len: 2 } }], 'redis-7.2.16');
+  const h = M.estimate([{ type: 'hash', count: 1, key: 3, fields: 1, field: { len: 2 }, value: { len: 2 } }], 'redis-7.2.17');
   assert.equal(h.groups[0].encoding, 'listpack');
   assert.equal(h.total, 8 + 24 + 16 + 16 + 32);
 });
 
 test('encodings and the limits that change them', () => {
   const hash = (fields, value) => [{ type: 'hash', count: 1, key: 8, fields: fields, field: { len: 6 }, value: { len: value } }];
-  assert.equal(M.estimate(hash(512, 10), 'redis-8.10.2').groups[0].encoding, 'listpack');
-  assert.equal(M.estimate(hash(513, 10), 'redis-8.10.2').groups[0].encoding, 'hashtable');
-  assert.equal(M.estimate(hash(10, 65), 'redis-8.10.2').groups[0].encoding, 'hashtable');
-  assert.equal(M.estimate(hash(513, 10), 'redis-8.10.2', { hashMaxListpackEntries: 1000 }).groups[0].encoding, 'listpack');
+  assert.equal(M.estimate(hash(512, 10), 'redis-8.10.3').groups[0].encoding, 'listpack');
+  assert.equal(M.estimate(hash(513, 10), 'redis-8.10.3').groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(hash(10, 65), 'redis-8.10.3').groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(hash(513, 10), 'redis-8.10.3', { hashMaxListpackEntries: 1000 }).groups[0].encoding, 'listpack');
   assert.equal(M.estimate(hash(10, 10), 'redis-6.2.24').groups[0].encoding, 'ziplist');
   const set = (n, member) => [{ type: 'set', count: 1, key: 8, members: n, member: member }];
-  assert.equal(M.estimate(set(512, { int: '1' }), 'valkey-9.1.2').groups[0].encoding, 'intset');
-  assert.equal(M.estimate(set(100, { len: 8 }), 'valkey-9.1.2').groups[0].encoding, 'listpack');
+  assert.equal(M.estimate(set(512, { int: '1' }), 'valkey-9.1.3').groups[0].encoding, 'intset');
+  assert.equal(M.estimate(set(100, { len: 8 }), 'valkey-9.1.3').groups[0].encoding, 'listpack');
   assert.equal(M.estimate(set(100, { len: 8 }), 'redis-7.0.15').groups[0].encoding, 'hashtable');
   const list = (n, writes) => [{ type: 'list', count: 1, key: 8, items: n, item: { len: 10 }, writes: writes }];
-  assert.equal(M.estimate(list(600, 'once'), 'redis-7.2.16').groups[0].encoding, 'listpack');
-  assert.equal(M.estimate(list(900, 'once'), 'redis-7.2.16').groups[0].encoding, 'quicklist');
+  assert.equal(M.estimate(list(600, 'once'), 'redis-7.2.17').groups[0].encoding, 'listpack');
+  assert.equal(M.estimate(list(900, 'once'), 'redis-7.2.17').groups[0].encoding, 'quicklist');
   assert.equal(M.estimate(list(10, 'once'), 'redis-7.0.15').groups[0].encoding, 'quicklist');
   const z = [{ type: 'zset', count: 1, key: 8, members: 200, member: { len: 8 }, score: '1' }];
-  const r = M.estimate(z, 'redis-8.10.2');
+  const r = M.estimate(z, 'redis-8.10.3');
   assert.equal(r.groups[0].encoding, 'skiplist');
   assert.ok(r.sd > 0 && r.random > 0, 'skiplist nodes are left to chance');
 });
@@ -112,14 +112,14 @@ test('a listpack stops at 1 GB, an intset at 2^30 numbers', () => {
   const h = (writes) => [{ type: 'hash', count: 1, key: 8, fields: 200000000, field: { len: 4 }, value: { len: 4 }, writes: writes }];
   // One HSET checks its arguments, 1.6 GB of them; one field at a time,
   // the listpack's own size.
-  assert.equal(M.estimate(h('once'), 'redis-8.10.2', big).groups[0].encoding, 'hashtable');
-  assert.equal(M.estimate(h('each'), 'redis-8.10.2', big).groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(h('once'), 'redis-8.10.3', big).groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(h('each'), 'redis-8.10.3', big).groups[0].encoding, 'hashtable');
   const h2 = (writes) => [{ type: 'hash', count: 1, key: 8, fields: 100000000, field: { len: 4 }, value: { len: 4 }, writes: writes }];
   assert.equal(M.estimate(h2('once'), 'redis-6.2.24', big).groups[0].encoding, 'ziplist');
   assert.equal(M.estimate(h2('each'), 'redis-6.2.24', big).groups[0].encoding, 'hashtable');
   const s = [{ type: 'set', count: 1, key: 8, members: 1100000000, member: { int: '0' } }];
-  assert.equal(M.estimate(s, 'redis-8.10.2', { setMaxIntsetEntries: 2000000000 }).groups[0].encoding, 'hashtable');
-  assert.equal(M.estimate(s, 'redis-8.10.2', { setMaxIntsetEntries: 1000000000 }).groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(s, 'redis-8.10.3', { setMaxIntsetEntries: 2000000000 }).groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(s, 'redis-8.10.3', { setMaxIntsetEntries: 1000000000 }).groups[0].encoding, 'hashtable');
 });
 
 test('ziplists of numbers counted run by run, as fast for 100 million as for 10', () => {
@@ -151,12 +151,12 @@ test('the spread of what chance decides', () => {
   // Keys of a group have the same field names, so their tables' collisions
   // go together: a hundred keys spread a hundred times as much as one.
   const g = (count) => [{ type: 'hash', count: count, key: 8, fields: 600, field: { len: 6 }, value: { len: 10 } }];
-  const one = M.estimate(g(1), 'redis-8.10.2').groups[0].sd, many = M.estimate(g(100), 'redis-8.10.2').groups[0].sd;
+  const one = M.estimate(g(1), 'redis-8.10.3').groups[0].sd, many = M.estimate(g(100), 'redis-8.10.3').groups[0].sd;
   assert.ok(one > 0);
   assert.ok(Math.abs(many / one - 100) < 1e-6, 'ratio ' + many / one);
   // Skiplist levels are drawn for each node: ten times, for a hundred.
   const z = (count) => [{ type: 'zset', count: count, key: 8, members: 300, member: { len: 6 } }];
-  const zo = M.estimate(z(1), 'redis-7.2.16').groups[0].sd, zm = M.estimate(z(100), 'redis-7.2.16').groups[0].sd;
+  const zo = M.estimate(z(1), 'redis-7.2.17').groups[0].sd, zm = M.estimate(z(100), 'redis-7.2.17').groups[0].sd;
   assert.ok(Math.abs(zm / zo - 10) < 1e-6, 'ratio ' + zm / zo);
 });
 
@@ -174,16 +174,16 @@ test('scores the way each version writes them', () => {
   const F = (id) => M.features(id);
   assert.equal(I.scoreText(F('redis-6.2.24'), 4503599627370496), '4503599627370496');
   assert.equal(I.scoreText(F('redis-7.0.15'), 0.1), '0.10000000000000001');
-  assert.equal(I.scoreText(F('redis-7.2.16'), 0.1), '0.1');
+  assert.equal(I.scoreText(F('redis-7.2.17'), 0.1), '0.1');
   // Whole numbers within 2^62 are kept as integers from 7.0.
-  assert.deepEqual(I.scoreElem(F('redis-7.2.16'), 1759734012), { int: '1759734012' });
-  assert.deepEqual(I.scoreElem(F('redis-7.2.16'), -0), { int: '0' });
+  assert.deepEqual(I.scoreElem(F('redis-7.2.17'), 1759734012), { int: '1759734012' });
+  assert.deepEqual(I.scoreElem(F('redis-7.2.17'), -0), { int: '0' });
   assert.deepEqual(I.scoreElem(F('redis-6.2.24'), -0), { len: 2 });
   // ZADD refuses a score that overflows or underflows.
   const zs = (score) => [{ type: 'zset', count: 1, key: 8, members: 1, member: { len: 3 }, score: score }];
-  assert.throws(() => M.estimate(zs('1e400'), 'redis-8.10.2'), /score/);
-  assert.throws(() => M.estimate(zs('-1e-400'), 'redis-8.10.2'), /score/);
-  assert.equal(M.estimate(zs('inf'), 'redis-8.10.2').groups[0].encoding, 'listpack');
+  assert.throws(() => M.estimate(zs('1e400'), 'redis-8.10.3'), /score/);
+  assert.throws(() => M.estimate(zs('-1e-400'), 'redis-8.10.3'), /score/);
+  assert.equal(M.estimate(zs('inf'), 'redis-8.10.3').groups[0].encoding, 'listpack');
 });
 
 test('the text form', () => {
@@ -252,32 +252,32 @@ test('the text form: counts, lengths, comments and TTLs', () => {
 
 test('groups and settings are checked', () => {
   const s = (extra) => [Object.assign({ type: 'string', count: 10, key: 8, value: { len: 5 } }, extra)];
-  assert.throws(() => M.estimate(s({ ttl: '30%' }), 'redis-8.10.2'), /ttl/);
-  assert.throws(() => M.estimate(s({ ttl: 2 }), 'redis-8.10.2'), /ttl/);
-  assert.throws(() => M.estimate(s({ ttlCount: 20 }), 'redis-8.10.2'), /ttlCount/);
-  assert.throws(() => M.estimate(s({ ttlCount: -1 }), 'redis-8.10.2'), /ttlCount/);
-  assert.throws(() => M.estimate(s({ count: 1e16 }), 'redis-8.10.2'), /count/);
-  assert.throws(() => M.estimate(s({ value: { len: 600000000 } }), 'redis-8.10.2'), /512 MB/);
-  assert.throws(() => M.estimate(s({ type: 'geo' }), 'redis-8.10.2'), /Unknown type/);
-  assert.throws(() => M.estimate([null], 'redis-8.10.2'), /object/);
+  assert.throws(() => M.estimate(s({ ttl: '30%' }), 'redis-8.10.3'), /ttl/);
+  assert.throws(() => M.estimate(s({ ttl: 2 }), 'redis-8.10.3'), /ttl/);
+  assert.throws(() => M.estimate(s({ ttlCount: 20 }), 'redis-8.10.3'), /ttlCount/);
+  assert.throws(() => M.estimate(s({ ttlCount: -1 }), 'redis-8.10.3'), /ttlCount/);
+  assert.throws(() => M.estimate(s({ count: 1e16 }), 'redis-8.10.3'), /count/);
+  assert.throws(() => M.estimate(s({ value: { len: 600000000 } }), 'redis-8.10.3'), /512 MB/);
+  assert.throws(() => M.estimate(s({ type: 'geo' }), 'redis-8.10.3'), /Unknown type/);
+  assert.throws(() => M.estimate([null], 'redis-8.10.3'), /object/);
   // A number can come as a number.
-  assert.equal(M.estimate(s({ value: { int: 42 } }), 'redis-8.10.2').groups[0].encoding, 'int');
-  assert.throws(() => M.estimate(s({ value: { int: 2 ** 60 } }), 'redis-8.10.2'), /as text/);
+  assert.equal(M.estimate(s({ value: { int: 42 } }), 'redis-8.10.3').groups[0].encoding, 'int');
+  assert.throws(() => M.estimate(s({ value: { int: 2 ** 60 } }), 'redis-8.10.3'), /as text/);
   // Members counting up from a number must stay within 64 bits.
   const set = (start, n) => [{ type: 'set', count: 1, key: 8, members: n, member: { int: start } }];
-  assert.throws(() => M.estimate(set('9223372036854775806', 3), 'redis-8.10.2'), /9223372036854775807/);
-  assert.equal(M.estimate(set('9223372036854775806', 2), 'redis-8.10.2').groups[0].encoding, 'intset');
+  assert.throws(() => M.estimate(set('9223372036854775806', 3), 'redis-8.10.3'), /9223372036854775807/);
+  assert.equal(M.estimate(set('9223372036854775806', 2), 'redis-8.10.3').groups[0].encoding, 'intset');
   assert.equal(M.parse('1 sets members=1000 member=int:9223372036854775807').errors.length, 1);
   // Settings: whole numbers, known names, known policies.
   const g = s({});
-  assert.throws(() => M.estimate(g, 'redis-8.10.2', { hashMaxListpackEntries: -1 }), /0 or more/);
-  assert.throws(() => M.estimate(g, 'redis-8.10.2', { listMaxListpackSize: NaN }), /list-max-listpack-size/);
-  assert.throws(() => M.estimate(g, 'redis-8.10.2', { maxmemoryPolicy: 'banana' }), /maxmemory-policy/);
-  assert.throws(() => M.estimate(g, 'redis-8.10.2', { hashMaxZiplistEntries: 5 }), /Unknown setting/);
+  assert.throws(() => M.estimate(g, 'redis-8.10.3', { hashMaxListpackEntries: -1 }), /0 or more/);
+  assert.throws(() => M.estimate(g, 'redis-8.10.3', { listMaxListpackSize: NaN }), /list-max-listpack-size/);
+  assert.throws(() => M.estimate(g, 'redis-8.10.3', { maxmemoryPolicy: 'banana' }), /maxmemory-policy/);
+  assert.throws(() => M.estimate(g, 'redis-8.10.3', { hashMaxZiplistEntries: 5 }), /Unknown setting/);
   const h = [{ type: 'hash', count: 1, key: 8, fields: 600, field: { len: 4 }, value: { len: 4 } }];
-  assert.equal(M.estimate(h, 'redis-8.10.2', { hashMaxListpackEntries: undefined }).groups[0].encoding, 'hashtable');
-  assert.equal(M.estimate(h, 'redis-8.10.2', { hashMaxListpackEntries: '1024' }).groups[0].encoding, 'listpack');
-  assert.equal(M.estimate(h, 'redis-8.10.2', { maxmemoryPolicy: 'AllKeys-LRU' }).groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(h, 'redis-8.10.3', { hashMaxListpackEntries: undefined }).groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(h, 'redis-8.10.3', { hashMaxListpackEntries: '1024' }).groups[0].encoding, 'listpack');
+  assert.equal(M.estimate(h, 'redis-8.10.3', { maxmemoryPolicy: 'AllKeys-LRU' }).groups[0].encoding, 'hashtable');
   // Packing takes a whole number of fields.
   assert.throws(() => M.pack(g[0], NaN), /whole number/);
   assert.throws(() => M.pack(g[0], 0), /whole number/);
@@ -290,9 +290,9 @@ test('settings by the names each version gives them', () => {
   assert.equal(M.settingName('setMaxIntsetEntries', 'redis-6.2.24'), 'set-max-intset-entries');
   assert.equal(M.settingName('setMaxListpackEntries', 'redis-6.2.24'), null);
   assert.equal(M.settingName('setMaxListpackEntries', 'redis-7.0.15'), null);
-  assert.equal(M.settingName('setMaxListpackEntries', 'redis-7.2.16'), 'set-max-listpack-entries');
-  assert.equal(M.settingName('zsetMaxListpackValue', 'valkey-9.1.2'), 'zset-max-listpack-value');
-  assert.throws(() => M.settingName('nope', 'redis-7.2.16'), /Unknown setting/);
+  assert.equal(M.settingName('setMaxListpackEntries', 'redis-7.2.17'), 'set-max-listpack-entries');
+  assert.equal(M.settingName('zsetMaxListpackValue', 'valkey-9.1.3'), 'zset-max-listpack-value');
+  assert.throws(() => M.settingName('nope', 'redis-7.2.17'), /Unknown setting/);
 });
 
 test('the longest of numbers counting up', () => {
@@ -306,8 +306,8 @@ test('packing strings into hashes', () => {
   const g = { type: 'string', count: 1234, key: 13, value: { len: 8 } };
   const packed = M.pack(g, 100);
   assert.deepEqual(packed.map((x) => [x.count, x.fields, x.key]), [[12, 100, 11], [1, 34, 11]]);
-  const before = M.estimate([g], 'redis-8.10.2').total;
-  const after = M.estimate(packed, 'redis-8.10.2').total;
+  const before = M.estimate([g], 'redis-8.10.3').total;
+  const after = M.estimate(packed, 'redis-8.10.3').total;
   assert.ok(after < before / 3, 'packing saves most of it');
 });
 
@@ -315,8 +315,8 @@ test('compare, settings and the empty server', () => {
   const all = M.compare([{ type: 'string', count: 1000, key: 16, value: { len: 30 } }]);
   assert.equal(all.length, 15);
   for (const r of all) assert.ok(Math.abs(r.total - r.exact - r.random) < 1e-6);
-  assert.ok(M.emptyServer('valkey-9.1.2') > 500000);
-  const none = M.estimate([], 'redis-8.10.2');
+  assert.ok(M.emptyServer('valkey-9.1.3') > 500000);
+  const none = M.estimate([], 'redis-8.10.3');
   assert.equal(none.total, 0);
   assert.equal(none.keys, 0);
 });
@@ -328,7 +328,7 @@ test('the command line', () => {
     const run = (...args) => spawnSync(process.execPath, [cli, ...args], { encoding: 'utf8' });
     let r = run('1000 strings key=11 value=10', '--server', '7.2');
     assert.equal(r.status, 0, r.stderr);
-    assert.match(r.stdout, /Redis 7\.2\.16: used_memory grows by/);
+    assert.match(r.stdout, /Redis 7\.2\.17: used_memory grows by/);
     r = run('1000 strings key=11 value=10', '--compare', '--json');
     assert.equal(r.status, 0, r.stderr);
     assert.equal(JSON.parse(r.stdout).length, 15);
@@ -400,6 +400,6 @@ test('versions without HEXPIRE leave field TTLs out and say so', () => {
     if (r.notes.length) assert.equal(r.total, M.estimate(M.parse('100 hashes fields=10').groups, v.id).total);
     else assert.ok(r.total > M.estimate(M.parse('100 hashes fields=10').groups, v.id).total);
   }
-  assert.equal(M.estimate(g, 'redis-8.10.2').groups[0].encoding, 'listpackex');
-  assert.equal(M.estimate(g, 'valkey-9.1.2').groups[0].encoding, 'hashtable');
+  assert.equal(M.estimate(g, 'redis-8.10.3').groups[0].encoding, 'listpackex');
+  assert.equal(M.estimate(g, 'valkey-9.1.3').groups[0].encoding, 'hashtable');
 });

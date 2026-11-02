@@ -34,44 +34,44 @@ test('all 15 versions are recorded', () => {
 });
 
 test('versions are found by loose names', () => {
-  assert.equal(A.findVersion('valkey 9.1'), 'valkey-9.1.2');
-  assert.equal(A.findVersion('Redis 7.2.16'), 'redis-7.2.16');
-  assert.equal(A.findVersion('redis-8'), 'redis-8.10.2');
+  assert.equal(A.findVersion('valkey 9.1'), 'valkey-9.1.3');
+  assert.equal(A.findVersion('Redis 7.2.17'), 'redis-7.2.17');
+  assert.equal(A.findVersion('redis-8'), 'redis-8.10.3');
   assert.equal(A.findVersion('6.2'), 'redis-6.2.24');
   assert.equal(A.findVersion('nonsense'), null);
 });
 
 test('ACL SETUSER: all the rules or none, with the server\'s error', () => {
-  const ok = A.setUser(null, 'app', ['on', '>secret', '~app:*', '%R~cache:*', '&events:*', '-@all', '+@read', '-keys', '+set'], 'redis-7.2.16');
+  const ok = A.setUser(null, 'app', ['on', '>secret', '~app:*', '%R~cache:*', '&events:*', '-@all', '+@read', '-keys', '+set'], 'redis-7.2.17');
   assert.equal(ok.ok, true);
-  assert.equal(A.listLine(ok.user, 'redis-7.2.16').line,
+  assert.equal(A.listLine(ok.user, 'redis-7.2.17').line,
     'user app on sanitize-payload #2bb80d537b1da3e38bd30361aa855686bde0eacd7162fef6a25fe97bf527a25b ~app:* %R~cache:* resetchannels &events:* -@all +@read -keys +set');
-  const bad = A.setUser(ok.user, 'app', ['+get', '%X~a'], 'redis-7.2.16');
+  const bad = A.setUser(ok.user, 'app', ['+get', '%X~a'], 'redis-7.2.17');
   assert.equal(bad.ok, false);
   assert.equal(bad.error, 'Error in ACL SETUSER modifier \'%X~a\': Syntax error');
   // Redis 6.2: no %R~, and a new user may already use every channel.
   assert.equal(A.setUser(null, 'app', ['&news'], 'redis-6.2.24').error,
     'Error in ACL SETUSER modifier \'&news\': Adding a pattern after the * pattern (or the \'allchannels\' flag) is not valid and does not have any effect. Try \'resetchannels\' to start with an empty list of channels');
-  assert.equal(A.setUser(null, 'a b', [], 'valkey-9.1.2').error, 'Usernames can\'t contain spaces or null characters');
-  assert.equal(A.setUser(null, 'x', ['(+get', '~a'], 'valkey-9.1.2').error, 'Unmatched parenthesis in acl selector starting at \'(+get\'.');
+  assert.equal(A.setUser(null, 'a b', [], 'valkey-9.1.3').error, 'Usernames can\'t contain spaces or null characters');
+  assert.equal(A.setUser(null, 'x', ['(+get', '~a'], 'valkey-9.1.3').error, 'Unmatched parenthesis in acl selector starting at \'(+get\'.');
 });
 
 test('selectors and Valkey 9.1 databases', () => {
-  const r = A.setUser(null, 'x', ['on', 'nopass', '~a:*', '+get', '(~b:* +set)', 'db=0,2'], 'valkey-9.1.2');
-  assert.equal(A.listLine(r.user, 'valkey-9.1.2').line, 'user x on nopass ~a:* resetchannels db=0,2 -@all +get (~b:* resetchannels -@all +set)');
+  const r = A.setUser(null, 'x', ['on', 'nopass', '~a:*', '+get', '(~b:* +set)', 'db=0,2'], 'valkey-9.1.3');
+  assert.equal(A.listLine(r.user, 'valkey-9.1.3').line, 'user x on nopass ~a:* resetchannels db=0,2 -@all +get (~b:* resetchannels -@all +set)');
   const u = r.user;
-  assert.equal(A.check(u, ['GET', 'a:1'].map(b), 'valkey-9.1.2').allowed, true);
-  assert.equal(A.check(u, ['SET', 'b:1', 'x'].map(b), 'valkey-9.1.2').selector, 1);
+  assert.equal(A.check(u, ['GET', 'a:1'].map(b), 'valkey-9.1.3').allowed, true);
+  assert.equal(A.check(u, ['SET', 'b:1', 'x'].map(b), 'valkey-9.1.3').selector, 1);
   // Selector 1 has every database but not GET: the command is the reason given.
-  assert.equal(A.check(u, ['GET', 'a:1'].map(b), 'valkey-9.1.2', { db: 1 }).reason, 'command');
-  const one = A.setUser(null, 'x', ['on', 'nopass', '~*', '+@all', 'db=0'], 'valkey-9.1.2').user;
-  const deniedDb = A.check(one, ['GET', 'a:1'].map(b), 'valkey-9.1.2', { db: 1 });
+  assert.equal(A.check(u, ['GET', 'a:1'].map(b), 'valkey-9.1.3', { db: 1 }).reason, 'command');
+  const one = A.setUser(null, 'x', ['on', 'nopass', '~*', '+@all', 'db=0'], 'valkey-9.1.3').user;
+  const deniedDb = A.check(one, ['GET', 'a:1'].map(b), 'valkey-9.1.3', { db: 1 });
   assert.equal(deniedDb.reason, 'db');
   assert.equal(deniedDb.reply.error, 'NOPERM No permissions to access database');
   assert.equal(deniedDb.dryrun.reply, 'User x has no permissions to access database GET');
-  assert.equal(A.check(one, ['SELECT', '3'].map(b), 'valkey-9.1.2').dryrun.reply, 'User x has no permissions to access database 3');
-  assert.equal(A.setUser(null, 'x', ['db=2147483648'], 'valkey-9.1.2').error, 'Error in ACL SETUSER modifier \'db=2147483648\': The provided database ID is out of range');
-  assert.equal(A.setUser(null, 'x', ['db=1'], 'valkey-9.0.6').error, 'Error in ACL SETUSER modifier \'db=1\': Syntax error');
+  assert.equal(A.check(one, ['SELECT', '3'].map(b), 'valkey-9.1.3').dryrun.reply, 'User x has no permissions to access database 3');
+  assert.equal(A.setUser(null, 'x', ['db=2147483648'], 'valkey-9.1.3').error, 'Error in ACL SETUSER modifier \'db=2147483648\': The provided database ID is out of range');
+  assert.equal(A.setUser(null, 'x', ['db=1'], 'valkey-9.0.7').error, 'Error in ACL SETUSER modifier \'db=1\': Syntax error');
 });
 
 test('ACL DRYRUN and NOPERM, per version', () => {
@@ -79,8 +79,8 @@ test('ACL DRYRUN and NOPERM, per version', () => {
   const want = {
     'redis-6.2.24': [null, 'NOPERM this user has no permissions to access one of the keys used as arguments'],
     'redis-7.0.15': ['This user has no permissions to access the \'cache:x\' key', 'NOPERM this user has no permissions to access one of the keys used as arguments'],
-    'redis-7.2.16': ['User u has no permissions to access the \'cache:x\' key', 'NOPERM No permissions to access a key'],
-    'valkey-9.1.2': ['User u has no permissions to access the \'cache:x\' key', 'NOPERM No permissions to access a key']
+    'redis-7.2.17': ['User u has no permissions to access the \'cache:x\' key', 'NOPERM No permissions to access a key'],
+    'valkey-9.1.3': ['User u has no permissions to access the \'cache:x\' key', 'NOPERM No permissions to access a key']
   };
   for (const [id, [dry, noperm]] of Object.entries(want)) {
     const r = A.setUser(null, 'u', id === 'redis-6.2.24' ? ['on', 'nopass', '~cache:*', '+@all', '-set'] : rules, id);
@@ -94,54 +94,54 @@ test('ACL DRYRUN and NOPERM, per version', () => {
 });
 
 test('keys and their flags, as COMMAND GETKEYSANDFLAGS gives them', () => {
-  assert.deepEqual(A.getKeys(['SET', 'k', 'v', 'GET'].map(b), 'redis-8.10.2').keys, [['k', ['RW', 'access', 'update']]]);
-  assert.deepEqual(A.getKeys(['SORT', 'k', 'BY', 'w', 'STORE', 'd'].map(b), 'redis-8.10.2').keys, [['k', ['RO', 'access']], ['d', ['OW', 'update']]]);
-  assert.deepEqual(A.getKeys(['EVAL', 's', '2', 'a', 'b', 'c'].map(b), 'valkey-9.1.2').keys, [['a', ['RW', 'access', 'update']], ['b', ['RW', 'access', 'update']]]);
+  assert.deepEqual(A.getKeys(['SET', 'k', 'v', 'GET'].map(b), 'redis-8.10.3').keys, [['k', ['RW', 'access', 'update']]]);
+  assert.deepEqual(A.getKeys(['SORT', 'k', 'BY', 'w', 'STORE', 'd'].map(b), 'redis-8.10.3').keys, [['k', ['RO', 'access']], ['d', ['OW', 'update']]]);
+  assert.deepEqual(A.getKeys(['EVAL', 's', '2', 'a', 'b', 'c'].map(b), 'valkey-9.1.3').keys, [['a', ['RW', 'access', 'update']], ['b', ['RW', 'access', 'update']]]);
   assert.deepEqual(A.getKeys(['XREAD', 'COUNT', '2', 'STREAMS', 's1', 's2', '0', '0'].map(b), 'redis-6.2.24').keys.map((k) => k[0]), ['s1', 's2']);
-  assert.equal(A.getKeys(['PING'].map(b), 'redis-8.10.2').error, 'The command has no key arguments');
+  assert.equal(A.getKeys(['PING'].map(b), 'redis-8.10.3').error, 'The command has no key arguments');
 });
 
 test('ACL LIST crashes the server for some first arguments', () => {
-  const r = A.setUser(null, 'x', ['+select|a b'], 'redis-7.2.16');
+  const r = A.setUser(null, 'x', ['+select|a b'], 'redis-7.2.17');
   assert.equal(r.ok, true);
-  assert.ok(A.listLine(r.user, 'redis-7.2.16').crash);
+  assert.ok(A.listLine(r.user, 'redis-7.2.17').crash);
   // 6.2 and 7.0 work their rules out from the bitmap and don't crash.
   assert.ok(A.listLine(A.setUser(null, 'x', ['+select|a b'], 'redis-7.0.15').user, 'redis-7.0.15').line);
-  const e = A.explain(r.user, 'redis-7.2.16');
+  const e = A.explain(r.user, 'redis-7.2.17');
   assert.ok(e.warnings.some((w) => w.code === 'crash'));
 });
 
 test('ACL files and config lines', () => {
   const file = 'user default off\nuser app on nopass ~app:* +@read\n';
-  const r = A.loadFile(file, 'redis-8.10.2');
+  const r = A.loadFile(file, 'redis-8.10.3');
   assert.equal(r.ok, true);
-  assert.equal(A.listLine(r.users.get('app'), 'redis-8.10.2').line, 'user app on nopass sanitize-payload ~app:* resetchannels -@all +@read');
-  const bad = A.loadFile('user app on +nosuch\nuser app off\nhello\n', 'redis-8.10.2', { filename: '/etc/redis/users.acl' });
+  assert.equal(A.listLine(r.users.get('app'), 'redis-8.10.3').line, 'user app on nopass sanitize-payload ~app:* resetchannels -@all +@read');
+  const bad = A.loadFile('user app on +nosuch\nuser app off\nhello\n', 'redis-8.10.3', { filename: '/etc/redis/users.acl' });
   assert.equal(bad.error, '/etc/redis/users.acl:1: Error in applying operation \'+nosuch\': Unknown command or category name in ACL. WARNING: Duplicate user \'app\' found on line 2. /etc/redis/users.acl:3 should start with user keyword followed by the username. WARNING: ACL errors detected, no change to the previously active ACL rules was performed');
   // Redis 8.8 and later skip comments.
-  assert.equal(A.loadFile('# users\nuser a on\n', 'redis-8.8.3').ok, true);
-  assert.equal(A.loadFile('# users\nuser a on\n', 'redis-8.6.7').ok, false);
+  assert.equal(A.loadFile('# users\nuser a on\n', 'redis-8.8.4').ok, true);
+  assert.equal(A.loadFile('# users\nuser a on\n', 'redis-8.6.8').ok, false);
   // From 7.0 the server names the wrong word by its place among the rules.
-  assert.equal(A.checkUserLine(['user', 'alice', 'on', 'bogus'].map(b), 'redis-7.2.16'), 'Error in user declaration \'alice\': Syntax error');
+  assert.equal(A.checkUserLine(['user', 'alice', 'on', 'bogus'].map(b), 'redis-7.2.17'), 'Error in user declaration \'alice\': Syntax error');
   assert.equal(A.checkUserLine(['user', 'alice', 'on', 'bogus'].map(b), 'redis-6.2.24'), 'Error in user declaration \'bogus\': Syntax error');
-  assert.equal(A.checkUserLine(['user', 'alice', '+nosuch'].map(b), 'redis-7.2.16'), null);
-  assert.deepEqual(A.startupUsers([['user', 'alice', '+nosuch'].map(b)], 'redis-7.2.16').log,
+  assert.equal(A.checkUserLine(['user', 'alice', '+nosuch'].map(b), 'redis-7.2.17'), null);
+  assert.deepEqual(A.startupUsers([['user', 'alice', '+nosuch'].map(b)], 'redis-7.2.17').log,
     ['Error loading ACL rule \'+nosuch\' for the user named \'alice\': Unknown command or category name in ACL', 'Critical error while loading ACLs. Exiting.']);
 });
 
 test('the Config Checker checks user lines with this library', () => {
   const C = require('../../config/config.js');
-  const r = C.check('user alice on >pw ~* +@all\nuser bob on nopass +nosuchcmd\n', 'redis-7.2.16');
+  const r = C.check('user alice on >pw ~* +@all\nuser bob on nopass +nosuchcmd\n', 'redis-7.2.17');
   assert.equal(r.ok, false);
   assert.equal(r.error.startup, true);
   assert.match(r.error.output, /Error loading ACL rule '\+nosuchcmd' for the user named 'bob'/);
-  const f = C.check('acl-pubsub-default allchannels\nuser alice &chat\n', 'valkey-9.1.2');
+  const f = C.check('acl-pubsub-default allchannels\nuser alice &chat\n', 'valkey-9.1.3');
   assert.equal(f.error.line, 2);
   assert.match(f.error.message, /Adding a pattern after the \* pattern/);
 });
 
 test('rules as people write them', () => {
-  const id = 'redis-8.10.2';
+  const id = 'redis-8.10.3';
   assert.deepEqual(A.readRules('ACL SETUSER app on ">two words" ~x', id).users[0], { name: 'app', args: ['on', '>two words', '~x'], line: 1 });
   const file = A.readRules('user a on\nuser b off\n', id);
   assert.equal(file.kind, 'aclfile');
@@ -150,7 +150,7 @@ test('rules as people write them', () => {
 });
 
 test('explain: login, rules and warnings', () => {
-  const id = 'redis-8.10.2';
+  const id = 'redis-8.10.3';
   const u = A.setUser(null, 'ops', ['on', 'nopass', '~*', '+@all', '-@dangerous', '+config|set'], id).user;
   const e = A.explain(u, id);
   assert.equal(e.login.state, 'nopass');
@@ -184,11 +184,11 @@ test('MONITOR output and the least a client needs', () => {
     assert.equal(A.check(u, ['GET', 'other'].map(b), id).allowed, false, id + ' allows nothing else');
     assert.equal(A.check(u, ['DEL', 'user:42:profile'].map(b), id).allowed, false, id);
   }
-  const r = A.build(entries, 'redis-8.10.2', { name: 'web' });
+  const r = A.build(entries, 'redis-8.10.3', { name: 'web' });
   assert.deepEqual(r.keys, ['%W~jobs:email', '%R~plain', '%W~session:9f2c1e', '%R~user:*']);
   assert.deepEqual(r.channels, ['&events:login']);
   assert.match(r.setuser, /^ACL SETUSER web reset on >CHANGE-ME /);
-  assert.equal(A.build(entries, 'valkey-9.1.2').args.includes('db=0,3'), true);
+  assert.equal(A.build(entries, 'valkey-9.1.3').args.includes('db=0,3'), true);
 });
 
 test('glob patterns match the way the server matches them', () => {
@@ -296,7 +296,7 @@ test('MONITOR lines from IPv6 clients, unix sockets and scripts', () => {
     '1791293386.5 [0 /tmp/a] b.sock] "PING"'
   ].join('\r\n'));
   assert.deepEqual(e.map((x) => [x.client, x.db, x.argv[0]]), [['[::1]:52310', 0, 'SET'], ['unix:/run/redis/redis.sock', 2, 'EVAL'], ['lua', 2, 'SET'], ['[fe80::1%eth0]:6000', 0, 'GET'], ['/tmp/a] b.sock', 0, 'PING']]);
-  const r = A.build(e, 'redis-8.10.2');
+  const r = A.build(e, 'redis-8.10.3');
   assert.deepEqual(r.commands.map((c) => c.command), ['EVAL', 'GET', 'PING', 'SET']);
   assert.ok(r.check.every((c) => c.allowed));
 });
@@ -312,18 +312,18 @@ test('a client\'s draft takes the commands its scripts ran', () => {
     '1.6 [0 lua] "LPUSH" "jobs:1" "x"',
     '1.7 [0 10.0.0.7:1] "GET" "user:2"'
   ].join('\n'));
-  const mine = A.build(e, 'redis-8.10.2', { client: '10.0.0.7:1' });
+  const mine = A.build(e, 'redis-8.10.3', { client: '10.0.0.7:1' });
   assert.deepEqual(mine.commands.map((c) => c.command), ['EVAL', 'GET', 'INCR', 'SET']);
   assert.ok(mine.check.every((c) => c.allowed), 'the script\'s SET is allowed');
-  const theirs = A.build(e, 'redis-8.10.2', { client: '10.0.0.9:2' });
+  const theirs = A.build(e, 'redis-8.10.3', { client: '10.0.0.9:2' });
   assert.deepEqual(theirs.commands.map((c) => c.command), ['FCALL', 'GET', 'LPUSH']);
 });
 
 test('drafts from lines with too few arguments, and empty command lines', () => {
-  const r = A.build(A.parseMonitor('SELECT\nGET k\n'), 'redis-8.10.2');
+  const r = A.build(A.parseMonitor('SELECT\nGET k\n'), 'redis-8.10.3');
   assert.deepEqual(r.skipped.map((s) => s.reason), ['wrong number of arguments']);
   assert.deepEqual(r.args.slice(-2), ['-@all', '+get']);
-  assert.equal(A.check(A.defaultUser('redis-8.10.2'), [], 'redis-8.10.2').allowed, false);
+  assert.equal(A.check(A.defaultUser('redis-8.10.3'), [], 'redis-8.10.3').allowed, false);
   const c = cli();
   const s = c.file('s.txt', 'SELECT\nGET k\n');
   const out = c.run(['build', s]);
@@ -371,35 +371,35 @@ test('config lines: acl-pubsub-default, aclfile and lines the server can\'t read
   // The messages as Redis 6.2, 7.0, 7.2 and 8.10 and Valkey 8.0 and 9.1 print them.
   const fatal = (text, id) => { const r = A.loadConfig(text, id); return r.fatal && [r.fatal.line, r.fatal.message]; };
   const pattern = 'Adding a pattern after the * pattern (or the \'allchannels\' flag) is not valid and does not have any effect. Try \'resetchannels\' to start with an empty list of channels';
-  assert.deepEqual(fatal('acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n', 'redis-7.2.16'), [2, 'Error in user declaration \'on\': ' + pattern]);
+  assert.deepEqual(fatal('acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n', 'redis-7.2.17'), [2, 'Error in user declaration \'on\': ' + pattern]);
   assert.deepEqual(fatal('acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n', 'redis-6.2.24'), [2, 'Error in user declaration \'&chat\': ' + pattern]);
   // Set after the user line: the line passes, and the server stops at startup.
-  const late = A.loadConfig('user alice on nopass &chat +@all ~*\nacl-pubsub-default allchannels\n', 'valkey-9.1.2');
+  const late = A.loadConfig('user alice on nopass &chat +@all ~*\nacl-pubsub-default allchannels\n', 'valkey-9.1.3');
   assert.equal(late.fatal, null);
   assert.deepEqual(late.startup.log, ['Error loading ACL rule \'&chat\' for the user named \'alice\': ' + pattern, 'Critical error while loading ACLs. Exiting.']);
-  assert.deepEqual(fatal('user alice on ">pw ~* +@all\n', 'redis-8.10.2'), [1, 'Unbalanced quotes in configuration line']);
-  assert.deepEqual(fatal('port 6379\nrequirepass "x\n', 'redis-8.10.2'), [2, 'Unbalanced quotes in configuration line']);
+  assert.deepEqual(fatal('user alice on ">pw ~* +@all\n', 'redis-8.10.3'), [1, 'Unbalanced quotes in configuration line']);
+  assert.deepEqual(fatal('port 6379\nrequirepass "x\n', 'redis-8.10.3'), [2, 'Unbalanced quotes in configuration line']);
   assert.deepEqual(fatal('user alice on\nuser alice off\n', 'redis-7.0.15'), [2, 'Error in user declaration \'alice\': Duplicate user found. A user can only be defined once in config files']);
   assert.equal(fatal('user alice on\nuser alice off\n', 'redis-6.2.24'), null);
   assert.deepEqual(fatal('acl-pubsub-default foo\n', 'redis-6.2.24'), [1, 'argument must be one of the following: allchannels, resetchannels']);
-  assert.deepEqual(fatal('acl-pubsub-default foo\n', 'valkey-8.0.11'), [1, 'argument(s) must be one of the following: allchannels, resetchannels']);
-  assert.deepEqual(fatal('acl-pubsub-default allchannels resetchannels\n', 'redis-7.2.16'), [1, 'wrong number of arguments']);
-  assert.deepEqual(fatal('user\n', 'redis-8.10.2'), [1, 'Bad directive or wrong number of arguments']);
-  assert.deepEqual(fatal('\xef\xbb\xbfuser alice on\n', 'redis-8.10.2'), [1, 'Bad directive or wrong number of arguments']);
+  assert.deepEqual(fatal('acl-pubsub-default foo\n', 'valkey-8.0.12'), [1, 'argument(s) must be one of the following: allchannels, resetchannels']);
+  assert.deepEqual(fatal('acl-pubsub-default allchannels resetchannels\n', 'redis-7.2.17'), [1, 'wrong number of arguments']);
+  assert.deepEqual(fatal('user\n', 'redis-8.10.3'), [1, 'Bad directive or wrong number of arguments']);
+  assert.deepEqual(fatal('\xef\xbb\xbfuser alice on\n', 'redis-8.10.3'), [1, 'Bad directive or wrong number of arguments']);
   const both = (id) => A.loadConfig('user alice on nopass ~* +@all\naclfile /etc/users.acl\n', id).startup.message;
-  assert.match(both('redis-8.10.2'), /^Configuring Redis with users defined in redis\.conf and at the same setting an ACL file path is invalid\./);
-  assert.match(both('valkey-7.2.14'), /^Configuring Redis with users defined in redis\.conf/);
-  assert.match(both('valkey-9.1.2'), /^Configuring Valkey with users defined in valkey\.conf .* directly in your valkey\.conf, but not both\.$/);
-  assert.equal(A.loadConfig('user alice on\naclfile ""\n', 'redis-8.10.2').startup, null);
-  const ok = A.loadConfig('acl-pubsub-default allchannels\nuser a on nopass ~* +@all\nuser b off\n', 'redis-8.10.2');
+  assert.match(both('redis-8.10.3'), /^Configuring Redis with users defined in redis\.conf and at the same setting an ACL file path is invalid\./);
+  assert.match(both('valkey-7.2.15'), /^Configuring Redis with users defined in redis\.conf/);
+  assert.match(both('valkey-9.1.3'), /^Configuring Valkey with users defined in valkey\.conf .* directly in your valkey\.conf, but not both\.$/);
+  assert.equal(A.loadConfig('user alice on\naclfile ""\n', 'redis-8.10.3').startup, null);
+  const ok = A.loadConfig('acl-pubsub-default allchannels\nuser a on nopass ~* +@all\nuser b off\n', 'redis-8.10.3');
   assert.deepEqual(ok.users.map((u) => u.name), ['a', 'b']);
   assert.equal(ok.users[0].selectors[0].allchannels, true);
   // The command line and the kind readRules works out.
-  assert.equal(A.readRules('acl-pubsub-default allchannels\nuser alice on &chat\n', 'redis-8.10.2').kind, 'config');
+  assert.equal(A.readRules('acl-pubsub-default allchannels\nuser alice on &chat\n', 'redis-8.10.3').kind, 'config');
   const c = cli();
   let r = c.run(['explain', '--config', c.file('p.conf', 'acl-pubsub-default allchannels\nuser alice on nopass &chat +@all ~*\n'), '--server', '7.2']);
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /p\.conf:2: Redis 7\.2\.16 stops reading the file:\n {2}>>> 'user alice on nopass &chat \+@all ~\*'\n {2}Error in user declaration 'on'/);
+  assert.match(r.stdout, /p\.conf:2: Redis 7\.2\.17 stops reading the file:\n {2}>>> 'user alice on nopass &chat \+@all ~\*'\n {2}Error in user declaration 'on'/);
   r = c.run(['explain', '--config', c.file('q.conf', 'user alice on ">pw ~* +@all\n')]);
   assert.equal(r.status, 1);
   assert.match(r.stdout, /Unbalanced quotes in configuration line/);
@@ -408,9 +408,9 @@ test('config lines: acl-pubsub-default, aclfile and lines the server can\'t read
 
 test('a byte order mark stays, and shows', () => {
   const file = new Uint8Array(Buffer.from('\ufeffuser default off\nuser alice on nopass ~* +@all\n'));
-  const read = A.readRules(file, 'redis-8.10.2');
+  const read = A.readRules(file, 'redis-8.10.3');
   assert.equal(read.kind, 'aclfile');
-  const r = A.loadFile(read.text, 'redis-8.10.2');
+  const r = A.loadFile(read.text, 'redis-8.10.3');
   assert.equal(r.ok, false);
   assert.match(r.error, /^users\.acl:1 should start with user keyword followed by the username\./);
   assert.deepEqual(r.where, [{ line: 1, text: '\xef\xbb\xbfuser default off' }]);
@@ -436,48 +436,48 @@ test('large inputs: deep patterns, many keys, long lines', () => {
     return A.check(u, ['GET', 'a'.repeat(n)], id);
   };
   assert.equal(deep(20000, 'redis-7.0.15').allowed, true);
-  assert.equal(deep(20000, 'redis-7.2.16').allowed, false);
+  assert.equal(deep(20000, 'redis-7.2.17').allowed, false);
   const crash = deep(90000, 'redis-7.0.15');
   assert.equal(crash.reason, 'crash');
   assert.match(crash.crash, /stack overflow/);
   assert.equal(A.globMatch('*a'.repeat(20000), 'a'.repeat(20000) + 'b', false), false);
   // Patterns without wildcards are found by name; one pattern still has to
   // carry both permissions a command needs.
-  const split = A.setUser(null, 'u', ['on', 'nopass', '%R~a', '%W~\\a', '+@all'], 'redis-8.10.2').user;
-  assert.equal(A.check(split, ['GET', 'a'], 'redis-8.10.2').allowed, true);
-  assert.equal(A.check(split, ['SET', 'a', '1'], 'redis-8.10.2').allowed, true);
-  assert.equal(A.check(split, ['GETSET', 'a', '1'], 'redis-8.10.2').allowed, false);
+  const split = A.setUser(null, 'u', ['on', 'nopass', '%R~a', '%W~\\a', '+@all'], 'redis-8.10.3').user;
+  assert.equal(A.check(split, ['GET', 'a'], 'redis-8.10.3').allowed, true);
+  assert.equal(A.check(split, ['SET', 'a', '1'], 'redis-8.10.3').allowed, true);
+  assert.equal(A.check(split, ['GETSET', 'a', '1'], 'redis-8.10.3').allowed, false);
   // 30,000 keys with no separator: quick, and a note that it's a long list.
   const lines = [];
   for (let i = 0; i < 30000; i++) lines.push(['GET', 'key' + i]);
   const t = Date.now();
-  const r = A.build(lines, 'redis-8.10.2', { keys: 'exact' });
+  const r = A.build(lines, 'redis-8.10.3', { keys: 'exact' });
   assert.ok(Date.now() - t < 20000, 'took ' + (Date.now() - t) + ' ms');
   assert.equal(r.keys.length, 30000);
   assert.equal(r.manyPatterns, 30000);
   assert.ok(r.check.every((c) => c.allowed));
   // A long file of NULs with no newline: each piece of it is dropped.
   const t2 = Date.now();
-  assert.equal(A.loadFile('user a on' + '\0'.repeat(20000000), 'redis-8.10.2').ok, true);
+  assert.equal(A.loadFile('user a on' + '\0'.repeat(20000000), 'redis-8.10.3').ok, true);
   assert.ok(Date.now() - t2 < 3000, 'took ' + (Date.now() - t2) + ' ms');
 });
 
 test('the ACL file line of a draft with no password', () => {
-  const r = A.build([['GET', 'k']], 'redis-8.10.2');
+  const r = A.build([['GET', 'k']], 'redis-8.10.3');
   assert.equal(r.placeholder, true);
   assert.equal(r.aclfile, 'user app on #<sha256-of-your-password> %R~k resetchannels -@all +get');
   // ACL LOAD refuses it (Redis 6.2 and 7.2 and Valkey 9.1 do the same).
-  for (const id of ['redis-6.2.24', 'redis-8.10.2', 'valkey-9.1.2']) {
+  for (const id of ['redis-6.2.24', 'redis-8.10.3', 'valkey-9.1.3']) {
     assert.match(A.loadFile(r.aclfile + '\n', id).error, /users\.acl:1: The password hash must be exactly 64 characters and contain only lowercase hexadecimal characters/, id);
   }
-  const p = A.build([['GET', 'k']], 'redis-8.10.2', { password: 's3cret' });
+  const p = A.build([['GET', 'k']], 'redis-8.10.3', { password: 's3cret' });
   assert.equal(p.placeholder, false);
   assert.equal(p.aclfile, 'user app on #' + A.sha256hex('s3cret') + ' %R~k resetchannels -@all +get');
 });
 
 test('rules as people write them: a password hash on its own line', () => {
   const hash = A.sha256hex('password');
-  const r = A.readRules('ACL SETUSER app on\n# a comment\n#' + hash + '\n~app:* +get', 'redis-8.10.2');
+  const r = A.readRules('ACL SETUSER app on\n# a comment\n#' + hash + '\n~app:* +get', 'redis-8.10.3');
   assert.deepEqual(r.users[0], { name: 'app', args: ['on', '#' + hash, '~app:*', '+get'], line: 1 });
 });
 

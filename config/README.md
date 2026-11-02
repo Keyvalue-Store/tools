@@ -2,7 +2,7 @@
 
 Paste a redis.conf or valkey.conf and pick a server version. The checker reads the file the way that version reads it at startup and tells you whether the server would start. If it wouldn't, you get the error the server prints, word for word, with the line it stops at, and then every other line it would stop at once that one is fixed. If it would, you see each setting the file changes as CONFIG GET would report it, and the settings that deserve a second look. It also reads the output of `CONFIG GET *` from a running server and shows what differs from the defaults.
 
-It knows 15 versions: Redis 6.2.24, 7.0.15, 7.2.16, 7.4.11, 8.0.6, 8.2.10, 8.4.7, 8.6.7, 8.8.3 and 8.10.2, and Valkey 7.2.14, 8.0.11, 8.1.10, 9.0.6 and 9.1.2.
+It knows 15 versions: Redis 6.2.24, 7.0.15, 7.2.17, 7.4.12, 8.0.6, 8.2.11, 8.4.8, 8.6.8, 8.8.4 and 8.10.3, and Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7 and 9.1.3.
 
 Try it in your browser at https://keyvaluestore.com/tools/config/, or open `config/app/index.html` from a copy of this repository.
 
@@ -60,7 +60,7 @@ node config/cli.js --get config.txt                  # CONFIG GET * output again
 
 | Option | Meaning |
 |---|---|
-| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x), a full version such as `8.4.7`, or `all` (the default) |
+| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x), a full version such as `8.4.8`, or `all` (the default) |
 | `--no-tls` | Redis 6.2 or 7.0 built without TLS, where the TLS settings don't exist |
 | `--compression` | Redis 8.10 built with BUILD_COMPRESSION=yes |
 | `--minimal` | Print the short file, as the page's download gives it. It needs `--server` with one version; with `--json`, it prints the version and the lines as JSON |
@@ -83,7 +83,7 @@ Bytes from a file that a terminal would act on, such as escape sequences, are pr
 
 ```js
 const C = require('./config/config.js');
-const r = C.check('maxmemory 2gb\nmaxmemory-policy allkeys-lru\n', 'valkey-9.1.2');
+const r = C.check('maxmemory 2gb\nmaxmemory-policy allkeys-lru\n', 'valkey-9.1.3');
 r.ok;                       // whether the server starts
 r.error;                    // { line, text, message, output }: where it stops and what it prints
 r.problems;                 // every line it would stop at, in order
@@ -91,8 +91,8 @@ r.values.get('maxmemory');  // '2147483648', as CONFIG GET reports it (bytes, on
 C.advise(r);                // [{ level, code, title, text }], worst first
 C.minimal(r);               // the short file's lines
 C.report(r);                // what the checker found, ready for JSON
-C.findVersion('redis 8');   // 'redis-8.10.2'
-C.readConfigGet('maxmemory\n0\n', 'redis-7.2.16');  // CONFIG GET output against the defaults
+C.findVersion('redis 8');   // 'redis-8.10.3'
+C.readConfigGet('maxmemory\n0\n', 'redis-7.2.17');  // CONFIG GET output against the defaults
 ```
 
 A file's bytes (a Buffer or Uint8Array, such as `fs.readFileSync('redis.conf')` gives) are read as they are; a string is read as UTF-8. Values come back as strings with one character per byte, the way the server stores them. `C.fromBinary(value)` turns one into text, and `C.visible(value)` into text to show, with odd bytes as `\xHH`. In a page, load `servers.js` and then `config.js` with script tags and use `window.KVConfig`.

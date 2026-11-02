@@ -286,7 +286,7 @@ def good_rules(vid):
         else:
             base, arg = random.choice(FIRSTARGS[:6])
             rules.append('+' + base + '|' + arg)
-    if vid == 'valkey-9.1.2' and random.random() < 0.5:
+    if vid == 'valkey-9.1.3' and random.random() < 0.5:
         rules.append(random.choice(['db=0', 'db=1', 'db=0,2', 'resetdbs', 'alldbs', 'db=5']))
     if random.random() < 0.25 and not vid.startswith('redis-6.'):
         sel = good_rules(vid) if random.random() < 0.1 else ['~' + random.choice(KEY_PATTERNS), random.choice(['+@read', '+get', '+@write', '+set', '+@all', '+@string'])]
@@ -404,7 +404,7 @@ def record_dryrun(srv, vid, users, per):
         rules = good_rules(vid)
         if not make_user(srv, rules):
             continue
-        db = random.choice([0, 0, 0, 1, 2, 5]) if vid == 'valkey-9.1.2' else 0
+        db = random.choice([0, 0, 0, 1, 2, 5]) if vid == 'valkey-9.1.3' else 0
         if db:
             srv.c.call('SELECT', db)
         checks = []

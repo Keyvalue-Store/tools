@@ -10,7 +10,7 @@
 # and built with plain "make BUILD_TLS=no", so with the server's own bundled
 # jemalloc. Keep the build as it is: the recorded data depends on it. The
 # server and its cli then go to KV_BIN/<server>-<version>/, for example
-# KV_BIN/redis-7.2.16/redis-server.
+# KV_BIN/redis-7.2.17/redis-server.
 #
 # What uses the result:
 #   memory/test/generate/record.py, config/test/generate/record.py and
@@ -27,7 +27,7 @@
 # Versions already in KV_BIN are skipped. Each build writes its output to
 # KV_SRC/build-<server>-<version>.log. Exits with 1 if any version failed.
 #
-# Usage: scripts/build-servers.sh [redis-7.2.16 valkey-9.1.2 ...]
+# Usage: scripts/build-servers.sh [redis-7.2.17 valkey-9.1.3 ...]
 #   KV_SRC  where the sources go (default /opt/kvsrc)
 #   KV_BIN  where the servers go (default /opt/kv)
 #   JOBS    make jobs at once (default: the number of CPUs)
@@ -40,9 +40,9 @@ JOBS=${JOBS:-$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || ech
 
 # The versions the test data was recorded from. Change this list only
 # together with the record scripts and their data.
-ALL="redis-6.2.24 redis-7.0.15 redis-7.2.16 redis-7.4.11 redis-8.0.6 \
-redis-8.2.10 redis-8.4.7 redis-8.6.7 redis-8.8.3 redis-8.10.2 \
-valkey-7.2.14 valkey-8.0.11 valkey-8.1.10 valkey-9.0.6 valkey-9.1.2"
+ALL="redis-6.2.24 redis-7.0.15 redis-7.2.17 redis-7.4.12 redis-8.0.6 \
+redis-8.2.11 redis-8.4.8 redis-8.6.8 redis-8.8.4 redis-8.10.3 \
+valkey-7.2.15 valkey-8.0.12 valkey-8.1.11 valkey-9.0.7 valkey-9.1.3"
 
 if [ $# -eq 0 ]; then
   # No names given: build them all. $ALL splits into words on purpose.
@@ -89,7 +89,7 @@ fail() {
     $id: $1, see $log"
 }
 
-# Clones, builds, checks and copies one version, such as redis-7.2.16.
+# Clones, builds, checks and copies one version, such as redis-7.2.17.
 build() {
   id=$1
   name=${id%%-*}

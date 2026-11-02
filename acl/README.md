@@ -2,7 +2,7 @@
 
 Paste a user's ACL rules and pick a server version. The builder applies the rules the way that version does. You get the error ACL SETUSER would reply with, word for word, or the line ACL LIST would print, and what the user can do in plain words. Type commands to see whether the user may run them, with the reply ACL DRYRUN gives and the error the command itself would get. Or paste what MONITOR printed while an app worked, and the builder drafts a user that may do what the app did and nothing more.
 
-It knows 15 versions: Redis 6.2.24, 7.0.15, 7.2.16, 7.4.11, 8.0.6, 8.2.10, 8.4.7, 8.6.7, 8.8.3 and 8.10.2, and Valkey 7.2.14, 8.0.11, 8.1.10, 9.0.6 and 9.1.2.
+It knows 15 versions: Redis 6.2.24, 7.0.15, 7.2.17, 7.4.12, 8.0.6, 8.2.11, 8.4.8, 8.6.8, 8.8.4 and 8.10.3, and Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7 and 9.1.3.
 
 Try it in your browser at https://keyvaluestore.com/tools/acl/, or open `acl/app/index.html` from a copy of this repository.
 
@@ -22,7 +22,7 @@ A command runs only if the user may run it and may use every key and channel it 
 
 Rules in parentheses make a selector, a second set of rights: `(~logs:* +xadd)`. A command may run if the rules outside the parentheses allow it or any one selector does. Valkey 9.1 adds databases: `db=0,2` keeps a user to those two.
 
-The rules changed more between versions than they seem to. Redis 6.2 has no selectors and no `%R~` or `%W~`, and a new user there may use every channel; from 7.0 a new user starts with none. Redis 7.0 works out the rules ACL LIST prints from what the user can do, so they can come back in another form; 7.2 and later print them as written. Some first arguments, such as `+select|a b` with a space, make 7.2 and later crash when they print the user. From 7.0 the error for a bad `user` line in a config file names the wrong word. Redis 7.0 follows a pattern with thousands of `*`, such as `*a` repeated, as deep as it goes, and crashes once its stack runs out; the others give up after 1000 levels. The builder does what each version does, these included.
+The rules changed more between versions than they seem to. Redis 6.2 has no selectors and no `%R~` or `%W~`, and a new user there may use every channel; from 7.0 a new user starts with none. Redis 7.0 works out the rules ACL LIST prints from what the user can do, so they can come back in another form; 7.2 and later print them as written. Some first arguments, such as `+select|a b` with a space, make 7.2 and later crash when they print the user. From 7.0 the error for a bad `user` line in a config file names the wrong word. Redis 7.0 follows a pattern with thousands of `*`, such as `*a` repeated, as deep as it goes, and crashes once its stack runs out; the others give up after 1000 levels. Valkey's November 2026 patches changed two things: an unclosed `(` after other rules on an ACL file line, which crashes the earlier patches of every Valkey line, is now reported like any other error, and Valkey 7.2.15 accepts `sanitize-payload` and `skip-sanitize-payload` but ignores them, as Valkey 8 does. The builder does what each version does, these included.
 
 ## What the builder shows
 
@@ -58,7 +58,7 @@ node acl/cli.js keys SORT list BY weight_* STORE out                          # 
 
 | Option | Meaning |
 |---|---|
-| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x of either), or a full version such as `8.4.7`. The default is the newest Redis |
+| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x of either), or a full version such as `8.4.8`. The default is the newest Redis |
 | `--user NAME` | With `--file` or `--config`: only this user, the default user included |
 | `--db N` | The client's database, for Valkey 9.1's `db=` rules (default 0) |
 | `--pubsub-default allchannels\|resetchannels` | The server's `acl-pubsub-default`, when it isn't the version's default. In a config file, an `acl-pubsub-default` line counts from where it is |
@@ -79,7 +79,7 @@ Exit status: 0 when the rules are valid and every command is allowed, for every 
 
 ```js
 const A = require('./acl/acl.js');
-const id = 'redis-8.10.2';
+const id = 'redis-8.10.3';
 const r = A.setUser(null, 'app', ['on', '>s3cret', '~app:*', '-@all', '+@read'], id);
 r.ok;                                   // false with r.error, the text after "ERR"
 A.listLine(r.user, id);                 // { line: 'user app on ...' }, or { crash } when listing it crashes the server

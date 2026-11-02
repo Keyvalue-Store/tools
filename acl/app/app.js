@@ -118,7 +118,7 @@
     for (const v of A.versions().filter((x) => x.server === server).reverse()) group.append(el('option', { value: v.id, text: v.label }));
     select$.append(group);
   }
-  select$.value = 'redis-8.10.2';
+  select$.value = 'redis-8.10.3';
   const label = (id) => A.versions().find((v) => v.id === id).label;
 
   // ---- applying the rules ----

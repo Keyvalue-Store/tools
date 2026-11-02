@@ -21,9 +21,9 @@
   // ---- versions ----
 
   const VERSION_LIST = [
-    ['redis', '6.2.24'], ['redis', '7.0.15'], ['redis', '7.2.16'], ['redis', '7.4.11'], ['redis', '8.0.6'],
-    ['redis', '8.2.10'], ['redis', '8.4.7'], ['redis', '8.6.7'], ['redis', '8.8.3'], ['redis', '8.10.2'],
-    ['valkey', '7.2.14'], ['valkey', '8.0.11'], ['valkey', '8.1.10'], ['valkey', '9.0.6'], ['valkey', '9.1.2']
+    ['redis', '6.2.24'], ['redis', '7.0.15'], ['redis', '7.2.17'], ['redis', '7.4.12'], ['redis', '8.0.6'],
+    ['redis', '8.2.11'], ['redis', '8.4.8'], ['redis', '8.6.8'], ['redis', '8.8.4'], ['redis', '8.10.3'],
+    ['valkey', '7.2.15'], ['valkey', '8.0.12'], ['valkey', '8.1.11'], ['valkey', '9.0.7'], ['valkey', '9.1.3']
   ];
 
   function versions() {
@@ -33,7 +33,7 @@
     }));
   }
 
-  // 'valkey 9.1', 'Redis 7.2.16', 'redis-8.10.2', '8', 'valkey' → the newest
+  // 'valkey 9.1', 'Redis 7.2.17', 'redis-8.10.3', '8', 'valkey' → the newest
   // matching version. A patch release it doesn't know gets the newest of the
   // same minor version.
   function findVersion(spec) {
@@ -1516,10 +1516,13 @@
 
   // used_memory of each version right after it starts with the default
   // config, as INFO memory reports it to the one client asking.
+  // The November 2026 patch releases moved by what the same start measured
+  // on the patch before them (Valkey 9.0.7: 448 bytes more, the others at
+  // most 272 either way).
   const EMPTY = {
-    'redis-6.2.24': 874000, 'redis-7.0.15': 881784, 'redis-7.2.16': 889296, 'redis-7.4.11': 971792, 'redis-8.0.6': 675904,
-    'redis-8.2.10': 677096, 'redis-8.4.7': 692728, 'redis-8.6.7': 729376, 'redis-8.8.3': 734376, 'redis-8.10.2': 738632,
-    'valkey-7.2.14': 904080, 'valkey-8.0.11': 914992, 'valkey-8.1.10': 882184, 'valkey-9.0.6': 880568, 'valkey-9.1.2': 929512
+    'redis-6.2.24': 874000, 'redis-7.0.15': 881784, 'redis-7.2.17': 889392, 'redis-7.4.12': 971792, 'redis-8.0.6': 675904,
+    'redis-8.2.11': 677096, 'redis-8.4.8': 692728, 'redis-8.6.8': 729376, 'redis-8.8.4': 734376, 'redis-8.10.3': 738632,
+    'valkey-7.2.15': 903808, 'valkey-8.0.12': 914992, 'valkey-8.1.11': 882056, 'valkey-9.0.7': 881016, 'valkey-9.1.3': 929448
   };
   function emptyServer(id) {
     features(id);
