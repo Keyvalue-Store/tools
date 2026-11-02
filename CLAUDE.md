@@ -2,7 +2,23 @@
 
 ## Where the next session starts
 
-KeyValueStore Tools 0.2.0 is released (softdev-plan item 33 done). Open: the refresh check found real changes in the newest Valkey patches (see step 5); moving the tracked versions and the ACL Builder to them waits for YK.
+KeyValueStore Tools 0.2.1 is in progress (YK said update, 2026-11-02): see the next section. 0.2.0 is released (softdev-plan item 33 done).
+
+## In progress: KeyValueStore Tools 0.2.1
+
+What and why: the first refresh run found the newest Valkey patches behave differently from the tracked versions in the ACL Builder's area (7.2.15 drops sanitize-payload from ACL LIST; 8.0.12 and later no longer crash on ACL LOAD of an unclosed selector; one GETKEYS change), so the tools are wrong for anyone on the newest patches. YK approved moving the tracked versions to the newest patches.
+
+Design decisions:
+- Tracked versions become the newest patch of each line: Redis 6.2.24, 7.0.15 (no newer), 7.2.17, 7.4.12, 8.0.6 (no newer), 8.2.11, 8.4.8, 8.6.8, 8.8.4, 8.10.3; Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7, 9.1.3. Version ids change everywhere (build-servers.sh, memory.js, recorders, servers.js data, docs); findVersion keeps accepting a line such as "valkey 9.1" and maps an older patch of a line to the newest.
+- Re-extract config and ACL data from the new sources, re-record memory, config and ACL on all 15, fix the tools until replay shows no differences (memory's existing tolerance rules unchanged).
+- Version 0.2.1. Site: version numbers on the Memory, Config and ACL pages, a short post.
+
+Steps:
+1. [ ] Build the 12 newer patches; switch the version list and ids.
+2. [ ] Re-extract and re-record memory, config, ACL; fix differences.
+3. [ ] Docs and site figures for the new versions.
+4. [ ] Independent review (at most two rounds), fixes.
+5. [ ] 0.2.1 released by the workflow, package checked, site and studio note, softdev-plan log row.
 
 ## Done: KeyValueStore Tools 0.2
 
