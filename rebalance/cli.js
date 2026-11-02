@@ -87,7 +87,7 @@ function main(argv) {
     delete out.owner;
     console.log(JSON.stringify(out, null, 2));
   } else {
-    for (const pr of p.problems) console.log('Not safe: ' + pr.message + '. ' + pr.fix + '.');
+    for (const pr of p.problems) console.log((pr.code === 'option' ? 'Cannot plan: ' : 'Not safe: ') + pr.message + '. ' + pr.fix + '.');
     if (!p.problems.length) {
       console.log('Balancing by ' + (load ? 'load' + (loadNote ? ' (' + loadNote + ')' : '') : 'slot count') + '.');
       console.log('primary\t\tweight\tslots before\tslots after' + (load ? '\tload before\tload after\ttarget' : '\ttarget'));

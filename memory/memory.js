@@ -1363,13 +1363,15 @@
     if (g.type === 'zset' && Number.isNaN(parseScore(scoreOf(g)))) throw new Error('score must be a number, or inf or -inf.');
     if (g.type === 'list') { need('items', 1, MAX_ELEMS, 'a list holds'); elem('item'); }
     if (g.type === 'stream') {
-      need('entries', 1, 1e9, 'the calculator takes for a stream');
+      need('entries', 1, 1e7, 'the calculator takes for one stream (10 million): give several streams, or scale the figure');
       need('fields', 1, 1e6, 'the calculator takes for an entry');
       elem('field'); elem('value');
-      for (const [name, max] of [['groups', 1e5], ['consumers', 1e5], ['pending', g.entries]]) {
+      for (const [name, max] of [['groups', 1000], ['consumers', 1e5], ['pending', g.entries]]) {
         if (g[name] === undefined || g[name] === null) g[name] = 0;
         need(name, 0, max, name === 'pending' ? 'the entries in the stream' : 'the calculator takes');
       }
+      if (g.pending > 1e6) throw new Error('pending is ' + g.pending + ', more than the calculator takes for a group (1 million).');
+      if (!g.groups) { g.consumers = 0; g.pending = 0; }
       if (g.groups && g.pending && !g.consumers) throw new Error('Pending entries belong to consumers: give consumers=1 or more.');
       for (const name of ['group', 'consumer']) {
         if (g[name] === undefined || g[name] === null) g[name] = 8;
@@ -1703,6 +1705,7 @@
           } else throw new Error(name + " isn't something a " + (type === 'zset' ? 'sorted set' : type) + ' line takes.');
         }
         if (g.fieldTtl === 'all') g.fieldTtl = g.fields;
+        if (type === 'stream' && !g.groups && (g.consumers || g.pending)) throw new Error('Consumers and pending entries belong to consumer groups: give groups=1 or more.');
         checkGroup(g);
         groups.push(g);
       } catch (e) {

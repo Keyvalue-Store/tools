@@ -92,15 +92,15 @@ Exit status 0 means a plan was made or nothing needs to move, 1 that the cluster
 
 ## The script
 
-The script is plain POSIX shell, meant to be read before it is run. It works through one range of slots at a time. For each range it sends the `IMPORTING` commands for every slot to the receiver in one `redis-cli` call, then the `MIGRATING` commands to the donor, then counts the keys in each slot and moves keys only from slots that hold any, then sends the `NODE` commands to the receiver, the donor and the other primaries. Every reply has to be `OK`, or the script stops.
+The script is plain POSIX shell, meant to be read before it is run. It works through one range of slots at a time. For each range it sends the `IMPORTING` commands for every slot to the receiver in one `redis-cli` call, then the `MIGRATING` commands to the donor, then moves the keys of each slot with `MIGRATE` until the donor counts none left, then checks that every slot of the range is empty on the donor, and only then sends the `NODE` commands to the receiver, the donor and the other primaries. Every command has to answer `OK`, and every round of `MIGRATE` has to leave fewer keys than before, or the script stops. A slot never changes owner while the donor still holds a key in it: the donor would drop that key.
 
 Things to know before you run it:
 
 - Run it from a machine that can reach every primary at the addresses `CLUSTER NODES` shows. Set `REDISCLI_AUTH` if the cluster has a password. `MIGRATE` passes `MIGRATE_AUTH` to the receiver, which defaults to `REDISCLI_AUTH`. `CLI`, `BATCH` and `TIMEOUT` can be set the same way.
 - A whole range is open, in `IMPORTING` and `MIGRATING`, while its keys move. Clients keep working through `ASK` redirects, but a client library that doesn't follow `ASK` will see errors for those slots until the range is done.
 - If the script stops part way, some slots stay open. `redis-cli --cluster fix HOST:PORT` closes them. Then take `CLUSTER NODES` again and plan again.
-- Keys go from `GETKEYSINSLOT` to `MIGRATE` one per line, so a key with a line break in its name stops the script.
-- A primary that gives away its last slot may become a replica of the primary that took it, or lose its own replica to that primary, when `cluster-allow-replica-migration` is on (the default). It can then refuse the last `SETSLOT NODE` commands: Redis answers that `SETSLOT` is only for primaries, Valkey 8 closes the connection and Valkey 9 answers `NOREPLICAS`. The script accepts those three answers from the donor only, since the cluster already tells it the new owner. Remove the node afterwards with `--cluster del-node` if you meant to.
+- Keys go from `GETKEYSINSLOT` to `MIGRATE` one per line, so the script can't move a key with an empty name or a line break in it. It stops at that slot, before the slot changes owner, and says so; move that key by hand, then run `--cluster fix` and plan again.
+- A primary that gives away its last slot may become a replica of the primary that took it, or lose its own replica to that primary, when `cluster-allow-replica-migration` is on (the default). It can then refuse the last `SETSLOT NODE` commands: Redis answers that `SETSLOT` is only for primaries, Valkey 8 closes the connection and Valkey 9 answers `NOREPLICAS`. The script then waits up to 30 seconds for the donor to be a replica, or a primary that holds no slot and has none half moved, and goes on only if it is; the cluster tells the donor the new owner. Any other refusal stops the script. Remove the node afterwards with `--cluster del-node` if you meant to.
 - Replicas follow their primary. The plan doesn't move replicas between primaries.
 
 ## Use it in your own code
@@ -133,7 +133,8 @@ Each step ran the script the planner wrote, with that version's own `redis-cli` 
 - **The cluster ended where the plan said.** In all 15 steps, the slot owners every node reported afterwards were exactly the owners in the plan, slot for slot.
 - **No key was lost or changed.** All 4,000 keys read back with their exact values after every step, and the primaries held 4,000 keys between them.
 - **By bytes.** Before the by-bytes step the fullest primary was 26 to 27 percent above its share of the bytes. Afterwards every primary was within 0.1 percent of its target, moving about 6.6 percent of the bytes.
-- **Draining.** On all five versions the drained primary ended as a replica of a primary that took its slots. On Valkey 8.0 and 9.1 it refused the last `SETSLOT` commands as it did so, which is why the script accepts those answers from the donor.
+- **Draining.** On all five versions the drained primary ended as a replica of a primary that took its slots. On Valkey 8.0 and 9.1 it refused the last `SETSLOT` commands as it did so, which is why the script accepts a refusal from a donor that is left with nothing.
+- **Keys it can't move.** A key with an empty name in slot 0, and a key `{t}a` newline `{t}b`, each in a slot being drained on Redis 7.4.11 (and the empty name on Valkey 9.1.2): the script stopped with exit status 1 at that slot, before it changed owner, and the key was still on the donor with its value. An independent review found that the first version of the script ended such a slot early and let the donor drop the key; that is fixed.
 
 The tests replay the recorded `CLUSTER NODES` output, before and after each step, through the planner. They also cover every slot form and flag of `CLUSTER NODES`, each refusal, weights, draining, the threshold, the cap, byte balance and the script's text. They run without a server.
 

@@ -330,7 +330,8 @@
   // MIGRATE in batches from the slots that hold any, then SETSLOT NODE on
   // the receiver, the donor and every other primary. Each of those steps is
   // one redis-cli process reading its commands from standard input, and any
-  // reply other than OK stops the script. REDISCLI_AUTH (and MIGRATE_AUTH
+  // reply other than OK stops the script, as does a slot that still holds
+  // keys before it changes owner. REDISCLI_AUTH (and MIGRATE_AUTH
   // for MIGRATE, which defaults to it) supply a password.
   function script(cluster, p, opts) {
     opts = opts || {};
@@ -344,69 +345,123 @@
       '# Written by the KeyValueStore.com Cluster Rebalancing Planner.',
       '# Moves ' + (p.movedSlots || 0) + ' slots in ' + p.moves.length + ' moves. Read it before you run it.',
       '# Set REDISCLI_AUTH for a password; MIGRATE uses MIGRATE_AUTH, or REDISCLI_AUTH.',
-      '# Keys go from CLUSTER GETKEYSINSLOT to MIGRATE one per line, so a key with',
-      '# a newline in its name stops the script. If it stops part way, run',
-      '# redis-cli --cluster fix HOST:PORT to close the slots it left open.',
+      '# Keys go from CLUSTER GETKEYSINSLOT to MIGRATE one per line. A slot that',
+      '# still holds keys after a round makes the script stop, before that slot',
+      '# changes owner: a key with an empty name or a newline in it has to be',
+      '# moved by hand. If it stops part way, run redis-cli --cluster fix HOST:PORT',
+      '# to close the slots it left open, then plan again.',
       'set -eu',
+      'set -f',
       'CLI=${CLI:-' + cli + '}',
       'BATCH=${BATCH:-' + batch + '}',
       'TIMEOUT=${TIMEOUT:-' + timeout + '}',
       'MIGRATE_AUTH=${MIGRATE_AUTH:-${REDISCLI_AUTH:-}}',
       'PRIMARIES=' + quote(primaries.map((n) => n.host + ' ' + n.port).join(' ')),
-      '',
-      '# setslots FIRST LAST STATE NODE_ID: CLUSTER SETSLOT for every slot of a range',
-      'setslots() {',
-      '  s=$1',
-      '  while [ "$s" -le "$2" ]; do echo "CLUSTER SETSLOT $s $3 $4"; s=$((s + 1)); done',
-      '}',
-      '',
-      '# on_node HOST PORT [ALSO]: run the commands on standard input; all must',
-      '# answer OK, or match the pattern ALSO',
-      'on_node() {',
-      '  out=$("$CLI" -h "$1" -p "$2" 2>&1) || true',
-      '  bad=$(printf \'%s\\n\' "$out" | grep -v \'^OK$\' | grep -v "${3:-^OK$}" || true)',
-      '  if [ -n "$bad" ]; then echo "$1:$2: $bad" >&2; return 1; fi',
-      '}',
-      '',
-      '# move_keys SLOT FROM_HOST FROM_PORT TO_HOST TO_PORT',
-      'move_keys() {',
-      '  while :; do',
-      '    keys=$("$CLI" -h "$2" -p "$3" --raw CLUSTER GETKEYSINSLOT "$1" "$BATCH")',
-      '    [ -n "$keys" ] || break',
-      '    if [ -n "$MIGRATE_AUTH" ]; then',
-      '      out=$(printf \'%s\\n\' "$keys" | tr \'\\n\' \'\\000\' | xargs -0 "$CLI" -h "$2" -p "$3" MIGRATE "$4" "$5" "" 0 "$TIMEOUT" AUTH "$MIGRATE_AUTH" KEYS)',
-      '    else',
-      '      out=$(printf \'%s\\n\' "$keys" | tr \'\\n\' \'\\000\' | xargs -0 "$CLI" -h "$2" -p "$3" MIGRATE "$4" "$5" "" 0 "$TIMEOUT" KEYS)',
-      '    fi',
-      '    case "$out" in OK|NOKEY) ;; *) echo "$2:$3: MIGRATE slot $1: $out" >&2; return 1 ;; esac',
-      '  done',
-      '}',
-      '',
-      '# move_range FIRST LAST FROM_HOST FROM_PORT FROM_ID TO_HOST TO_PORT TO_ID',
-      'move_range() {',
-      '  setslots "$1" "$2" IMPORTING "$5" | on_node "$6" "$7"',
-      '  setslots "$1" "$2" MIGRATING "$8" | on_node "$3" "$4"',
-      '  counts=$(s=$1; while [ "$s" -le "$2" ]; do echo "CLUSTER COUNTKEYSINSLOT $s"; s=$((s + 1)); done | "$CLI" -h "$3" -p "$4")',
-      '  s=$1',
-      '  for n in $counts; do',
-      '    case "$n" in 0) ;; *[!0-9]*) echo "$3:$4: COUNTKEYSINSLOT $s: $n" >&2; return 1 ;; *) move_keys "$s" "$3" "$4" "$6" "$7" ;; esac',
-      '    s=$((s + 1))',
-      '  done',
-      '  setslots "$1" "$2" NODE "$8" | on_node "$6" "$7"',
-      '  # A donor that just gave away its last slot may already have turned into',
-      '  # a replica of the receiver, or lost its own replica to it. It then',
-      '  # refuses SETSLOT (Valkey 9 says NOREPLICAS, Valkey 8 closes the',
-      '  # connection) and needs none: it learns the new owner from the cluster.',
-      '  setslots "$1" "$2" NODE "$8" | on_node "$3" "$4" \'only with masters\\|master -> replica\\|^NOREPLICAS\'',
-      '  first=$1 last=$2 to=$8',
-      '  set -- $PRIMARIES',
-      '  while [ $# -ge 2 ]; do',
-      '    setslots "$first" "$last" NODE "$to" | "$CLI" -h "$1" -p "$2" > /dev/null 2>&1 || true',
-      '    shift 2',
-      '  done',
-      '}',
       ''
-    ];
+    ].concat(String.raw`# setslots FIRST LAST STATE NODE_ID: CLUSTER SETSLOT for every slot of a range
+setslots() {
+  s=$1
+  while [ "$s" -le "$2" ]; do echo "CLUSTER SETSLOT $s $3 $4"; s=$((s + 1)); done
+}
+
+# on_node HOST PORT COUNT: run the COUNT commands on standard input; every
+# one must answer OK
+on_node() {
+  out=$("$CLI" -h "$1" -p "$2" 2>&1) || true
+  ok=$(printf '%s\n' "$out" | grep -c '^OK$' || true)
+  if [ "$ok" != "$3" ]; then
+    echo "$1:$2: $ok of $3 commands answered OK:" >&2
+    printf '%s\n' "$out" | grep -v '^OK$' | head -n 5 >&2
+    return 1
+  fi
+}
+
+# keys_in SLOT HOST PORT: how many keys the node holds in the slot
+keys_in() {
+  n=$("$CLI" -h "$2" -p "$3" CLUSTER COUNTKEYSINSLOT "$1")
+  case "$n" in '' | *[!0-9]*) echo "$2:$3: COUNTKEYSINSLOT $1: $n" >&2; return 1 ;; esac
+  echo "$n"
+}
+
+# move_keys SLOT FROM_HOST FROM_PORT TO_HOST TO_PORT: MIGRATE until the slot
+# is empty on the donor; stop when a round moves nothing
+move_keys() {
+  left=$(keys_in "$1" "$2" "$3")
+  while [ "$left" -gt 0 ]; do
+    keys=$("$CLI" -h "$2" -p "$3" --raw CLUSTER GETKEYSINSLOT "$1" "$BATCH")
+    if [ -n "$keys" ]; then
+      if [ -n "$MIGRATE_AUTH" ]; then
+        out=$(printf '%s\n' "$keys" | tr '\n' '\000' | xargs -0 "$CLI" -h "$2" -p "$3" MIGRATE "$4" "$5" "" 0 "$TIMEOUT" AUTH "$MIGRATE_AUTH" KEYS 2>&1) || true
+      else
+        out=$(printf '%s\n' "$keys" | tr '\n' '\000' | xargs -0 "$CLI" -h "$2" -p "$3" MIGRATE "$4" "$5" "" 0 "$TIMEOUT" KEYS 2>&1) || true
+      fi
+    else
+      out='no key names'
+    fi
+    now=$(keys_in "$1" "$2" "$3")
+    if [ "$now" -ge "$left" ]; then
+      echo "$2:$3: slot $1 still holds $now keys that MIGRATE did not move ($out)." >&2
+      echo "A key with an empty name or a newline in it can't be moved by this script." >&2
+      return 1
+    fi
+    left=$now
+  done
+}
+
+# donor_done HOST PORT: the node is a replica now, or a primary with no
+# slots and nothing migrating
+donor_done() {
+  role=$("$CLI" -h "$1" -p "$2" ROLE 2>/dev/null | head -n 1) || return 1
+  case "$role" in slave | replica) return 0 ;; esac
+  me=$("$CLI" -h "$1" -p "$2" CLUSTER NODES 2>/dev/null | grep ' myself') || return 1
+  set -- $me
+  [ $# -eq 8 ]
+}
+
+# move_range FIRST LAST FROM_HOST FROM_PORT FROM_ID TO_HOST TO_PORT TO_ID
+move_range() {
+  n=$(($2 - $1 + 1))
+  setslots "$1" "$2" IMPORTING "$5" | on_node "$6" "$7" "$n"
+  setslots "$1" "$2" MIGRATING "$8" | on_node "$3" "$4" "$n"
+  s=$1
+  while [ "$s" -le "$2" ]; do
+    move_keys "$s" "$3" "$4" "$6" "$7"
+    s=$((s + 1))
+  done
+  # Every slot of the range must be empty on the donor before it changes
+  # owner; the donor drops whatever a slot still holds when it does.
+  counts=$(s=$1; while [ "$s" -le "$2" ]; do echo "CLUSTER COUNTKEYSINSLOT $s"; s=$((s + 1)); done | "$CLI" -h "$3" -p "$4")
+  zeros=$(printf '%s\n' "$counts" | grep -c '^0$' || true)
+  if [ "$zeros" != "$n" ]; then
+    echo "$3:$4: slots $1 to $2 are not all empty on the donor; stopping before they change owner." >&2
+    return 1
+  fi
+  setslots "$1" "$2" NODE "$8" | on_node "$6" "$7" "$n"
+  # A donor that just gave away its last slot may turn into a replica of the
+  # receiver, or lose its own replica to it, and refuse SETSLOT. It needs
+  # none then: it learns the new owner from the cluster. That is accepted
+  # only once the donor is a replica, or holds no slot and none half moved;
+  # any other refusal stops here.
+  if ! setslots "$1" "$2" NODE "$8" | on_node "$3" "$4" "$n"; then
+    tries=0
+    until donor_done "$3" "$4"; do
+      tries=$((tries + 1))
+      if [ "$tries" -ge 30 ]; then
+        echo "$3:$4 refused SETSLOT NODE and still holds slots." >&2
+        return 1
+      fi
+      sleep 1
+    done
+    echo "$3:$4 gave away its last slot and refused SETSLOT NODE, as expected." >&2
+  fi
+  first=$1 last=$2 to=$8
+  set -- $PRIMARIES
+  while [ $# -ge 2 ]; do
+    setslots "$first" "$last" NODE "$to" | "$CLI" -h "$1" -p "$2" > /dev/null 2>&1 || true
+    shift 2
+  done
+}
+`.split('\n'));
     for (const mv of p.moves) {
       const f = byId.get(mv.from), t = byId.get(mv.to);
       lines.push('# ' + mv.slots + ' slots from ' + mv.fromNode + ' to ' + mv.toNode + ': ' + formatRanges(mv.ranges));

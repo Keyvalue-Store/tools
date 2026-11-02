@@ -133,6 +133,11 @@ def main():
             out = subprocess.run(replay(fixture), cwd=ROOT, env=renv, capture_output=True, text=True)
             with open(log, 'a') as f:
                 f.write(out.stdout + out.stderr)
+            # A replay exits with 1 when it finds differences; any other
+            # failure, or a crash after some output, counts as one too.
+            crashed = out.returncode not in (0, 1) or (out.returncode == 1 and 'differences' not in out.stdout)
+            if crashed:
+                problems.append('the %s replay failed (exit %d); see the log' % (name, out.returncode))
             for r in ready:
                 lines = [l for l in out.stdout.splitlines() if r['id'] in l]
                 diffs = 0
@@ -140,7 +145,9 @@ def main():
                     for m in re.finditer(r'(\d+) differences', l):
                         diffs += int(m.group(1))
                 r.setdefault('tools', {})[name] = 'same' if diffs == 0 and lines else ('%d differences' % diffs if lines else 'no result')
-                if diffs or not lines:
+                if crashed:
+                    r['tools'][name] = 'replay failed'
+                elif diffs or not lines:
                     problems.append('%s %s: %s %s' % (r['server'], r['newest'], name, r['tools'][name]))
         for r in ready:
             if 'status' not in r:

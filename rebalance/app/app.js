@@ -155,7 +155,7 @@
     const p = R.plan(cluster, { weights: w, load: L.load, threshold: threshold >= 0 ? threshold : 2, maxSlots: maxSlots > 0 ? maxSlots : undefined });
 
     if (p.problems.length) {
-      out.append(verdict('bad', 'Not safe to rebalance yet', p.problems.map((x) => x.message + '. ' + x.fix + '.')));
+      out.append(verdict('bad', p.problems.every((x) => x.code === 'option') ? 'Cannot plan with these options' : 'Not safe to rebalance yet', p.problems.map((x) => x.message + '. ' + x.fix + '.')));
       return;
     }
     const byLoad = !!L.load;

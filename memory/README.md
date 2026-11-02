@@ -131,6 +131,7 @@ node --test memory/test/memory.test.js
 
 - **How the keys were written.** The figures are for keys written by clients. A server that loaded its data from an RDB file at startup sizes some tables at once and keeps lists as the file had them, so it can differ by a few percent. Values grown by APPEND or SETRANGE keep spare room the calculator doesn't count.
 - **What it doesn't cover.** Module types such as JSON, list compression (`list-compress-depth`), and streams that were trimmed or had entries deleted or acknowledged: it counts streams as `XADD`, `XGROUP` and `XREADGROUP` leave them.
+- **Big streams.** The calculator works a stream out listpack by listpack, so it takes up to 10 million entries, 1,000 groups and 1 million pending entries a group. For more, describe several streams or scale the figure: past the first listpack, memory grows in step with the entries.
 - **Expiry times and stream IDs.** Fields with a TTL are taken to expire at one time, and stream IDs to come `per-ms` a millisecond. Many different expiry times, or IDs spread over hours, take more radix tree nodes and buckets than that.
 - **Standalone servers.** In cluster mode every hash slot has its own table, and Redis up to 7.2 keeps extra data for each key.
 - **The build.** It assumes a 64-bit Linux build with the bundled jemalloc. Built with another allocator, or on a Mac with Apple silicon, where Redis 8.2 and later fit longer strings in the key's object, the figures differ.

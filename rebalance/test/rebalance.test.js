@@ -222,8 +222,13 @@ test('the script quotes hosts, walks every range and updates every primary', () 
   assert.match(sh, /^#!\/bin\/sh\n/);
   assert.match(sh, /CLI=\$\{CLI:-valkey-cli\}/);
   assert.match(sh, /BATCH=\$\{BATCH:-50\}/);
-  assert.match(sh, /setslots "\$1" "\$2" IMPORTING "\$5" \| on_node "\$6" "\$7"/);
-  assert.match(sh, /setslots "\$1" "\$2" MIGRATING "\$8" \| on_node "\$3" "\$4"/);
+  assert.match(sh, /setslots "\$1" "\$2" IMPORTING "\$5" \| on_node "\$6" "\$7" "\$n"/);
+  assert.match(sh, /setslots "\$1" "\$2" MIGRATING "\$8" \| on_node "\$3" "\$4" "\$n"/);
+  // Nothing changes owner while the donor still holds keys in it.
+  assert.ok(sh.indexOf('are not all empty on the donor') < sh.indexOf('setslots "$1" "$2" NODE "$8" | on_node "$6" "$7" "$n"'));
+  assert.match(sh, /if \[ "\$now" -ge "\$left" \]/);
+  assert.match(sh, /^set -f$/m);
+  assert.ok(!/\\\|/.test(sh), 'no GNU grep alternation');
   assert.match(sh, /CLUSTER GETKEYSINSLOT "\$1" "\$BATCH"/);
   assert.match(sh, /MIGRATE "\$4" "\$5" "" 0 "\$TIMEOUT" KEYS/);
   assert.match(sh, /PRIMARIES='10\.0\.0\.1 7001 10\.0\.0\.2 7002 10\.0\.0\.3 7003 10\.0\.0\.4 7004'/);
