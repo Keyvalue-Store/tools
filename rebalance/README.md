@@ -124,9 +124,9 @@ The planner was checked against real clusters in November 2026, on Redis 6.2.24,
 
 | Step | What the planner was asked | Slots moved | Script time |
 |---|---|---|---|
-| add-empty | Balance slot counts, which fills the empty primary | 4,096 | 8 to 26 s |
+| add-empty | Balance slot counts, which fills the empty primary | 4,096 | 14 to 30 s |
 | by-bytes | Balance by `MEMORY USAGE` of every key | 406 to 418 | 12 to 17 s |
-| drain | Drain one of the first primaries, weight 2 for the new one | 3,964 to 3,972 | 23 to 41 s |
+| drain | Drain one of the first primaries, weight 2 for the new one | 3,964 to 3,974 | 28 to 44 s |
 
 Each step ran the script the planner wrote, with that version's own `redis-cli` or `valkey-cli`, waited until every node agreed on who owns each slot, and read every key back from its new owner.
 
