@@ -295,7 +295,9 @@ test('hexadecimal percentiles: overflow, underflow and length', () => {
     ['0x0p-99999', { 'valkey-9.1.3': '0 99', 'redis-8.10.3': '0 99', 'redis-7.2.17': '0 99' }],
     [hexOf(5119), { 'valkey-9.1.3': '8 99', 'redis-8.10.3': '8 99', 'redis-7.2.17': '8 99' }],
     [hexOf(5120), { 'valkey-9.1.3': null, 'redis-8.10.3': '8 99', 'redis-7.2.17': '8 99' }],
-    ['0x1p5', { 'valkey-9.1.3': '32 99', 'redis-8.10.3': '32 99', 'redis-7.2.17': '32 99' }]
+    ['0x1p5', { 'valkey-9.1.3': '32 99', 'redis-8.10.3': '32 99', 'redis-7.2.17': '32 99' }],
+    ['0x' + 'f'.repeat(300) + 'p-1200', { 'valkey-9.1.3': '1 99', 'redis-8.10.3': '1 99', 'redis-7.2.17': '1 99' }],
+    ['0x1' + '0'.repeat(300) + 'p-1200', { 'valkey-9.1.3': '1 99', 'redis-8.10.3': '1 99', 'redis-7.2.17': '1 99' }]
   ];
   for (const [v, want] of cases) {
     for (const [id, got] of Object.entries(want)) {

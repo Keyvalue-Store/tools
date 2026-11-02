@@ -301,11 +301,18 @@
   }
   function parseHexFloat(s) {
     const m = /^([+-]?)0[xX]([0-9a-fA-F]*)\.?([0-9a-fA-F]*)(?:[pP]([+-]?\d+))?$/.exec(s);
-    let x = 0;
-    for (const d of m[2]) x = x * 16 + parseInt(d, 16);
-    let f = 1 / 16;
-    for (const d of m[3]) { x += parseInt(d, 16) * f; f /= 16; }
-    x *= Math.pow(2, Number(m[4] || 0));
+    // The whole mantissa as one integer, then the exponent in one go, so a
+    // long mantissa can't overflow on the way to a small value.
+    const digits = (m[2] + m[3]).replace(/^0+/, '');
+    if (!digits) return m[1] === '-' ? -0 : 0;
+    let mant = BigInt('0x' + digits);
+    let e = Math.max(-100000, Math.min(100000, Number(m[4] || 0))) - 4 * m[3].length;
+    const bits = mant.toString(2).length;
+    if (bits > 64) { mant >>= BigInt(bits - 64); e += bits - 64; }
+    let x = Number(mant);
+    while (e > 1000 && Number.isFinite(x)) { x *= Math.pow(2, 1000); e -= 1000; }
+    while (e < -1000 && x !== 0) { x *= Math.pow(2, -1000); e += 1000; }
+    x *= Math.pow(2, e);
     return m[1] === '-' ? -x : x;
   }
   // printf("%f") then trimDoubleString: "99.900000" -> "99.9".

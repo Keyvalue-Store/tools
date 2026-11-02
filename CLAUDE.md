@@ -16,8 +16,8 @@ Design decisions:
 Steps:
 1. [x] Built the 12 newer patches; version list and ids switched in build-servers.sh, memory, config and ACL (code, tests, READMEs).
 2. [x] Re-extracted and re-recorded on all 15: memory 97,211 cases, 0 differences (99.75 percent within 3 sd); config and ACL replay 0 differences. Fixes: fresh-server used_memory for 5 versions (measured old patch to new patch deltas); Valkey 9.1.3 passes hex floats to strtod (string2d 'ffclibc'); ACL features sanitize (Valkey 7.2.15 drops it) and parenCrash (unclosed selector no longer crashes Valkey 7.2.15, 8.0.12, 8.1.11, 9.0.7, 9.1.3 and later). 436 tests pass, smoke passes.
-3. [ ] Docs done in the repo (version lists, ACL README note); site figures after the release.
-4. [ ] Independent review (at most two rounds), fixes.
+3. [x] Docs in the repo (version lists; ACL, config and memory READMEs on the patch changes and on older patches). Site figures after the release.
+4. [x] Independent review, two rounds. Round 1, no blockers. Should-fix: an older patch (e.g. Valkey 8.0.11) was silently modelled as the newest of its line, where real 8.0.11 still crashes on an unclosed selector; fixed with the "Checking as X" note in the ACL and memory CLIs (config had it) and README lines (per-patch features left out: only recorded patches are known). Should-fix: hex percentiles that overflow or underflow were accepted, and 9.1.3's 5120-byte limit was missing; fixed, tests checked against real 9.1.3, 8.10.3 and 7.2.17. Nits fixed: string2d modes allow-listed, EMPTY comment, config README. Round 2, no blockers; one minor: parseHexFloat overflowed on mantissas over 256 hex digits; rebuilt with a BigInt mantissa, two cases added (real 9.1.3 agrees). 437 tests pass.
 5. [ ] 0.2.1 released by the workflow, package checked, site and studio note, softdev-plan log row.
 
 ## Done: KeyValueStore Tools 0.2
