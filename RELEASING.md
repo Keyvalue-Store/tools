@@ -105,6 +105,15 @@ never made, so the same version goes out on the next green run.
 - Releases made by the workflow don't start the workflow again, because
   events from `GITHUB_TOKEN` don't trigger other runs. No loop.
 
+## The monthly refresh check
+
+`.github/workflows/refresh.yml` runs `scripts/refresh.py` on the 3rd of each
+month and on demand (`gh api -X POST repos/Keyvalue-Store/tools/actions/workflows/refresh.yml/dispatches -f ref=main`).
+It commits a report to `test/results/refresh/` and fails when a newer patch
+release or a new line doesn't match the recordings. It releases nothing: a
+failed check is something for a session to look into, and any fix goes out
+as a normal version raise.
+
 ## Rules that don't change
 
 - The owner doesn't publish releases, interim or final. Never ask him to. If

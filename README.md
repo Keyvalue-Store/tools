@@ -64,6 +64,10 @@ node --test
 
 Node finds every test under the tool folders. They need no server and no network, since they replay the answers recorded from the servers.
 
+## Keeping the recordings current
+
+Redis and Valkey ship patch releases often. Once a month the `refresh` workflow runs `scripts/refresh.py`: it finds the newest patch of every tracked line and any new line, builds them, records them with the Memory Calculator, Config Checker and ACL Builder recorders, replays the recordings through the tools as they are, and commits a dated report to [`test/results/refresh/`](test/results/refresh/). It never changes a tool on its own. When a newer patch behaves differently, or a new line appears, the run fails and the report says where, so the tools and their data can be brought up to date by hand. `scripts/refresh.py --dry-run` only lists the versions.
+
 ## License
 
 Everything in this repository is under the Apache License 2.0, unless a file says otherwise. Copyright 2026 KeyValueStore.com. See [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
