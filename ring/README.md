@@ -33,7 +33,7 @@ Try one virtual node per node and watch the ring's load fall apart, then raise i
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install.
+You need Node.js 22 or newer. Nothing to install.
 
 ```sh
 $ node ring/cli.js --nodes 5 --add

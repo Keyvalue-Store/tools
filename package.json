@@ -6,7 +6,7 @@
   "homepage": "https://keyvaluestore.com/tools/",
   "repository": "github:Keyvalue-Store/tools",
   "license": "Apache-2.0",
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=22" },
   "scripts": {
     "test": "node --test"
   }

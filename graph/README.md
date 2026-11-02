@@ -35,7 +35,7 @@ Paste links, one a line: `from type to`, or `from,type,to` when names have space
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install.
+You need Node.js 22 or newer. Nothing to install.
 
 ```sh
 $ printf 'web calls auth\nweb calls cart\ncart reads cart-db\nauth reads user-db\n' > links.txt

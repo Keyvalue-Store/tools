@@ -108,7 +108,7 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node: "20"
+            node: "22"
           - os: ubuntu-24.04-arm
             node: "24"
           - os: macos-latest
@@ -168,7 +168,7 @@ jobs:
           sha256sum keyvaluestore-tools.tar.gz keyvaluestore-tools.zip > SHA256SUMS
           cat SHA256SUMS
           cat > ../notes.md <<'EOF'
-          All the KeyValueStore.com tools in one package: each tool's library, command line, web page and manual, with the license files. They run anywhere Node.js 20 or newer runs, with nothing to install and nothing to build.
+          All the KeyValueStore.com tools in one package: each tool's library, command line, web page and manual, with the license files. They run anywhere Node.js 22 or newer runs, with nothing to install and nothing to build.
 
           | File | For |
           |---|---|

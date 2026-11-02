@@ -54,7 +54,7 @@ The second part of the page does the opposite. Paste protocol data and see it as
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install.
+You need Node.js 22 or newer. Nothing to install.
 
 ```sh
 $ node pipe/cli.js csv users.csv --key 'user:${id}' --type hash --ttl 3600 > users.resp

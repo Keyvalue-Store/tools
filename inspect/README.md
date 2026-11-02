@@ -78,7 +78,7 @@ Nothing you paste leaves the page. The tool doesn't send anything anywhere, and 
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install.
+You need Node.js 22 or newer. Nothing to install.
 
 ```sh
 $ node inspect/cli.js cart.bin

@@ -48,7 +48,7 @@ Nothing you paste or load leaves the page. The tool doesn't send anything anywhe
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install: clone the repository and run the file.
+You need Node.js 22 or newer. Nothing to install: clone the repository and run the file.
 
 ```sh
 $ node slots/cli.js somekey 'user:{42}:cart'

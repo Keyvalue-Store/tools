@@ -57,7 +57,7 @@ Nothing you paste or load leaves the page. The tool doesn't send anything anywhe
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install.
+You need Node.js 22 or newer. Nothing to install.
 
 ```sh
 $ aws dynamodb scan --table-name users > scan.json

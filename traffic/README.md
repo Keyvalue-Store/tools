@@ -98,7 +98,7 @@ Nothing you load leaves the page. The tool doesn't send anything anywhere, and t
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install. The file is read piece by piece, and `-` reads standard input, so a capture can go straight in:
+You need Node.js 22 or newer. Nothing to install. The file is read piece by piece, and `-` reads standard input, so a capture can go straight in:
 
 ```sh
 $ node traffic/cli.js monitor.txt

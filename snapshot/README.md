@@ -63,7 +63,7 @@ Nothing you load leaves the page. The tool doesn't send anything anywhere, and t
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install. The command line reads the file piece by piece and writes no faster than the program reading its output, so snapshots of any size work, and `| head` stops it early. It exits with 1 when the checksum doesn't match.
+You need Node.js 22 or newer. Nothing to install. The command line reads the file piece by piece and writes no faster than the program reading its output, so snapshots of any size work, and `| head` stops it early. It exits with 1 when the checksum doesn't match.
 
 ```sh
 $ node snapshot/cli.js dump.rdb

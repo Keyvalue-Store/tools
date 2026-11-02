@@ -29,11 +29,11 @@ Each folder's README is the tool's manual, with a plain-language explanation of 
 
 ## Download
 
-Each release has every tool in one package, without the tests: [keyvaluestore-tools.tar.gz](https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.tar.gz) for Linux and macOS, or [keyvaluestore-tools.zip](https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.zip). Unpack it and run the tools with Node.js 20 or newer. Before a release goes out, the package is checked on Linux, macOS and Windows.
+Each release has every tool in one package, without the tests: [keyvaluestore-tools.tar.gz](https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.tar.gz) for Linux and macOS, or [keyvaluestore-tools.zip](https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.zip). Unpack it and run the tools with Node.js 22 or newer. Before a release goes out, the package is checked on Linux, macOS and Windows.
 
 ## Run them
 
-From the package or a copy of this repository, with Node.js 20 or newer:
+From the package or a copy of this repository, with Node.js 22 or newer:
 
 ```sh
 node slots/cli.js --help

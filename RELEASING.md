@@ -24,7 +24,7 @@ version already has a tag and stops quietly.
 
 The `release` workflow ([.github/workflows/release.yml](.github/workflows/release.yml))
 is started by a finished `test` run, not by the push itself. The `test` run is
-`node --test` on Linux and macOS, with Node.js 20 and 24.
+`node --test` on Linux and macOS, with Node.js 22 and 24.
 
 - **plan.** Goes on only if the `test` run passed, came from a push to `main`
   in this repo, and `main` still points at that commit (if `main` moved on, the
@@ -37,7 +37,7 @@ is started by a finished `test` run, not by the push itself. The `test` run is
   named `keyvaluestore-tools`. Out come `keyvaluestore-tools.tar.gz` and
   `keyvaluestore-tools.zip`.
 - **check.** Unpacks the package and runs `scripts/smoke.js` against it on
-  Linux x86-64 (Node.js 20), Linux ARM, macOS and Windows (Node.js 24). The
+  Linux x86-64 (Node.js 22), Linux ARM, macOS and Windows (Node.js 24). The
   smoke test comes from the commit, but the tools come only from the package,
   so what's checked is what ships. Every tool's command line has to start and
   print its help, and the tools that take text get real work with known
@@ -60,7 +60,7 @@ step.
 | SHA256SUMS | Checksums of both |
 
 There are no binaries: the tools are plain JavaScript with no dependencies,
-and they run with Node.js 20 or newer. Archive names carry no version on
+and they run with Node.js 22 or newer. Archive names carry no version on
 purpose. Links like
 `https://github.com/Keyvalue-Store/tools/releases/latest/download/keyvaluestore-tools.tar.gz`
 keep working from one release to the next, so the README and the site never

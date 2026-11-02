@@ -36,7 +36,7 @@ Nothing you paste or load leaves the page. The tool doesn't send anything anywhe
 
 ## Use it from the command line
 
-You need Node.js 20 or newer. Nothing to install.
+You need Node.js 22 or newer. Nothing to install.
 
 ```sh
 $ redis-cli --scan | node keyspace/cli.js -
