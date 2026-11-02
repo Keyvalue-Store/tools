@@ -46,15 +46,21 @@ function before(id, r) {
 // One recorded case against the model, given what chance decided. A
 // skiplist's nodes have random sizes nobody can see from outside, so cases
 // with one get a tolerance of six standard deviations, and the bytes the
-// nodes must have taken are checked against the sizes nodes can have.
+// nodes must have taken are checked against the sizes nodes can have. The
+// same goes for Valkey's tables of fields and keys with an expiry, which
+// hash pointers: their child buckets can't be seen either.
+function volatile(id, c) {
+  return M.features(id).hfe === 'valkey' && c.groups.some((g) => g.type === 'hash' && g.fieldTtl);
+}
 function check(id, c) {
   const obs = observed(c);
   const r = M.estimate(c.groups, id, c.settings, { observed: obs });
   const skip = r.groups.some((g) => g.encoding === 'skiplist');
+  const loose = skip || volatile(id, c);
   const diff = c.delta - (r.total - before(id, r));
   const out = [];
-  if (skip ? Math.abs(diff) > 6 * r.sd + 1e-6 : Math.abs(diff) > 1e-6) {
-    out.push({ kind: 'bytes', measured: c.delta, model: r.total - before(id, r), diff: diff, sd: r.sd, skiplist: skip });
+  if (loose ? Math.abs(diff) > 6 * r.sd + 1e-6 : Math.abs(diff) > 1e-6) {
+    out.push({ kind: 'bytes', measured: c.delta, model: r.total - before(id, r), diff: diff, sd: r.sd, skiplist: skip, volatile: !skip && loose });
   }
   if (skip) {
     // What the nodes took, by the model of everything else: no less than
@@ -125,7 +131,7 @@ function chance(id, rec) {
   };
 }
 
-module.exports = { load: load, observed: observed, check: check, differences: differences, skiplistStats: skiplistStats, chance: chance, before: before };
+module.exports = { volatile, load: load, observed: observed, check: check, differences: differences, skiplistStats: skiplistStats, chance: chance, before: before };
 
 // node --test runs every .js file under a test folder; this one only runs
 // by hand (the tests require it).

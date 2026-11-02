@@ -101,10 +101,12 @@
 
   // ---- the form ----
   // Each row keeps what was typed; toGroup() turns it into what memory.js takes.
-  const TYPES = [['string', 'Strings'], ['hash', 'Hashes'], ['set', 'Sets'], ['zset', 'Sorted sets'], ['list', 'Lists']];
-  const COUNT_LABEL = { hash: 'Fields per hash', set: 'Members per set', zset: 'Members per set', list: 'Items per list' };
-  const ELEM = { string: [['value', 'Value']], hash: [['field', 'Field names'], ['value', 'Values']], set: [['member', 'Members']], zset: [['member', 'Members']], list: [['item', 'Items']] };
-  const COUNT_NAME = { hash: 'fields', set: 'members', zset: 'members', list: 'items' };
+  const TYPES = [['string', 'Strings'], ['hash', 'Hashes'], ['set', 'Sets'], ['zset', 'Sorted sets'], ['list', 'Lists'], ['stream', 'Streams']];
+  const COUNT_LABEL = { hash: 'Fields per hash', set: 'Members per set', zset: 'Members per set', list: 'Items per list', stream: 'Entries per stream' };
+  const ELEM = { string: [['value', 'Value']], hash: [['field', 'Field names'], ['value', 'Values']], set: [['member', 'Members']], zset: [['member', 'Members']], list: [['item', 'Items']], stream: [['field', 'Field names'], ['value', 'Values']] };
+  const COUNT_NAME = { hash: 'fields', set: 'members', zset: 'members', list: 'items', stream: 'entries' };
+  // Stream extras, and how many fields of a hash have a TTL of their own.
+  const STREAM_EXTRA = [['fields', 'Fields per entry'], ['groups', 'Consumer groups'], ['consumers', 'Consumers per group'], ['pending', 'Pending per group']];
   const DISTINCT = { field: true, member: true };
   const MAX_LEN = 536870912;
   let rows = [];
@@ -119,6 +121,8 @@
       writes: g.writes || 'once', score: g.score === undefined || g.score === null ? '0' : String(g.score)
     };
     for (const t of Object.keys(COUNT_NAME)) if (g.type === t) r.n = String(g[COUNT_NAME[t]]);
+    if (g.type === 'stream') for (const [name] of STREAM_EXTRA) r[name] = String(g[name] || 0);
+    if (g.type === 'hash') r.fieldTtl = String(g.fieldTtl || 0);
     for (const [name] of ELEM[g.type]) {
       const e = g[name];
       r[name] = e.int !== undefined ? { kind: 'number', text: String(e.int) } : { kind: 'text', text: String(e.len) };
@@ -126,7 +130,7 @@
     return r;
   }
   function blankRow(type) {
-    const d = { string: '1m strings key=20 value=100', hash: '10000 hashes key=20 fields=10 field=8 value=20', set: '10000 sets key=20 members=10 member=10', zset: '1000 zsets key=20 members=100 member=10 score=1', list: '1000 lists key=20 items=100 item=20' };
+    const d = { string: '1m strings key=20 value=100', hash: '10000 hashes key=20 fields=10 field=8 value=20', set: '10000 sets key=20 members=10 member=10', zset: '1000 zsets key=20 members=100 member=10 score=1', list: '1000 lists key=20 items=100 item=20', stream: '10 streams key=20 entries=10000 fields=2 field=8 value=20' };
     return rowFromGroup(M.parse(d[type]).groups[0]);
   }
   function utf8Length(t) {
@@ -181,6 +185,16 @@
     }
     for (const [name, title] of ELEM[r.type]) g[name] = elemOf(r, name, title);
     if (r.type === 'zset') g.score = r.score.trim() || '0';
+    if (r.type === 'stream') {
+      delete g.writes;
+      for (const [name, title] of STREAM_EXTRA) g[name] = count(r[name], title, 1e9);
+      if (g.fields < 1) throw new Error('Fields per entry: at least 1.');
+      if (g.pending > g.entries) throw new Error('Pending per group: at most the entries in the stream.');
+    }
+    if (r.type === 'hash') {
+      g.fieldTtl = count(r.fieldTtl || '0', 'Fields with a TTL', 4294967295);
+      if (g.fieldTtl > g.fields) throw new Error('Fields with a TTL: at most the fields per hash.');
+    }
     return M.checkGroup(g);
   }
 
@@ -259,7 +273,9 @@
         second.append(el('div', { class: 'field' }, [el('label', { for: id, text: title }), box2]));
       }
       if (r.type === 'zset') second.append(field('Scores like', input(r.score, (v) => { r.score = v; update(); })));
-      if (r.type !== 'string') {
+      if (r.type === 'hash') second.append(field('Fields with a TTL', input(r.fieldTtl, (v) => { r.fieldTtl = v; update(); }), el('span', { class: 'hint', text: 'HEXPIRE, all at one time' })));
+      if (r.type === 'stream') for (const [name, title] of STREAM_EXTRA) second.append(field(title, input(r[name], (v) => { r[name] = v; update(); })));
+      if (r.type !== 'string' && r.type !== 'stream') {
         second.append(field('Written', select([['once', 'One command per key'], ['each', 'One element at a time']], r.writes, (v) => { r.writes = v; update(); })));
       }
       card.append(second);
@@ -356,10 +372,10 @@
   }, 250));
 
   // ---- results ----
-  const TYPE_WORDS = { string: ['string', 'strings'], hash: ['hash', 'hashes'], set: ['set', 'sets'], zset: ['sorted set', 'sorted sets'], list: ['list', 'lists'] };
+  const TYPE_WORDS = { string: ['string', 'strings'], hash: ['hash', 'hashes'], set: ['set', 'sets'], zset: ['sorted set', 'sorted sets'], list: ['list', 'lists'], stream: ['stream', 'streams'] };
   const ENCODING = {
     int: 'number in the object', embstr: 'with the key', raw: 'apart', listpack: 'listpack', ziplist: 'ziplist', intset: 'intset',
-    hashtable: 'hash table', skiplist: 'skiplist', quicklist: 'quicklist'
+    hashtable: 'hash table', skiplist: 'skiplist', quicklist: 'quicklist', listpackex: 'listpack with expiries', stream: 'stream'
   };
   function groupLabel(g) {
     return num(g.count) + ' ' + TYPE_WORDS[g.type][g.count === 1 ? 0 : 1];
@@ -423,6 +439,7 @@
       body.push('Chance decides about ' + bytes(r.sd) + ' of it either way: how the keys land in the buckets of the hash tables' +
         (r.groups.some((g) => g.encoding === 'skiplist') ? ' and how many levels each skiplist node gets.' : '.'));
     }
+    for (const n of r.notes || []) body.push(n);
     out.append(verdict('info', 'These keys take ' + bytes(r.total), body));
     const rowsOut = r.groups.map((g) => {
       const enc = ENCODING[g.encoding] || g.encoding;

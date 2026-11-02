@@ -107,7 +107,28 @@
       // Valkey hashtable structs with their type's metadata.
       htHash: is(9, 1) && !R ? 96 : 80,
       htSet: 80,
-      htZset: 80
+      htZset: 80,
+      // Stream structs (sizeof, from each version's headers): the stream,
+      // a rax, a consumer group, a consumer, a pending entry (NACK).
+      stream: R ? (is(6, 2) ? 40 : ge(8, 6) ? 160 : ge(8, 4) ? 120 : ge(8, 2) ? 112 : 80) : 80,
+      rax: R ? (ge(8, 10) ? 40 : ge(8, 4) ? 32 : 24) : (ge(8, 1) ? 32 : 24),
+      streamCG: R ? (is(6, 2) ? 32 : ge(8, 8) ? 64 : ge(8, 6) ? 56 : ge(8, 4) ? 48 : 40) : 40,
+      consumer: R ? (ge(7, 2) ? 32 : 24) : 32,
+      nack: R ? (ge(8, 6) ? 64 : ge(8, 2) ? 32 : 24) : 24,
+      // Redis 8.10 keeps the value of a 16-byte stream ID in its parent
+      // node instead of a leaf node of its own.
+      raxInline: R && ge(8, 10),
+      // Redis 8.2+ indexes pending entries by ID: a list of the groups
+      // that hold each one.
+      cgroupsRef: R && ge(8, 2),
+      // Redis 8.4 also indexes a group's pending entries by delivery time.
+      pelByTime: R && is(8, 4),
+      // Hash fields with their own expiry (HEXPIRE): Redis 7.4+, Valkey 9.0+.
+      hfe: R ? (ge(7, 4) ? 'redis' : null) : (ge(9, 0) ? 'valkey' : null),
+      // Redis: the listpackEx struct around a listpack with expiries, and
+      // what the hash table's struct grows by for its expiry metadata.
+      lpex: R && ge(8, 2) ? 24 : 32,
+      dictMeta: R ? (ge(8, 4) ? 32 : ge(8, 2) ? 24 : 40) : 0
     };
     featureCache.set(id, F);
     return F;
@@ -811,12 +832,88 @@
 
   // ---- hashes ----
 
+  // Hash fields with an expiry, all at the same time (one HPEXPIREAT).
+  const FIELD_EXPIRE_AT = 4102444800000n;
+  // Redis keeps items with an expiry in ebuckets: a plain list up to 16,
+  // then a rax of time buckets, each a chain of segments of 16 items. Items
+  // with the same time share one bucket: a first segment header, and one
+  // more segment for each 16 items past the first 16.
+  function ebuckets(F, n) {
+    if (n <= 16) return 0;
+    const key = new Uint8Array(6);
+    return sc(F.rax + 8) + raxBytes([key], F.raxInline ? 6 : 0) + 16 + 24 * (1 + Math.floor((n - 17) / 16));
+  }
+  // A hash table entry with an expiry (Redis 8.6+ ExpireMeta of 16 bytes,
+  // Valkey 9 an 8-byte time); the field's sds header is at least type 8.
+  function entryAllocTtl(F, fl, vl, E) {
+    const t = Math.max(sdsHdr(fl, F), 3);
+    const a = E + t + fl + 1 + vl + 4;
+    if (a <= 128) return sc(a);
+    return sc(E + 8 + t + fl + 1) + sdsNew(vl, F);
+  }
+
   function hashValue(F, g, S) {
+    const base = hashBase(F, g, S, !!(g.fieldTtl && F.hfe === 'valkey'));
+    const t = g.fieldTtl || 0;
+    if (!t) return base;
+    const N = g.fields, f = g.field, vl = elemLen(g.value);
+    if (F.hfe === 'redis') {
+      if (base.enc === 'listpack') {
+        const lp = base.lpBytes + t * lpIntEntry(FIELD_EXPIRE_AT) + (N - t) * lpIntEntry(0n);
+        return { bytes: sc(lp) + sc(F.lpex), rand: base.rand, enc: 'listpackex', hfe: 1 };
+      }
+      const field = F.hashHT === 'F'
+        ? sumDistinct(f, t, (x) => entryAllocTtl(F, digits(x), vl, 16) - entryAlloc(F, digits(x), vl), (l) => entryAllocTtl(F, l, vl, 16) - entryAlloc(F, l, vl))
+        : sumDistinct(f, t, (x) => mstrMeta(digits(x)) - mstr(digits(x)), (l) => mstrMeta(l) - mstr(l));
+      return { bytes: base.bytes + F.dictMeta + field + ebuckets(F, t), rand: base.rand, enc: base.enc, hfe: 1 };
+    }
+    const field = sumDistinct(f, t, (x) => entryAllocTtl(F, digits(x), vl, 8) - entryAlloc(F, digits(x), vl), (l) => entryAllocTtl(F, l, vl, 8) - entryAlloc(F, l, vl));
+    let vset = 0;
+    const rand = base.rand.slice();
+    if (t >= 2 && t <= 127) vset = sc(8 + 8 * t);
+    else if (t >= 128) {
+      const big = vsetBig(t);
+      vset = big.exact;
+      rand.push({ kind: 'vset', mean: big.mean, var: big.var });
+    }
+    return { bytes: base.bytes + field + vset, rand: rand, enc: base.enc, hfe: 1 };
+  }
+  // A Redis 7.4-8.4 hash field with its expiry metadata (16 bytes) and
+  // the 2-byte flags that say so in front.
+  function mstrMeta(len) {
+    return sc(16 + 2 + (len < 32 ? 1 : len < 65536 ? 3 : 9) + len + 1);
+  }
+  // A Valkey volatile set (vset.c): one entry is kept as is, up to 127 in
+  // a sorted vector; past that, fields that all expire at the same time
+  // go into one time bucket, a hashtable of entry pointers. The pointers
+  // hash to random buckets, so its child buckets are left to chance. A
+  // table that has just doubled keeps its old buckets until as many more
+  // entries have gone in (incremental rehashing), and at exactly 128 the
+  // old vector is still held. Measured on Valkey 9.0 and 9.1: 216 bytes
+  // of rax and table structs.
+  function vsetBig(t) {
+    let b = 1;
+    while (7 * b < t) b *= 2;
+    let exact = 216 + 64 * b + (t === 128 ? sc(8 + 8 * 127) : 0);
+    const r = childBuckets(t, b);
+    let mean = r.mean, v = r.var;
+    const old = b / 2, since = t - (7 * old + 1);
+    if (old >= 32 && since >= 0 && since < old) {
+      exact += 64 * old;
+      const left = childBuckets(7 * old, old);
+      const share = 1 - since / old;
+      mean += left.mean * share;
+      v += left.var * share;
+    }
+    return { exact: exact, mean: 64 * mean, var: 64 * 64 * v };
+  }
+
+  function hashBase(F, g, S, forceTable) {
     const N = g.fields, f = g.field, v = g.value, once = g.writes !== 'each';
     const fl = maxLenDistinct(f, N), vl = elemLen(v);
     const long = fl > S.hashMaxListpackValue || vl > S.hashMaxListpackValue;
     let safety = false;
-    if (N <= S.hashMaxListpackEntries && !long) {
+    if (N <= S.hashMaxListpackEntries && !long && !forceTable) {
       let bytes;
       if (F.ziplist) {
         const vv = elemInt(v);
@@ -828,7 +925,7 @@
       // all the fields by the length of its arguments, one field at a time
       // by the listpack's own size.
       const raw = sumDistinct(f, N, digits, (l) => l) + N * vl;
-      if (once ? raw <= SAFE_SIZE : bytes <= SAFE_SIZE) return { bytes: sc(bytes), rand: [], enc: F.ziplist ? 'ziplist' : 'listpack' };
+      if (once ? raw <= SAFE_SIZE : bytes <= SAFE_SIZE) return { bytes: sc(bytes), lpBytes: bytes, rand: [], enc: F.ziplist ? 'ziplist' : 'listpack' };
       safety = true;
     }
     // A hash table. How big its bucket array starts out: one HSET with
@@ -837,6 +934,9 @@
     // holds (7.0+).
     let pre = 0;
     if (safety) pre = 0;
+    // Valkey turns a listpack into a table, sized for its fields, when a
+    // field gets an expiry.
+    else if (forceTable && N <= S.hashMaxListpackEntries && !long) pre = N;
     else if (once && F.presize && N > S.hashMaxListpackEntries) pre = N;
     else if (long) pre = 0;
     else if (!F.ziplist) pre = S.hashMaxListpackEntries + 1;
@@ -1066,7 +1166,7 @@
 
   // ---- a whole dataset ----
 
-  const TYPES = ['string', 'hash', 'set', 'zset', 'list'];
+  const TYPES = ['string', 'hash', 'set', 'zset', 'list', 'stream'];
 
   // Limits: more keys than anyone has, the longest string the server takes
   // (proto-max-bulk-len, 512 MB), the most elements a collection holds.
@@ -1075,6 +1175,158 @@
 
   // A group, checked, as a copy with numbers given as { int: 42 } turned
   // into text.
+  // ---- streams ----
+
+  // A radix tree (rax.c) holding the keys, given sorted and distinct as
+  // byte arrays. An insert-only rax has one shape for a set of keys: a
+  // node with one child takes the whole run of single children into one
+  // compressed node, up to the next fork or key. A node is a 4-byte header,
+  // its bytes (the compressed run, or one byte per child), padding to 8, a
+  // pointer per child (one for a compressed node), and a value pointer when
+  // it is a key with a value. `inlineLen`: keys of exactly this length get
+  // no leaf node of their own (Redis 8.10 streams).
+  function raxNodeLen(size, children, value) {
+    const pad = (8 - ((size + 4) % 8)) & 7;
+    return 4 + size + pad + 8 * children + (value ? 8 : 0);
+  }
+  function raxBytes(keys, inlineLen, noValues) {
+    if (!keys.length) return sc(raxNodeLen(0, 0, false));
+    let total = 0;
+    const walk = (lo, hi, d) => {
+      let isKey = false;
+      if (keys[lo].length === d) { isKey = !noValues; lo++; }
+      if (lo === hi) {
+        if (!(inlineLen && d === inlineLen)) total += sc(raxNodeLen(0, 0, isKey));
+        return;
+      }
+      const a = keys[lo], z = keys[hi - 1];
+      if (a[d] === z[d]) {
+        let l = 1;
+        while (d + l < a.length && d + l < z.length && a[d + l] === z[d + l]) l++;
+        total += sc(raxNodeLen(l, 1, isKey));
+        walk(lo, hi, d + l);
+        return;
+      }
+      const groups = [];
+      let start = lo;
+      for (let i = lo + 1; i <= hi; i++) {
+        if (i === hi || keys[i][d] !== keys[start][d]) { groups.push([start, i]); start = i; }
+      }
+      total += sc(raxNodeLen(groups.length, groups.length, isKey));
+      for (const [x, y] of groups) walk(x, y, d + 1);
+    };
+    walk(0, keys.length, 0);
+    return total;
+  }
+  // A stream ID as the 16 bytes of its rax key: milliseconds, then
+  // sequence, both big-endian.
+  const STREAM_BASE = 1767225600000;
+  function streamKey(ms, seq) {
+    const k = new Uint8Array(16);
+    let m = BigInt(ms), q = BigInt(seq);
+    for (let i = 7; i >= 0; i--) { k[i] = Number(m & 255n); m >>= 8n; k[8 + i] = Number(q & 255n); q >>= 8n; }
+    return k;
+  }
+  function streamId(g, i) {
+    const per = g.perMs || 1;
+    return [STREAM_BASE + Math.floor(i / per), i % per];
+  }
+
+  // The listpacks of a stream's entries (t_stream.c, streamAppendItem). A
+  // listpack starts with a master entry (count, deleted, the field names,
+  // 0); each entry is flags, the ID's difference from the master's,
+  // the values (the fields when they differ from the master's, which they
+  // never do here), and a count of its parts. A new listpack starts when
+  // the last one has 100 entries (stream-node-max-entries) or the new
+  // entry would take it to 4096 bytes (stream-node-max-bytes). The last
+  // listpack is made with 4096 bytes up front; the others are shrunk to
+  // fit when the next one starts.
+  function streamNodes(F, g) {
+    const N = g.entries, nf = g.fields, f = g.field, v = g.value;
+    const fieldNames = sumDistinct(f, nf, lpIntEntry, (l) => lpStrEntry(l, F));
+    const values = sumSame(v, nf, lpIntEntry, (l) => lpStrEntry(l, F));
+    const totelelen = sumDistinct(f, nf, digits, (l) => l) + nf * elemLen(v);
+    const maxEntries = 100, maxBytes = 4096;
+    const big = (x) => BigInt(x);
+    const nodes = [];
+    let i = 0;
+    while (i < N) {
+      const [mms, mseq] = streamId(g, i);
+      // Master entry, with count 1 for now.
+      let bytes = 7 + lpIntEntry(1n) + lpIntEntry(0n) + lpIntEntry(big(nf)) + fieldNames + lpIntEntry(0n);
+      let count = 0;
+      while (i < N) {
+        if (count > 0 && (bytes + totelelen >= maxBytes || count >= maxEntries)) break;
+        const [ms, seq] = streamId(g, i);
+        bytes += lpIntEntry(2n) + lpIntEntry(big(ms - mms)) + lpIntEntry(big(seq - mseq)) + values + lpIntEntry(big(nf + 3));
+        if (count > 0) bytes += lpIntEntry(big(count + 1)) - lpIntEntry(big(count));
+        count++;
+        i++;
+      }
+      nodes.push({ key: streamKey(mms, mseq), bytes: bytes, count: count });
+    }
+    return nodes;
+  }
+
+  function streamValue(F, g) {
+    const nodes = streamNodes(F, g);
+    let bytes = sc(F.stream) + sc(F.rax);
+    nodes.forEach((n, j) => { bytes += j === nodes.length - 1 ? Math.max(4096, sc(n.bytes)) : sc(n.bytes); });
+    bytes += raxBytes(nodes.map((n) => n.key), F.raxInline ? 16 : 0);
+    return { bytes: bytes + streamGroups(F, g), rand: [], enc: 'stream', nodes: undefined };
+  }
+
+  // Distinct names as XGROUP and XREADGROUP get them: group names and
+  // consumer names are text of the given length (never numbers), told
+  // apart in their last bytes. Only their lengths and how they sort
+  // matter to the rax, so they are made the way the recorder makes them.
+  const NAME_FIRST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  const NAME_REST = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+  function nameText(i, L) {
+    let rest = '', q = Math.floor(i / 52);
+    do { rest = NAME_REST[q % 62] + rest; q = Math.floor(q / 62); } while (q > 0);
+    if (L === 1) return NAME_FIRST[i];
+    return NAME_FIRST[i % 52] + ':'.repeat(L - 1 - rest.length) + rest;
+  }
+  function nameKeys(n, L) {
+    const enc = new TextEncoder();
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(enc.encode(nameText(i, L)));
+    return out.sort(compareBytes);
+  }
+  function compareBytes(a, b) {
+    const n = Math.min(a.length, b.length);
+    for (let i = 0; i < n; i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return a.length - b.length;
+  }
+
+  // Consumer groups. Each group is a struct, its pending entries list (a
+  // rax of IDs) and a rax of consumers by name. A consumer is a struct, its
+  // name and a rax of the IDs it holds. A pending entry is a NACK, in both
+  // raxes. Redis 8.2+ also keeps, for each pending ID, a list of the groups
+  // holding it, in one rax for the stream.
+  function streamGroups(F, g) {
+    const G = g.groups || 0;
+    if (!G) return 0;
+    const C = g.consumers || 0, P = g.pending || 0;
+    const inl = F.raxInline ? 16 : 0;
+    const ids = [];
+    for (let i = 0; i < P; i++) { const [ms, seq] = streamId(g, i); ids.push(streamKey(ms, seq)); }
+    let perGroup = sc(F.streamCG) + sc(F.rax) + raxBytes(ids, inl) + sc(F.rax) + raxBytes(nameKeys(C, g.consumer), 0) + P * sc(F.nack);
+    // Redis 8.4: delivery time (8 bytes) and ID, no value. The entries a
+    // group holds are taken to have been delivered in the same millisecond.
+    if (F.pelByTime) perGroup += sc(F.rax) + raxBytes(ids.map((k) => { const t = new Uint8Array(24); t.set(k, 8); return t; }), 0, true);
+    let at = 0;
+    for (let c = 0; c < C; c++) {
+      const n = Math.floor(P / C) + (c < P % C ? 1 : 0);
+      perGroup += sc(F.consumer) + sdsNew(g.consumer, F) + sc(F.rax) + raxBytes(ids.slice(at, at + n), inl);
+      at += n;
+    }
+    let bytes = sc(F.rax) + raxBytes(nameKeys(G, g.group), 0) + G * perGroup;
+    if (F.cgroupsRef && P) bytes += sc(F.rax) + raxBytes(ids, inl) + P * (sc(48) + G * sc(24));
+    return bytes;
+  }
+
   function checkGroup(g0) {
     if (!g0 || typeof g0 !== 'object') throw new Error('A group must be an object.');
     const g = Object.assign({}, g0);
@@ -1102,10 +1354,30 @@
       }
     };
     if (g.type === 'string') elem('value');
-    if (g.type === 'hash') { need('fields', 1, MAX_ELEMS, 'a hash holds'); elem('field'); elem('value'); }
+    if (g.type === 'hash') {
+      need('fields', 1, MAX_ELEMS, 'a hash holds'); elem('field'); elem('value');
+      if (g.fieldTtl === undefined || g.fieldTtl === null) g.fieldTtl = 0;
+      need('fieldTtl', 0, g.fields, 'the fields of the hash');
+    }
     if (g.type === 'set' || g.type === 'zset') { need('members', 1, MAX_ELEMS, 'a set holds'); elem('member'); }
     if (g.type === 'zset' && Number.isNaN(parseScore(scoreOf(g)))) throw new Error('score must be a number, or inf or -inf.');
     if (g.type === 'list') { need('items', 1, MAX_ELEMS, 'a list holds'); elem('item'); }
+    if (g.type === 'stream') {
+      need('entries', 1, 1e9, 'the calculator takes for a stream');
+      need('fields', 1, 1e6, 'the calculator takes for an entry');
+      elem('field'); elem('value');
+      for (const [name, max] of [['groups', 1e5], ['consumers', 1e5], ['pending', g.entries]]) {
+        if (g[name] === undefined || g[name] === null) g[name] = 0;
+        need(name, 0, max, name === 'pending' ? 'the entries in the stream' : 'the calculator takes');
+      }
+      if (g.groups && g.pending && !g.consumers) throw new Error('Pending entries belong to consumers: give consumers=1 or more.');
+      for (const name of ['group', 'consumer']) {
+        if (g[name] === undefined || g[name] === null) g[name] = 8;
+        need(name, 1, 1e4, 'the calculator takes for a name');
+      }
+      if (g.perMs === undefined || g.perMs === null) g.perMs = 1;
+      need('perMs', 1, 1e9, 'entries in a millisecond');
+    }
     if (g.ttl !== undefined && g.ttl !== null && !(typeof g.ttl === 'number' && g.ttl >= 0 && g.ttl <= 1)) throw new Error('ttl is the share of keys with a TTL, a number from 0 to 1.');
     if (g.ttlCount !== undefined && g.ttlCount !== null && !(Number.isInteger(g.ttlCount) && g.ttlCount >= 0 && g.ttlCount <= g.count)) {
       throw new Error('ttlCount is how many of the ' + g.count + ' keys have a TTL.');
@@ -1123,7 +1395,7 @@
 
   // What the random parts weigh: a collision entry is 16 bytes, a child
   // bucket 64, skiplist nodes are counted in bytes.
-  const RAND_BYTES = { collisions: 16, children: 64, nodes: 1 };
+  const RAND_BYTES = { collisions: 16, children: 64, nodes: 1, vset: 1 };
 
   // Memory for one group of keys (checked), without the keyspace tables.
   // `observed` can give the random parts as they turned out, totals for the
@@ -1139,7 +1411,8 @@
       encTtl = s.encTtl;
     } else {
       const h = holder(F, g.key);
-      const val = g.type === 'hash' ? hashValue(F, g, S) : g.type === 'set' ? setValue(F, g, S) : g.type === 'zset' ? zsetValue(F, g, S) : listValue(F, g, S);
+      const val = g.type === 'hash' ? hashValue(F, g, S) : g.type === 'set' ? setValue(F, g, S) : g.type === 'zset' ? zsetValue(F, g, S)
+        : g.type === 'stream' ? streamValue(F, g, S) : listValue(F, g, S);
       perPlain = h.plain + val.bytes;
       perTtl = h.ttl + val.bytes;
       enc = encTtl = val.enc;
@@ -1175,7 +1448,14 @@
     const S = settingsOf(settings);
     const opt = options || {};
     const obs = opt.observed || {};
-    const list = (Array.isArray(groups) ? groups : [groups]).map(checkGroup);
+    const notes = [];
+    const list = (Array.isArray(groups) ? groups : [groups]).map(checkGroup).map((g) => {
+      if (g.type === 'hash' && g.fieldTtl && !F.hfe) {
+        if (!notes.length) notes.push(versions().find((v) => v.id === id).label + ' has no HEXPIRE: hash fields with a TTL of their own came in Redis 7.4 and Valkey 9.0. Those TTLs are left out here.');
+        return Object.assign({}, g, { fieldTtl: 0 });
+      }
+      return g;
+    });
     let keys = 0, ttlKeys = 0, exact = 0, mean = 0, va = 0;
     const out = list.map((g, i) => {
       const c = groupCost(F, g, S, obs.groups && obs.groups[i]);
@@ -1191,6 +1471,19 @@
         keyBytes: c.perKey, keyBytesTtl: c.perKeyTtl
       };
     });
+    // Redis tracks the hashes that have fields with an expiry in the
+    // database's own ebuckets, by their next expiry (the same for all here).
+    const hfeKeys = list.reduce((a, g) => a + (g.type === 'hash' && g.fieldTtl ? g.count : 0), 0);
+    if (F.hfe === 'redis') exact += ebuckets(F, hfeKeys);
+    // Valkey keeps them in a table of its own, like the keyspace table: one
+    // 64-byte bucket while empty, more as it fills.
+    let hfeTable = null;
+    if (F.hfe === 'valkey' && hfeKeys) {
+      hfeTable = keyTable(F, hfeKeys, obs.volatileKeys);
+      exact += hfeTable.bytes - 64;
+      mean += hfeTable.mean;
+      va += hfeTable.var;
+    }
     const kt = keyTable(F, keys, obs.keys);
     const et = keyTable(F, ttlKeys, obs.expires);
     // A database's dicts, made for its first key and its first expiry
@@ -1208,7 +1501,7 @@
     const ksd = Math.sqrt(kt.var) + Math.sqrt(et.var);
     va += ksd * ksd;
     return {
-      version: id, keys: keys, ttlKeys: ttlKeys,
+      version: id, keys: keys, ttlKeys: ttlKeys, notes: notes,
       total: exact + mean, sd: Math.sqrt(va), exact: exact, random: mean,
       tables: {
         keys: { bytes: kt.bytes + kt.mean, buckets: kt.size, kind: F.ks === 'ht' ? 'buckets' : 'slots' },
@@ -1266,14 +1559,16 @@
   // start of a word, outside quotes, starts a comment.
   const TYPE_WORDS = {
     string: 'string', strings: 'string', hash: 'hash', hashes: 'hash', set: 'set', sets: 'set',
-    zset: 'zset', zsets: 'zset', 'sorted-set': 'zset', 'sorted-sets': 'zset', list: 'list', lists: 'list'
+    zset: 'zset', zsets: 'zset', 'sorted-set': 'zset', 'sorted-sets': 'zset', list: 'list', lists: 'list',
+    stream: 'stream', streams: 'stream'
   };
   const GROUP_DEFAULTS = {
     string: { key: 20, value: { len: 100 } },
     hash: { key: 20, fields: 10, field: { len: 8 }, value: { len: 20 } },
     set: { key: 20, members: 10, member: { len: 10 } },
     zset: { key: 20, members: 10, member: { len: 10 }, score: '0' },
-    list: { key: 20, items: 10, item: { len: 20 } }
+    list: { key: 20, items: 10, item: { len: 20 } },
+    stream: { key: 20, entries: 1000, fields: 2, field: { len: 8 }, value: { len: 20 } }
   };
   // A count: 2500, 2,500, 2_500, 2.5k, 1.5m, 2b, 1e6. Worked out in
   // decimal digits, so 1.1b is exactly 1100000000. null if it isn't one.
@@ -1356,7 +1651,7 @@
         let type = TYPE_WORDS[typeWord];
         let rest = words.slice(2);
         if (!type && typeWord === 'sorted' && /^sets?$/i.test(words[2] || '')) { type = 'zset'; rest = words.slice(3); }
-        if (!type) throw new Error('The second word is the type: strings, hashes, sets, zsets or lists.');
+        if (!type) throw new Error('The second word is the type: strings, hashes, sets, zsets, lists or streams.');
         const g = Object.assign({ type: type, count: count }, JSON.parse(JSON.stringify(GROUP_DEFAULTS[type])));
         for (const w of rest) {
           const m = /^([a-z-]+)=(.*)$/i.exec(w);
@@ -1371,8 +1666,18 @@
             const qm = /^"(.*)"$/.exec(v) || /^'(.*)'$/.exec(v);
             g.key = qm ? utf8Length(qm[1]) : parseLength(v);
             if (g.key === null) throw new Error('key should be a length in bytes, such as 24, or "an:example" in quotes.');
-          } else if (name === 'value' && (type === 'string' || type === 'hash')) g.value = parseElem(v, name);
-          else if ((name === 'fields' && type === 'hash') || (name === 'members' && (type === 'set' || type === 'zset')) || (name === 'items' && type === 'list')) g[name] = num();
+          } else if (name === 'value' && (type === 'string' || type === 'hash' || type === 'stream')) g.value = parseElem(v, name);
+          else if (type === 'stream' && ['entries', 'fields', 'groups', 'consumers', 'pending', 'per-ms'].includes(name)) g[name === 'per-ms' ? 'perMs' : name] = num();
+          else if (type === 'stream' && name === 'field') g.field = parseElem(v, name);
+          else if (type === 'stream' && (name === 'group' || name === 'consumer')) {
+            const l = parseLength(v);
+            if (l === null) throw new Error(name + ' is the length of each ' + name + ' name in bytes.');
+            g[name] = l;
+          } else if (type === 'hash' && name === 'field-ttl') {
+            if (/^(all|yes)$/i.test(v)) g.fieldTtl = 'all';
+            else if (/^(none|no)$/i.test(v)) g.fieldTtl = 0;
+            else g.fieldTtl = num();
+          } else if ((name === 'fields' && type === 'hash') || (name === 'members' && (type === 'set' || type === 'zset')) || (name === 'items' && type === 'list')) g[name] = num();
           else if ((name === 'field' && type === 'hash') || (name === 'member' && (type === 'set' || type === 'zset')) || (name === 'item' && type === 'list')) g[name] = parseElem(v, name);
           else if (name === 'score' && type === 'zset') {
             if (Number.isNaN(parseScore(v))) throw new Error('score should be a number.');
@@ -1397,6 +1702,7 @@
             g.writes = v.toLowerCase();
           } else throw new Error(name + " isn't something a " + (type === 'zset' ? 'sorted set' : type) + ' line takes.');
         }
+        if (g.fieldTtl === 'all') g.fieldTtl = g.fields;
         checkGroup(g);
         groups.push(g);
       } catch (e) {
@@ -1424,12 +1730,18 @@
   function format(groups0) {
     const groups = (Array.isArray(groups0) ? groups0 : [groups0]).map(checkGroup);
     return groups.map((g) => {
-      const words = [plain(g.count), { string: 'strings', hash: 'hashes', set: 'sets', zset: 'zsets', list: 'lists' }[g.type], 'key=' + g.key];
+      const words = [plain(g.count), { string: 'strings', hash: 'hashes', set: 'sets', zset: 'zsets', list: 'lists', stream: 'streams' }[g.type], 'key=' + g.key];
       if (g.type === 'string') words.push('value=' + formatElem(g.value));
       if (g.type === 'hash') words.push('fields=' + g.fields, 'field=' + formatElem(g.field), 'value=' + formatElem(g.value));
       if (g.type === 'set' || g.type === 'zset') words.push('members=' + g.members, 'member=' + formatElem(g.member));
       if (g.type === 'zset') words.push('score=' + String(scoreOf(g)).trim());
       if (g.type === 'list') words.push('items=' + g.items, 'item=' + formatElem(g.item));
+      if (g.type === 'hash' && g.fieldTtl) words.push('field-ttl=' + g.fieldTtl);
+      if (g.type === 'stream') {
+        words.push('entries=' + g.entries, 'fields=' + g.fields, 'field=' + formatElem(g.field), 'value=' + formatElem(g.value));
+        if (g.groups) words.push('groups=' + g.groups, 'consumers=' + g.consumers, 'pending=' + g.pending, 'group=' + g.group, 'consumer=' + g.consumer);
+        if (g.perMs !== 1) words.push('per-ms=' + g.perMs);
+      }
       if (g.ttlCount) words.push('ttl=' + plain(g.ttlCount));
       else if (g.ttl && (g.ttlCount === undefined || g.ttlCount === null)) words.push('ttl=' + percent(g.ttl) + '%');
       if (g.writes === 'each' && g.type !== 'string') words.push('writes=each');

@@ -258,7 +258,7 @@ test('groups and settings are checked', () => {
   assert.throws(() => M.estimate(s({ ttlCount: -1 }), 'redis-8.10.2'), /ttlCount/);
   assert.throws(() => M.estimate(s({ count: 1e16 }), 'redis-8.10.2'), /count/);
   assert.throws(() => M.estimate(s({ value: { len: 600000000 } }), 'redis-8.10.2'), /512 MB/);
-  assert.throws(() => M.estimate(s({ type: 'stream' }), 'redis-8.10.2'), /Unknown type/);
+  assert.throws(() => M.estimate(s({ type: 'geo' }), 'redis-8.10.2'), /Unknown type/);
   assert.throws(() => M.estimate([null], 'redis-8.10.2'), /object/);
   // A number can come as a number.
   assert.equal(M.estimate(s({ value: { int: 42 } }), 'redis-8.10.2').groups[0].encoding, 'int');
@@ -367,4 +367,39 @@ test('the command line', () => {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test('streams and hash fields with a TTL are in the recordings of every version that has them', () => {
+  const runs = R.load();
+  for (const v of M.versions()) {
+    const kinds = new Set(runs[v.id].cases.map((c) => c.kind));
+    assert.ok(kinds.has('streams'), v.id + ' has stream cases');
+    assert.equal(kinds.has('fieldttl'), !!M.features(v.id).hfe, v.id + ' field TTL cases');
+    const groups = runs[v.id].cases.filter((c) => c.kind === 'streams' && c.groups[0].groups && c.groups[0].pending);
+    assert.ok(groups.length >= 20, v.id + ' has stream cases with pending entries');
+  }
+});
+
+test('the text form takes streams and field TTLs and gives them back', () => {
+  const text = '10 streams key=12 entries=1m fields=3 field=8 value=int:42 groups=2 consumers=4 pending=500 group=10 consumer=6 per-ms=7\n' +
+    '200 hashes key=16 fields=50 field=8 value=20 field-ttl=10\n3 hashes key=5 fields=4 field=3 value=3 field-ttl=all';
+  const p = M.parse(text);
+  assert.deepEqual(p.errors, []);
+  assert.equal(p.groups[2].fieldTtl, 4);
+  assert.equal(M.format(p.groups), text.replace('field-ttl=all', 'field-ttl=4').replace('entries=1m', 'entries=1000000'));
+  assert.match(M.parse('1 streams entries=10 groups=1 pending=3').errors[0].message, /consumers/);
+  assert.match(M.parse('1 hashes fields=3 field-ttl=4').errors[0].message, /fieldTtl/);
+  assert.match(M.parse('1 streams entries=10 groups=1 consumers=1 pending=11').errors[0].message, /pending/);
+});
+
+test('versions without HEXPIRE leave field TTLs out and say so', () => {
+  const g = M.parse('100 hashes fields=10 field-ttl=3').groups;
+  for (const v of M.versions()) {
+    const r = M.estimate(g, v.id);
+    assert.equal(r.notes.length ? 1 : 0, M.features(v.id).hfe ? 0 : 1, v.id);
+    if (r.notes.length) assert.equal(r.total, M.estimate(M.parse('100 hashes fields=10').groups, v.id).total);
+    else assert.ok(r.total > M.estimate(M.parse('100 hashes fields=10').groups, v.id).total);
+  }
+  assert.equal(M.estimate(g, 'redis-8.10.2').groups[0].encoding, 'listpackex');
+  assert.equal(M.estimate(g, 'valkey-9.1.2').groups[0].encoding, 'hashtable');
 });

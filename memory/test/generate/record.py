@@ -24,11 +24,12 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.environ.get('KV_BIN', '/opt/kv')
 OUT = os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
 SCALE = float(os.environ.get('KV_SCALE', '1'))
-KINDS = os.environ.get('KV_KINDS', 'strings,keys,hashes,sets,zsets,lists,mixed,settings').split(',')
+KINDS = os.environ.get('KV_KINDS', 'strings,keys,hashes,sets,zsets,lists,mixed,settings,streams,fieldttl').split(',')
 VERSIONS = ['redis-6.2.24', 'redis-7.0.15', 'redis-7.2.16', 'redis-7.4.11', 'redis-8.0.6', 'redis-8.2.10',
             'redis-8.4.7', 'redis-8.6.7', 'redis-8.8.3', 'redis-8.10.2', 'valkey-7.2.14', 'valkey-8.0.11',
             'valkey-8.1.10', 'valkey-9.0.6', 'valkey-9.1.2']
 TTL = '1000000'
+STREAMS = 'streams' in KINDS
 
 
 def b(s):
@@ -376,6 +377,11 @@ def group_commands(gi, g):
                 cmds.append(['HSET', k] + [x for f in fs for x in (f, v)])
             else:
                 cmds += [['HSET', k, f, v] for f in fs]
+            nf = g.get('fieldTtl', 0)
+            if nf:
+                # One expiry time for every field that has one, as one
+                # HPEXPIREAT gives them.
+                cmds.append(['HPEXPIREAT', k, FIELD_EXPIRE_AT, 'FIELDS', str(nf)] + fs[:nf])
         elif t == 'set':
             ms = distinct(g['member'], g['members'])
             cmds += [['SADD', k] + ms] if once else [['SADD', k, m] for m in ms]
@@ -387,9 +393,46 @@ def group_commands(gi, g):
             v = same_value(g['item'])
             n = g['items']
             cmds += [['RPUSH', k] + [v] * n] if once else [['RPUSH', k, v] for _ in range(n)]
+        elif t == 'stream':
+            cmds += stream_commands(k, g)
         if ttl and (t != 'string' or g.get('ttlMode', 'ex') == 'expire'):
             cmds.append(['EXPIRE', k, TTL])
         yield k, cmds
+
+
+FIELD_EXPIRE_AT = '4102444800000'  # 2100-01-01, far enough never to come
+STREAM_BASE = 1767225600000  # 2026-01-01, the first entry's milliseconds
+
+
+def stream_ids(g):
+    per = g.get('perMs', 1)
+    return ['%d-%d' % (STREAM_BASE + i // per, i % per) for i in range(g['entries'])]
+
+
+def stream_commands(k, g):
+    """XADD every entry with explicit IDs (perMs entries share a
+    millisecond), then the consumer groups: each reads its pending entries
+    with XREADGROUP, spread over its consumers in order, and consumers
+    that read nothing are made with XGROUP CREATECONSUMER."""
+    v = same_value(g['value'])
+    fs = distinct(g['field'], g['fields'])
+    cmds = [['XADD', k, sid] + [x for f in fs for x in (f, v)] for sid in stream_ids(g)]
+    for j in range(g.get('groups', 0)):
+        name = text(j, g.get('group', 8))
+        cmds.append(['XGROUP', 'CREATE', k, name, '0'])
+        C, P = g.get('consumers', 0), g.get('pending', 0)
+        # One transaction per group, so every delivery in it has the same
+        # time (Redis 8.4 indexes pending entries by delivery time).
+        cmds.append(['MULTI'])
+        for c in range(C):
+            n = P // C + (1 if c < P % C else 0)
+            cname = text(c, g.get('consumer', 8))
+            if n:
+                cmds.append(['XREADGROUP', 'GROUP', name, cname, 'COUNT', str(n), 'STREAMS', k, '>'])
+            else:
+                cmds.append(['XGROUP', 'CREATECONSUMER', k, name, cname])
+        cmds.append(['EXEC'])
+    return cmds
 
 
 def big(cmd):
@@ -508,11 +551,17 @@ def warm_up(srv):
         {'type': 'set', 'count': 1, 'key': 4, 'members': 300, 'member': {'len': 4}},
         {'type': 'zset', 'count': 1, 'key': 4, 'members': 300, 'member': {'len': 4}, 'score': '1'},
         {'type': 'list', 'count': 1, 'key': 4, 'items': 3, 'item': {'len': 2}}]}
+    if STREAMS:
+        case['groups'].append({'type': 'stream', 'count': 1, 'key': 4, 'entries': 300, 'fields': 2, 'field': {'len': 3},
+                               'value': {'len': 5}, 'groups': 2, 'consumers': 2, 'pending': 150})
     # Commands a case may need only now and then.
     c = srv.conn()
     for cmd in (['HEXISTS', 'x', 'y'], ['SISMEMBER', 'x', 'y'], ['ZSCORE', 'x', 'y'], ['OBJECT', 'ENCODING', 'x'],
                 ['DEBUG', 'HTSTATS-KEY', 'x'], ['SET', 'x', 'y', 'EX', '100'], ['EXPIRE', 'x', '100'], ['RPUSH', 'l', 'a'],
-                ['HSET', 'h', 'a', 'b'], ['SADD', 's', 'a'], ['ZADD', 'z', '1', 'a'], ['CONFIG', 'SET', 'maxmemory', '0']):
+                ['HSET', 'h', 'a', 'b'], ['SADD', 's', 'a'], ['ZADD', 'z', '1', 'a'], ['CONFIG', 'SET', 'maxmemory', '0'],
+                ['HPEXPIREAT', 'h', FIELD_EXPIRE_AT, 'FIELDS', '1', 'a'], ['XADD', 'x', '*', 'a', 'b'],
+                ['XGROUP', 'CREATE', 'x', 'g', '0'], ['XREADGROUP', 'GROUP', 'g', 'c', 'STREAMS', 'x', '>'],
+                ['XGROUP', 'CREATECONSUMER', 'x', 'g', 'd'], ['MULTI'], ['EXEC']):
         # Errors are fine here (DEBUG HTSTATS-KEY on a missing key): the first
         # error of a kind allocates its counter, and the cases make none.
         c.s.sendall(Conn.pack(cmd))
@@ -760,12 +809,72 @@ def settings_cases(rnd):
     return out
 
 
+def stream_group(rnd, **kw):
+    g = {'type': 'stream', 'count': 1, 'key': 8, 'entries': 100, 'fields': 1, 'field': {'len': 5}, 'value': {'len': 10}}
+    g.update(kw)
+    return g
+
+
+def stream_cases(rnd):
+    out = []
+    # Entries around the 100-entry and 4096-byte node limits.
+    for n in [1, 2, 99, 100, 101, 199, 200, 201, 1000, 3333]:
+        for v in [{'len': 10}, {'len': 60}, {'int': '42'}]:
+            out.append({'groups': [stream_group(rnd, entries=n, value=v)]})
+    for v in [100, 200, 1000, 4000, 4096, 5000, 20000]:
+        out.append({'groups': [stream_group(rnd, entries=rnd.choice([3, 20, 60]), value={'len': v})]})
+    # Several fields, numbers as fields, many entries a millisecond.
+    for _ in range(int(40 * SCALE)):
+        out.append({'groups': [stream_group(rnd, entries=rnd.choice([1, 50, 150, 700, 2500]), fields=rnd.choice([1, 2, 5, 20]),
+                                             field=rnd.choice([{'len': 1}, {'len': 8}, {'len': 40}, {'int': '1'}, {'int': '70000'}]),
+                                             value=rnd.choice([{'len': 0}, {'len': 5}, {'len': 63}, {'len': 64}, {'len': 300}, {'int': '-7'}, {'int': '123456789012'}]),
+                                             perMs=rnd.choice([1, 1, 3, 100, 5000]), count=rnd.choice([1, 1, 3]),
+                                             key=rnd.choice([4, 20, 60]))]})
+    # Consumer groups, consumers and pending entries.
+    for _ in range(int(60 * SCALE)):
+        n = rnd.choice([10, 100, 300, 1000, 2500])
+        G = rnd.choice([1, 1, 2, 3, 10])
+        C = rnd.choice([0, 1, 2, 5, 30])
+        P = 0 if C == 0 else rnd.choice([0, 1, 7, n // 3, n])
+        out.append({'groups': [stream_group(rnd, entries=n, groups=G, consumers=C, pending=P, group=rnd.choice([1, 8, 40]),
+                                             consumer=rnd.choice([1, 8, 40]), perMs=rnd.choice([1, 1, 7, 1000]),
+                                             count=rnd.choice([1, 1, 2]))]})
+    # Streams with a TTL, next to other keys.
+    for _ in range(int(10 * SCALE)):
+        g = stream_group(rnd, entries=rnd.choice([5, 150]), count=rnd.choice([1, 4]), groups=rnd.choice([0, 1]), consumers=1, pending=3)
+        g['ttlCount'] = g['count']
+        out.append({'groups': [g, {'type': 'string', 'count': 3, 'key': 8, 'value': {'len': 20}}]})
+    return out
+
+
+def fieldttl_cases(rnd):
+    """Hashes with fields that expire (HEXPIRE), all at the same time."""
+    out = []
+    def h(n, t, **kw):
+        g = {'type': 'hash', 'count': 1, 'key': 8, 'fields': n, 'field': {'len': 6}, 'value': {'len': 10}, 'fieldTtl': t}
+        g.update(kw)
+        return {'groups': [g]}
+    for n, t in [(10, 1), (10, 10), (100, 37), (512, 512), (513, 1), (513, 513), (1000, 1), (1000, 16), (1000, 17), (1000, 33),
+                 (1000, 127), (1000, 128), (1000, 129), (1000, 224), (1000, 225), (1000, 300), (2000, 2000)]:
+        out.append(h(n, t))
+    for c in [5, 16, 17, 40, 100]:
+        out.append(h(10, 2, count=c))
+        out.append(h(600, 3, count=c))
+    for _ in range(int(80 * SCALE)):
+        n = rnd.choice([1, 5, 30, 200, 512, 700, 3000])
+        t = rnd.choice([1, 2, n // 2 or 1, n, min(n, 127), min(n, 150)])
+        out.append(h(n, max(1, min(n, t)), count=rnd.choice([1, 1, 3, 20]), key=rnd.choice([4, 20, 60]),
+                     field=rnd.choice(FIELD_SPECS), value=rnd.choice(VALUE_SPECS), writes=rnd.choice(['once', 'each'])))
+    return out
+
+
 def all_cases(vid):
     rnd = random.Random('memory-cases')
     makers = {'strings': string_cases, 'keys': key_cases, 'hashes': hash_cases, 'sets': set_cases, 'zsets': zset_cases,
-              'lists': list_cases, 'mixed': mixed_cases, 'settings': settings_cases}
+              'lists': list_cases, 'mixed': mixed_cases, 'settings': settings_cases, 'streams': stream_cases,
+              'fieldttl': fieldttl_cases}
     cases = []
-    for kind in ['strings', 'keys', 'hashes', 'sets', 'zsets', 'lists', 'mixed', 'settings']:
+    for kind in ['strings', 'keys', 'hashes', 'sets', 'zsets', 'lists', 'mixed', 'settings', 'streams', 'fieldttl']:
         made = makers[kind](rnd)
         if kind in KINDS:
             for c in made:
@@ -774,6 +883,9 @@ def all_cases(vid):
     out = []
     for c in cases:
         if not all(fits(g) for g in c['groups']):
+            continue
+        # HEXPIRE came in Redis 7.4 and Valkey 9.0.
+        if c.get('kind') == 'fieldttl' and not (vid >= 'redis-7.4' and vid.startswith('redis-') or vid >= 'valkey-9'):
             continue
         # Redis 6.2 reads a big argument into a buffer that doubles: the first
         # one on a connection lands a size class higher in a few ranges.

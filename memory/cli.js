@@ -23,10 +23,18 @@ A group is a line such as:
   1000 sets key=12 members=200 member=int:1000000
   200 zsets key=10 members=1000 member=12 score=1759734012.5
   100 lists key=8 items=5000 item=60 writes=each
+  20000 hashes key=16 fields=50 field=8 value=20 field-ttl=10
+  10 streams key=12 entries=1m fields=3 field=8 value=30 groups=2 consumers=4 pending=500
 Lengths are in bytes, or 8kb (8192) and 1mb. Counts take k, m and b: 2.5m.
 int:N is a number, which the server can store as one; for fields and members
 it means the numbers N, N+1, N+2 and so on. "text" in quotes gives a sample
 instead of a length. ttl= is a share (30%, all, none) or a number of keys.
+field-ttl= is how many fields of each hash have a TTL of their own (HEXPIRE,
+Redis 7.4+ and Valkey 9.0+), all expiring at the same time. A stream line takes
+entries, fields (per entry), field, value, groups, consumers (per group),
+pending (entries delivered and not acknowledged, per group), group and consumer
+(name lengths, default 8) and per-ms (entries that share a millisecond of their
+ID, default 1).
 writes=each means one element per command (HSET, SADD ... per element) instead
 of one command per key, which can size the hash tables differently. In a file,
 a # starts a comment.
@@ -122,7 +130,7 @@ function bytes(n) {
 }
 const whole = (n) => Math.round(n).toLocaleString('en-US');
 const label = (id) => M.versions().find((v) => v.id === id).label;
-const TYPE = { string: 'strings', hash: 'hashes', set: 'sets', zset: 'sorted sets', list: 'lists' };
+const TYPE = { string: 'strings', hash: 'hashes', set: 'sets', zset: 'sorted sets', list: 'lists', stream: 'streams' };
 
 function table(rows) {
   const w = rows[0].map((_, j) => Math.max(...rows.map((r) => String(r[j]).length)));
@@ -142,6 +150,7 @@ function report(r) {
   if (r.ttlKeys) rows.push(['Expires table', whole(r.tables.expires.buckets) + ' ' + r.tables.expires.kind, '', bytes(r.tables.expires.bytes)]);
   if (r.tables.database) rows.push(['Database structs', '', '', bytes(r.tables.database)]);
   lines.push(table(rows));
+  for (const n of r.notes || []) lines.push('Note: ' + n);
   return lines.join('\n');
 }
 
@@ -210,10 +219,11 @@ function main() {
       const rows = [['Version', 'used_memory', 'Per key', 'vs ' + label(id)]];
       for (const r of all) {
         const d = base.total ? (r.total - base.total) / base.total * 100 : 0;
-        rows.push([label(r.version), bytes(r.total), (r.total / Math.max(1, r.keys)).toFixed(1) + ' B',
+        rows.push([label(r.version) + (r.notes.length ? ' *' : ''), bytes(r.total), (r.total / Math.max(1, r.keys)).toFixed(1) + ' B',
           r.version === id ? '' : Math.abs(d) < 0.05 ? 'the same' : (d > 0 ? '+' : '') + d.toFixed(1) + '%']);
       }
       console.log(table(rows));
+      if (all.some((r) => r.notes.length)) console.log('* No HEXPIRE in this version: hash fields with a TTL of their own came in Redis 7.4 and Valkey 9.0, so those TTLs are left out.');
       return 0;
     }
     const r = M.estimate(groups, id, opt.settings);
