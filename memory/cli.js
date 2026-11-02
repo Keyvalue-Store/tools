@@ -93,6 +93,8 @@ function version(spec) {
   if (!spec) return M.versions().filter((v) => v.server === 'redis').pop().id;
   const id = M.findVersion(spec);
   if (!id) throw new Error('No version matches "' + spec + '". Run with --versions to list them.');
+  const asked = /(\d+\.\d+\.\d+)/.exec(spec);
+  if (asked && !id.endsWith('-' + asked[1])) console.error('Counting as ' + M.versions().find((v) => v.id === id).label + ', the nearest version the calculator knows.');
   return id;
 }
 

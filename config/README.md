@@ -60,7 +60,7 @@ node config/cli.js --get config.txt                  # CONFIG GET * output again
 
 | Option | Meaning |
 |---|---|
-| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x), a full version such as `8.4.8`, or `all` (the default) |
+| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x), a full version such as `8.4.8`, or `all` (the default). An older patch is checked as the newest of its line, and the checker says so. Valkey 9.1.3 reads hexadecimal percentiles such as `0x1p5` again, up to 5,119 bytes, where 9.1.0 to 9.1.2 refused them |
 | `--no-tls` | Redis 6.2 or 7.0 built without TLS, where the TLS settings don't exist |
 | `--compression` | Redis 8.10 built with BUILD_COMPRESSION=yes |
 | `--minimal` | Print the short file, as the page's download gives it. It needs `--server` with one version; with `--json`, it prints the version and the lines as JSON |

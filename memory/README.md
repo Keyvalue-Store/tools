@@ -87,7 +87,7 @@ For fields and members, `int:N` means the numbers N, N+1, N+2 and so on. Counts 
 
 | Option | Meaning |
 |---|---|
-| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `valkey` (the newest Valkey), `8` (the newest 8.x of either), or a full version such as `8.4.8`. The default is the newest Redis |
+| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `valkey` (the newest Valkey), `8` (the newest 8.x of either), or a full version such as `8.4.8`; an older patch counts as the newest of its line. The default is the newest Redis |
 | `--compare` | Every version side by side |
 | `--pack N` | String keys packed into hashes of N fields. It raises `hash-max-listpack-entries` and `hash-max-listpack-value` as far as the hashes need to stay listpacks, and says so |
 | `--set NAME=VALUE` | A setting other than the default, such as `hash-max-listpack-entries=1024` or `maxmemory-policy=allkeys-lru` |

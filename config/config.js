@@ -285,14 +285,18 @@
     let x;
     // Redis's fast parsers fall back to strtod for anything they don't take
     // whole, hexadecimal included; Valkey 9.1's (ffc) has no fallback until
-    // 9.1.3, which gives hexadecimal back to strtod (ffclibc).
+    // 9.1.3, which gives hexadecimal back to strtod (ffclibc) through a
+    // buffer of 5120 bytes and refuses anything longer.
+    const hexOk = { strtod: true, fast: true, fastfallback: true, ffclibc: true };
+    const isHex = hex.test(s);
     if (dec.test(s)) x = Number(s);
     else if (word.test(s)) x = /nan/i.test(s) ? NaN : (s[0] === '-' ? -Infinity : Infinity);
-    else if (hex.test(s) && v.f.string2d !== 'ffc') x = parseHexFloat(s);
+    else if (isHex && hexOk[v.f.string2d] && !(v.f.string2d === 'ffclibc' && s.length >= 5120)) x = parseHexFloat(s);
     else return null;
     if (Number.isNaN(x)) return null;
-    if (!Number.isFinite(x) && dec.test(s)) return null; // overflow
-    if (x === 0 && dec.test(s) && /[1-9]/.test(s.replace(/[eE].*$/, ''))) return null; // underflow
+    if (!Number.isFinite(x) && !word.test(s)) return null; // overflow
+    const mantissa = isHex ? s.replace(/[pP].*$/, '').replace(/^[+-]?0[xX]/, '') : s.replace(/[eE].*$/, '');
+    if (x === 0 && (isHex ? /[1-9a-fA-F]/ : /[1-9]/).test(mantissa)) return null; // underflow
     return x;
   }
   function parseHexFloat(s) {

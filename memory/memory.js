@@ -1518,7 +1518,8 @@
   // config, as INFO memory reports it to the one client asking.
   // The November 2026 patch releases moved by what the same start measured
   // on the patch before them (Valkey 9.0.7: 448 bytes more, the others at
-  // most 272 either way).
+  // most 272 either way), which is within what two fresh starts of the same
+  // version differ by.
   const EMPTY = {
     'redis-6.2.24': 874000, 'redis-7.0.15': 881784, 'redis-7.2.17': 889392, 'redis-7.4.12': 971792, 'redis-8.0.6': 675904,
     'redis-8.2.11': 677096, 'redis-8.4.8': 692728, 'redis-8.6.8': 729376, 'redis-8.8.4': 734376, 'redis-8.10.3': 738632,

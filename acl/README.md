@@ -22,7 +22,7 @@ A command runs only if the user may run it and may use every key and channel it 
 
 Rules in parentheses make a selector, a second set of rights: `(~logs:* +xadd)`. A command may run if the rules outside the parentheses allow it or any one selector does. Valkey 9.1 adds databases: `db=0,2` keeps a user to those two.
 
-The rules changed more between versions than they seem to. Redis 6.2 has no selectors and no `%R~` or `%W~`, and a new user there may use every channel; from 7.0 a new user starts with none. Redis 7.0 works out the rules ACL LIST prints from what the user can do, so they can come back in another form; 7.2 and later print them as written. Some first arguments, such as `+select|a b` with a space, make 7.2 and later crash when they print the user. From 7.0 the error for a bad `user` line in a config file names the wrong word. Redis 7.0 follows a pattern with thousands of `*`, such as `*a` repeated, as deep as it goes, and crashes once its stack runs out; the others give up after 1000 levels. Valkey's November 2026 patches changed two things: an unclosed `(` after other rules on an ACL file line, which crashes the earlier patches of every Valkey line, is now reported like any other error, and Valkey 7.2.15 accepts `sanitize-payload` and `skip-sanitize-payload` but ignores them, as Valkey 8 does. The builder does what each version does, these included.
+The rules changed more between versions than they seem to. Redis 6.2 has no selectors and no `%R~` or `%W~`, and a new user there may use every channel; from 7.0 a new user starts with none. Redis 7.0 works out the rules ACL LIST prints from what the user can do, so they can come back in another form; 7.2 and later print them as written. Some first arguments, such as `+select|a b` with a space, make 7.2 and later crash when they print the user. From 7.0 the error for a bad `user` line in a config file names the wrong word. Redis 7.0 follows a pattern with thousands of `*`, such as `*a` repeated, as deep as it goes, and crashes once its stack runs out; the others give up after 1000 levels. Valkey's November 2026 patches changed two things: an unclosed `(` after other rules on an ACL file line, which crashes the earlier patches of every Valkey line, is now reported like any other error, and Valkey 7.2.15 accepts `sanitize-payload` and `skip-sanitize-payload` but ignores them, as Valkey 8 does. The builder does what each version does, these included. It knows the newest patch of each line; an older patch, such as Valkey 8.0.11, is checked as the newest of its line, and the command line says so, so on an older Valkey patch an unclosed `(` still crashes the server.
 
 ## What the builder shows
 
@@ -58,7 +58,7 @@ node acl/cli.js keys SORT list BY weight_* STORE out                          # 
 
 | Option | Meaning |
 |---|---|
-| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x of either), or a full version such as `8.4.8`. The default is the newest Redis |
+| `--server VERSION` | `redis-7.2`, `"valkey 9.1"`, `8` (the newest 8.x of either), or a full version such as `8.4.8`; an older patch is checked as the newest of its line. The default is the newest Redis |
 | `--user NAME` | With `--file` or `--config`: only this user, the default user included |
 | `--db N` | The client's database, for Valkey 9.1's `db=` rules (default 0) |
 | `--pubsub-default allchannels\|resetchannels` | The server's `acl-pubsub-default`, when it isn't the version's default. In a config file, an `acl-pubsub-default` line counts from where it is |

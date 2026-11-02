@@ -284,6 +284,28 @@ test('a file that starts with a byte order mark', () => {
 
 // ---- large inputs ----
 
+// Hexadecimal percentiles at the edges, as real servers took them in
+// November 2026: overflow and underflow refused everywhere, and Valkey
+// 9.1.3 refusing 5,120 bytes or more where Redis's strtod reads any length.
+test('hexadecimal percentiles: overflow, underflow and length', () => {
+  const hexOf = (n) => '0x1.' + '0'.repeat(n - 6) + 'p3';
+  const cases = [
+    ['0x1p99999', { 'valkey-9.1.3': null, 'redis-8.10.3': null, 'redis-7.2.17': null }],
+    ['0x1p-99999', { 'valkey-9.1.3': null, 'redis-8.10.3': null, 'redis-7.2.17': null }],
+    ['0x0p-99999', { 'valkey-9.1.3': '0 99', 'redis-8.10.3': '0 99', 'redis-7.2.17': '0 99' }],
+    [hexOf(5119), { 'valkey-9.1.3': '8 99', 'redis-8.10.3': '8 99', 'redis-7.2.17': '8 99' }],
+    [hexOf(5120), { 'valkey-9.1.3': null, 'redis-8.10.3': '8 99', 'redis-7.2.17': '8 99' }],
+    ['0x1p5', { 'valkey-9.1.3': '32 99', 'redis-8.10.3': '32 99', 'redis-7.2.17': '32 99' }]
+  ];
+  for (const [v, want] of cases) {
+    for (const [id, got] of Object.entries(want)) {
+      const r = C.check('latency-tracking-info-percentiles ' + v + ' 99\n', id);
+      assert.equal(r.ok, got !== null, id + ' ' + v.slice(0, 20));
+      if (got !== null) assert.equal(r.values.get ? r.values.get('latency-tracking-info-percentiles') : r.values['latency-tracking-info-percentiles'], got, id + ' ' + v.slice(0, 20));
+    }
+  }
+});
+
 test('large inputs take time in proportion to their size', () => {
   const timed = (f) => { const t = Date.now(); f(); return Date.now() - t; };
   // Each took from seconds to hours before.
