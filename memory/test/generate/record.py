@@ -22,7 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.environ.get('KV_BIN', '/opt/kv')
-OUT = os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
+OUT = os.environ.get('KV_OUT') or os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
 SCALE = float(os.environ.get('KV_SCALE', '1'))
 KINDS = os.environ.get('KV_KINDS', 'strings,keys,hashes,sets,zsets,lists,mixed,settings,streams,fieldttl').split(',')
 VERSIONS = ['redis-6.2.24', 'redis-7.0.15', 'redis-7.2.16', 'redis-7.4.11', 'redis-8.0.6', 'redis-8.2.10',

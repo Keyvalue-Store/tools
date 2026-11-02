@@ -20,7 +20,7 @@ const ENV = new Set(['dir', 'unixsocket', 'port']);
 const MACHINE = new Set(['maxclients']);
 
 function load() {
-  return JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, 'fixtures', 'runs.json.gz'))).toString('utf8'));
+  return JSON.parse(zlib.gunzipSync(fs.readFileSync(process.env.KV_FIXTURE || path.join(__dirname, 'fixtures', 'runs.json.gz'))).toString('utf8'));
 }
 
 // A recorded file's bytes: the strings in the recording hold one byte per character.

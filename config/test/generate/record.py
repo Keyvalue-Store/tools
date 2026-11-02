@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.environ.get('KV_BIN', '/opt/kv')
 SERVERS = json.load(gzip.open(os.path.join(HERE, '..', 'fixtures', 'servers.json.gz'), 'rt'))
-OUT = os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
+OUT = os.environ.get('KV_OUT') or os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
 
 # Builds without TLS: Redis 6.2 and 7.0 compile the TLS settings in only
 # when built with TLS, and these weren't.

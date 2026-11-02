@@ -25,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor
 HERE = os.path.dirname(os.path.abspath(__file__))
 BIN = os.environ.get('KV_BIN', '/opt/kv')
 SERVERS = {v['version']: v for v in json.load(gzip.open(os.path.join(HERE, '..', 'fixtures', 'servers.json.gz'), 'rt'))}
-OUT = os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
+OUT = os.environ.get('KV_OUT') or os.path.join(HERE, '..', 'fixtures', 'runs.json.gz')
 SCALE = float(os.environ.get('KV_SCALE', '1'))
 
 

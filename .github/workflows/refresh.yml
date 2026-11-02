@@ -1,0 +1,62 @@
+name: refresh
+
+# Once a month: build the newest patch release of every tracked Redis and
+# Valkey line, record it with the Memory Calculator, Config Checker and ACL
+# Builder recorders, replay it through the tools, and commit the dated
+# report in test/results/refresh/. It never changes the tools. A
+# difference, a new line or a failed build fails the run, with annotations.
+# This repository is public, so its Actions minutes are free.
+
+on:
+  schedule:
+    - cron: "41 4 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Check the newest patches
+        id: check
+        continue-on-error: true
+        env:
+          KV_WORK: ${{ runner.temp }}/refresh
+        run: python3 scripts/refresh.py
+      - name: Keep the log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: refresh-log
+          path: ${{ runner.temp }}/refresh/refresh.log
+          if-no-files-found: ignore
+          retention-days: 30
+      - name: Commit the report
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/results/refresh
+          if git diff --cached --quiet; then
+            echo "No report to commit."
+          else
+            git commit -m "Refresh check $(date -u +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Fail when the check found something
+        if: steps.check.outcome != 'success'
+        run: |
+          echo "::error::The refresh check found something to look at; see the report in test/results/refresh and the annotations above."
+          exit 1

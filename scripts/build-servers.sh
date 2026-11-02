@@ -31,6 +31,7 @@
 #   KV_SRC  where the sources go (default /opt/kvsrc)
 #   KV_BIN  where the servers go (default /opt/kv)
 #   JOBS    make jobs at once (default: the number of CPUs)
+#   KV_ALLOW_ANY=1  also build versions not in the list (scripts/refresh.py)
 set -u
 
 KV_SRC=${KV_SRC:-/opt/kvsrc}
@@ -53,6 +54,10 @@ for id in "$@"; do
   for known in $ALL; do
     [ "$id" = "$known" ] && found=yes
   done
+  # scripts/refresh.py builds newer patch releases too.
+  if [ "${KV_ALLOW_ANY:-}" = 1 ] && printf '%s\n' "$id" | grep -Eq '^(redis|valkey)-[0-9]+\.[0-9]+\.[0-9]+$'; then
+    found=yes
+  fi
   if [ -z "$found" ]; then
     echo "Unknown server: $id" >&2
     echo "Usage: $0 [server-version ...]" >&2
