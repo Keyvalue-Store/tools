@@ -127,6 +127,16 @@ def main():
                 for r in ready:
                     r.setdefault('tools', {})[name] = 'recording failed'
                 continue
+            # Servers name their own version in error messages ("FATAL CONFIG
+            # FILE ERROR (Redis 8.10.3)"). The recording stands in for the
+            # tracked version, so say that version there; everything else is
+            # compared as recorded.
+            with gzip.open(fixture, 'rt') as f:
+                text = f.read()
+            for r in ready:
+                text = text.replace(r['newest'], r['tracked'])
+            with gzip.open(fixture, 'wt') as f:
+                f.write(text)
             renv = dict(os.environ)
             if envname:
                 renv[envname] = fixture
