@@ -82,6 +82,15 @@ check('graph: alice reaches carol in 2 hops', r.status === 0 && r.out.includes('
 r = run('pipe', ['commands', '-'], 'SET a 1\n');
 check('pipe: SET a 1 as protocol', r.status === 0 && r.out.includes('*3\r\n$3\r\nSET\r\n$1\r\na\r\n$1\r\n1\r\n'), r);
 
+const nodes = path.join(tmp, 'nodes.txt');
+fs.writeFileSync(nodes, [
+  'a'.repeat(40) + ' 10.0.0.1:6379@16379 myself,master - 0 0 1 connected 0-8191',
+  'b'.repeat(40) + ' 10.0.0.2:6379@16379 master - 0 0 2 connected 8192-16383',
+  'c'.repeat(40) + ' 10.0.0.3:6379@16379 master - 0 0 0 connected'
+].join('\n') + '\n');
+r = run('rebalance', [nodes, '--script', '-']);
+check('rebalance: 5461 slots onto the empty primary', r.status === 0 && r.out.includes('In all 5461 slots') && r.out.includes('move_range 5462 8191 '), r);
+
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(failed ? '\n' + failed + ' failed' : '\nall ' + tools.length + ' tools passed');
 process.exit(failed ? 1 : 0);

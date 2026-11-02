@@ -17,6 +17,7 @@ Free tools for the key-value stores you run: Redis and Valkey, DynamoDB, etcd, a
 | [ACL Builder](https://keyvaluestore.com/tools/acl/) | ACL rules applied the way each of 15 versions applies them: ACL SETUSER's error or ACL LIST's line, what the user may do, ACL DRYRUN for commands, and least-privilege users drafted from MONITOR | [`acl/`](acl/) |
 | [Expression Tester](https://keyvaluestore.com/tools/expressions/) | DynamoDB key conditions, filters, conditions, updates and projections checked the way DynamoDB checks them, with its error messages, then run on your items | [`expressions/`](expressions/) |
 | [Revision Viewer](https://keyvaluestore.com/tools/revisions/) | An etcd snapshot opened: what fills it, Kubernetes resources and old revisions, free pages, Secrets in the clear, and every revision of a key, printed the way kubectl prints it | [`revisions/`](revisions/) |
+| [Cluster Rebalancing Planner](https://keyvaluestore.com/tools/rebalance/) | Which slots to move between the primaries of a Redis or Valkey cluster, by slot count or by bytes, with weights and draining, and a script of the standard commands that moves them | [`rebalance/`](rebalance/) |
 | [Graph Key Builder](https://keyvaluestore.com/tools/graph/) | A list of links turned into the keys a graph takes in an ordered key-value store, then followed hop by hop with every prefix scan counted | [`graph/`](graph/) |
 
 Each folder's README is the tool's manual, with a plain-language explanation of the technology behind it.
@@ -50,6 +51,7 @@ node acl/cli.js --help
 node expressions/cli.js --help
 node revisions/cli.js --help
 node graph/cli.js --help
+node rebalance/cli.js --help
 ```
 
 Each tool's page is in its `app/` folder. Open `app/index.html` straight from the folder, or serve the repository with any static web server.

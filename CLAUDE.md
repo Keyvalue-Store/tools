@@ -24,8 +24,8 @@ Design decisions:
 
 Steps (done / remaining):
 1. [x] Phase 0 and upkeep (this file, Node 22, CI matrix).
-2. [ ] Rebalancing planner library, CLI and page, with tests (parser on every flag and slot form, coverage and open-slot refusals, slot-count and byte balance, weights, drain, threshold, cap, contiguous ranges, script text).
-3. [ ] Planner recorder against real clusters, fixtures and replay tests.
+2. [x] Rebalancing planner library, CLI and page, with tests (parser on every flag and slot form, coverage and open-slot refusals, slot-count and byte balance, weights, drain, threshold, cap, contiguous ranges, script text). The script moves a whole range per step (one redis-cli process per node per step, stdin commands, every reply OK) after a slot-by-slot first version took over 15 minutes for 4096 slots.
+3. [x] Planner recorder against real clusters, fixtures and replay tests: Redis 6.2.24, 7.4.11, 8.10.2, Valkey 8.0.11, 9.1.2; add-empty, by-bytes and drain steps all ended with the planned owners and all 4000 keys read back. A drained donor turns replica and may refuse its last SETSLOT NODE (Redis: only with masters; Valkey 8: connection closed; Valkey 9: NOREPLICAS); the script accepts those from the donor only.
 4. [ ] Streams and hash-field TTLs in memory.js, recorder cases, replay with no differences.
 5. [ ] Refresh script and workflow, first run.
 6. [ ] READMEs, RELEASING.md, smoke checks for the new tool.

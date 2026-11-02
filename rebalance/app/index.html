@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'; img-src data: blob:; form-action 'none'; base-uri 'none'">
+<title>Cluster Rebalancing Planner | KeyValueStore.com</title>
+<meta name="description" content="Plan which hash slots to move between the primaries of a Redis or Valkey cluster, by slot count or by bytes, and get a script that moves them. Runs in your browser.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://keyvaluestore.com/tools/rebalance/">
+<base target="_top">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231F3A5F'/%3E%3Crect x='6' y='9' width='8' height='14' rx='2' fill='none' stroke='%2350C4CC' stroke-width='2.5'/%3E%3Crect x='18' y='13' width='8' height='10' rx='2' fill='none' stroke='%2350C4CC' stroke-width='2.5'/%3E%3Cpath d='M12 6h9l-2-2M21 6l-2 2' stroke='%2350C4CC' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<script src="../../common/embed.js"></script>
+<link rel="stylesheet" href="../../common/tool.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="wrap">
+    <a class="brand" href="https://keyvaluestore.com/">KeyValueStore</a>
+    <span class="tool-name">Cluster Rebalancing Planner</span>
+    <span class="grow"></span>
+    <a class="help" href="https://keyvaluestore.com/tools/rebalance/">How to use it</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <noscript><p class="error">This tool needs JavaScript switched on.</p></noscript>
+
+  <section class="section" aria-labelledby="h-nodes">
+    <h2 id="h-nodes">Your cluster</h2>
+    <p class="lede">Paste the output of <code>CLUSTER NODES</code> from any node. A new primary with no slots yet takes part, so this is also how you plan filling one you just added.</p>
+    <div class="field">
+      <label for="nodes-text">CLUSTER NODES</label>
+      <textarea id="nodes-text" spellcheck="false" placeholder="07c37dfeb235213a872192d90877d0cd55635b91 10.0.0.4:6379@16379 myself,master - 0 1726238317239 1 connected 0-5460"></textarea>
+      <span class="hint">From <code>redis-cli -h HOST -p PORT CLUSTER NODES</code> or <code>valkey-cli</code>. Lines for replicas can stay in.</span>
+    </div>
+    <div class="row">
+      <label class="btn" for="nodes-file">Load a file</label>
+      <input type="file" id="nodes-file" class="file-input" accept=".txt,.conf,text/plain">
+      <button type="button" class="btn" id="example">Try an example</button>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-load">
+    <h2 id="h-load">What to balance</h2>
+    <div class="row">
+      <label class="check"><input type="radio" name="by" value="slots" id="by-slots" checked> Slot counts</label>
+      <label class="check"><input type="radio" name="by" value="keys" id="by-keys"> Bytes, from a list of keys and sizes</label>
+      <label class="check"><input type="radio" name="by" value="slotload" id="by-slotload"> Bytes, from a list of slots and sizes</label>
+    </div>
+    <div class="field" id="load-field" hidden>
+      <label for="load-text" id="load-label">Keys and sizes</label>
+      <textarea id="load-text" spellcheck="false"></textarea>
+      <span class="hint" id="load-hint"></span>
+    </div>
+    <div class="row" id="load-row" hidden>
+      <label class="btn" for="load-file">Load a file</label>
+      <input type="file" id="load-file" class="file-input" accept=".txt,.csv,text/plain">
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-opts">
+    <h2 id="h-opts">Options</h2>
+    <div id="weights"></div>
+    <div class="row">
+      <label for="threshold">Leave it alone when every primary is within</label>
+      <input type="number" id="threshold" min="0" max="100" step="0.5" value="2" aria-label="Threshold in percent">
+      <span>% of its target</span>
+    </div>
+    <div class="row">
+      <label for="max-slots">Move at most</label>
+      <input type="number" id="max-slots" min="1" max="16384" placeholder="all" aria-label="Most slots to move">
+      <span>slots</span>
+      <span class="spacer"></span>
+      <label for="cli">Script uses</label>
+      <select id="cli"><option>redis-cli</option><option>valkey-cli</option></select>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-plan">
+    <h2 id="h-plan">The plan</h2>
+    <div id="plan" class="result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="wrap privacy">
+  Runs in your browser and sends nothing anywhere. The page's security policy stops it from fetching or loading anything from another site, and the script it writes only runs when you run it.
+  <a href="https://github.com/Keyvalue-Store/tools/tree/main/rebalance">Source code</a>, Apache License 2.0.
+</footer>
+
+<script src="../rebalance.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
